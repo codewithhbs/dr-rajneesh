@@ -5,14 +5,14 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 
 const errorHandler = (err, req, res, next) => {
   const statusCode = err.statusCode || 500;
-
+  
 
   logger.error(`${statusCode} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`, {
     component: 'Server',
     context: 'Error',
     error: err.stack
   });
-
+  
 
   if (err.name === 'ValidationError') {
     return res.status(400).json({
@@ -21,7 +21,7 @@ const errorHandler = (err, req, res, next) => {
       errors: err.errors,
     });
   }
-
+  
 
   if (err.name === 'JsonWebTokenError') {
     return res.status(401).json({
@@ -29,7 +29,7 @@ const errorHandler = (err, req, res, next) => {
       message: 'Invalid token. Please log in again.'
     });
   }
-
+  
 
   if (!res.headersSent) {
     res.status(statusCode).json({
