@@ -4,6 +4,7 @@ const emailQueue = require("../../queues/emailQueue");
 const generateOtp = require("../../utils/otp");
 const { sendEmail } = require("../../utils/sendEmail");
 const { sendToken } = require("../../utils/sendToken");
+const axios = require('axios')
 
 
 
@@ -161,6 +162,92 @@ exports.registerNormalUser = async (req, res, next) => {
 
     } catch (error) {
         next(error);
+    }
+};
+
+exports.googleAuthRegisterAndLogin = async (req, res) => {
+    const isGoogleAuth = true;
+    const { CLIENT_ID, CLIENT_SECRET, REDIRECT_URI } = process.env;
+    const code = req.query.code;
+
+    if (!code) return res.status(400).send('Missing authorization code.');
+
+    try {
+        const params = new URLSearchParams();
+        params.append('code', code);
+        params.append('client_id', CLIENT_ID);
+        params.append('client_secret', CLIENT_SECRET);
+        params.append('redirect_uri', REDIRECT_URI);
+        params.append('grant_type', 'authorization_code');
+
+        const { data: tokenData } = await axios.post(
+            'https://oauth2.googleapis.com/token',
+            params,
+            { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+        );
+
+        const accessToken = tokenData.access_token;
+        if (!accessToken) return res.status(400).send('Token exchange failed');
+
+        const { data: userInfo } = await axios.get(
+            'https://www.googleapis.com/oauth2/v2/userinfo',
+            { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+
+        if (!userInfo.email) return res.status(400).send('No email from Google');
+
+        const existingUser = await userModel.findOne({ email: userInfo.email });
+
+        if (existingUser) {
+            if (!existingUser.isGoogleAuth) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'This email is already registered. Please login using email and password.'
+                });
+            }
+
+            console.log('Old user via Google login:', existingUser);
+            const { token } = await sendToken(existingUser, 200, res, 'Login successful', false);
+            return res.redirect(`http://localhost:3000/login/login-success?token=${encodeURIComponent(token)}`);
+
+        }
+
+        const newUser = new userModel({
+            name: userInfo.name.trim(),
+            email: userInfo.email.toLowerCase().trim(),
+            termsAccepted: true,
+            profileImage: {
+                url: userInfo.picture || '',
+                publicId: ''
+            },
+            emailVerification: {
+                isVerified: userInfo.verified_email || false
+            },
+            isGoogleAuth,
+            status: 'active'
+        });
+
+        await newUser.save();
+
+        console.log('data is save', newUser)
+
+        const emailHtml = welcome(newUser);
+        emailQueue.add({
+            type: 'welcome',
+            to: newUser.email,
+            subject: 'Thank you for registering with us',
+            html: emailHtml
+        }).then(job => {
+            console.log('✅ Email job queued:', job.id);
+        }).catch(error => {
+            console.error('❌ Email queue error:', error);
+        });
+        const { token, user } = await sendToken(newUser, 200, res, 'Thank you for registering', false);
+        return res.redirect(`http://localhost:3000/login/login-success?token=${encodeURIComponent(token)}`);
+
+    } catch (err) {
+        console.error('OAuth Error:', err.response?.data || err.message);
+        return res.status(500).send('Google authentication failed.');
     }
 };
 
@@ -1058,3 +1145,309 @@ const resendVerificationEmail = async (req, res, next) => {
         next(error);
     }
 };
+
+
+
+//welcome mail content
+
+function welcome(user) {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verified - Dr. Rajneesh Kant</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f5f5; line-height: 1.6;">
+    
+    <!-- Main Container -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f5f5; padding: 20px 0;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; max-width: 600px; width: 100%; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden;">
+                    
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color: #2563eb; padding: 40px 30px; text-align: center;">
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td align="center">
+                                        <!-- Logo -->
+                                        <div style="width: 60px; height: 60px; background-color: #ffffff; border-radius: 50%; margin: 0 auto 20px; display: inline-flex; align-items: center; justify-content: center; font-size: 24px; line-height: 60px; text-align: center;">
+                                            🏥
+                                        </div>
+                                        
+                                        <h1 style="color: #ffffff; font-size: 28px; font-weight: bold; margin: 0 0 10px 0; text-align: center;">
+                                            Dr. Rajneesh Kant
+                                        </h1>
+                                        
+                                        <p style="color: #ffffff; font-size: 16px; margin: 0; opacity: 0.9; text-align: center;">
+                                            Physiotherapy & Chiropractic Care
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    
+                    <!-- Success Badge -->
+                    <tr>
+                        <td style="padding: 0 30px; text-align: center; transform: translateY(-20px);">
+                            <div style="background-color: #10b981; color: #ffffff; padding: 12px 24px; border-radius: 25px; display: inline-block; font-weight: bold; font-size: 14px; margin-bottom: 10px;">
+                                ✓ Email Verified Successfully
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <!-- Main Content -->
+                    <tr>
+                        <td style="padding: 20px 30px 40px;">
+                            
+                            <!-- Welcome Title -->
+                            <h2 style="color: #1f2937; font-size: 32px; font-weight: bold; margin: 0 0 25px 0; text-align: center;">
+                                Welcome to Our Wellness Family!
+                            </h2>
+                            
+                            <!-- Content Text -->
+                            <p style="color: #374151; font-size: 16px; margin: 0 0 20px 0; line-height: 1.6;">
+                                Dear <strong style="color: #2563eb;">${user.name}</strong>,
+                            </p>
+                            
+                            <p style="color: #6b7280; font-size: 16px; margin: 0 0 20px 0; line-height: 1.6;">
+                                Your email has been successfully verified. We're thrilled to welcome you to Dr. Rajneesh Kant's clinic - your trusted partner for physiotherapy and chiropractic care in Faridabad.
+                            </p>
+                            
+                            <p style="color: #6b7280; font-size: 16px; margin: 0 0 30px 0; line-height: 1.6;">
+                                Our clinic specializes in personalized treatment plans designed to help you recover, heal, and achieve optimal wellness through modern therapeutic techniques.
+                            </p>
+                            
+                        </td>
+                    </tr>
+                    
+                    <!-- Features Section -->
+                    <tr>
+                        <td style="padding: 0 30px 30px;">
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8fafc; border-radius: 8px; padding: 25px;">
+                                <tr>
+                                    <td>
+                                        <h3 style="color: #1f2937; font-size: 20px; font-weight: bold; margin: 0 0 25px 0; text-align: center;">
+                                            What You Can Do Now
+                                        </h3>
+                                        
+                                        <!-- Features Grid -->
+                                        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                            <tr>
+                                                <td width="33.33%" style="text-align: center; padding: 15px; vertical-align: top;">
+                                                    <div style="font-size: 36px; margin-bottom: 12px; line-height: 1;">📅</div>
+                                                    <p style="color: #6b7280; font-size: 14px; margin: 0; line-height: 1.4;">
+                                                        Book appointments<br>online
+                                                    </p>
+                                                </td>
+                                                <td width="33.33%" style="text-align: center; padding: 15px; vertical-align: top;">
+                                                    <div style="font-size: 36px; margin-bottom: 12px; line-height: 1;">📋</div>
+                                                    <p style="color: #6b7280; font-size: 14px; margin: 0; line-height: 1.4;">
+                                                        Access health<br>resources
+                                                    </p>
+                                                </td>
+                                                <td width="33.33%" style="text-align: center; padding: 15px; vertical-align: top;">
+                                                    <div style="font-size: 36px; margin-bottom: 12px; line-height: 1;">💬</div>
+                                                    <p style="color: #6b7280; font-size: 14px; margin: 0; line-height: 1.4;">
+                                                        Get personalized<br>care tips
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    
+                    <!-- Stats Section -->
+                    <tr>
+                        <td style="padding: 0 30px 30px;">
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #1f2937; border-radius: 8px; padding: 25px;">
+                                <tr>
+                                    <td>
+                                        <h3 style="color: #ffffff; font-size: 20px; font-weight: bold; margin: 0 0 25px 0; text-align: center;">
+                                            Why Choose Our Clinic?
+                                        </h3>
+                                        
+                                        <!-- Stats Grid -->
+                                        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                            <tr>
+                                                <td width="33.33%" style="text-align: center; padding: 10px; vertical-align: top;">
+                                                    <div style="color: #3b82f6; font-size: 28px; font-weight: bold; margin-bottom: 5px;">15+</div>
+                                                    <p style="color: #d1d5db; font-size: 14px; margin: 0;">Years Experience</p>
+                                                </td>
+                                                <td width="33.33%" style="text-align: center; padding: 10px; vertical-align: top;">
+                                                    <div style="color: #3b82f6; font-size: 28px; font-weight: bold; margin-bottom: 5px;">500+</div>
+                                                    <p style="color: #d1d5db; font-size: 14px; margin: 0;">Happy Patients</p>
+                                                </td>
+                                                <td width="33.33%" style="text-align: center; padding: 10px; vertical-align: top;">
+                                                    <div style="color: #3b82f6; font-size: 28px; font-weight: bold; margin-bottom: 5px;">98%</div>
+                                                    <p style="color: #d1d5db; font-size: 14px; margin: 0;">Success Rate</p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    
+                    <!-- CTA Buttons -->
+                    <tr>
+                        <td style="padding: 0 30px 30px; text-align: center;">
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td align="center" style="padding: 10px;">
+                                        <a href="#" style="display: inline-block; background-color: #2563eb; color: #ffffff !important; text-decoration: none; padding: 16px 32px; border-radius: 6px; font-weight: bold; font-size: 16px; text-align: center; min-width: 180px;">
+                                            📅 Book Appointment
+                                        </a>
+                                    </td>
+                                    <td align="center" style="padding: 10px;">
+                                        <a href="#" style="display: inline-block; background-color: #10b981; color: #ffffff !important; text-decoration: none; padding: 16px 32px; border-radius: 6px; font-weight: bold; font-size: 16px; text-align: center; min-width: 180px;">
+                                            🔍 View Services
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    
+                    <!-- Contact Information -->
+                    <tr>
+                        <td style="padding: 0 30px 30px;">
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8fafc; border-radius: 8px; padding: 25px;">
+                                <tr>
+                                    <td>
+                                        <h3 style="color: #1f2937; font-size: 20px; font-weight: bold; margin: 0 0 20px 0; text-align: center;">
+                                            Get In Touch
+                                        </h3>
+                                        
+                                        <!-- Contact Grid -->
+                                        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                            <tr>
+                                                <td width="50%" style="padding: 10px; vertical-align: middle;">
+                                                    <table cellpadding="0" cellspacing="0" border="0">
+                                                        <tr>
+                                                            <td style="vertical-align: middle; padding-right: 12px;">
+                                                                <div style="width: 40px; height: 40px; background-color: #2563eb; color: #ffffff; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; line-height: 40px; text-align: center;">
+                                                                    📞
+                                                                </div>
+                                                            </td>
+                                                            <td style="vertical-align: middle;">
+                                                                <div style="color: #374151; font-size: 16px; font-weight: bold;">
+                                                                    +91 98765 43210
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                                <td width="50%" style="padding: 10px; vertical-align: middle;">
+                                                    <table cellpadding="0" cellspacing="0" border="0">
+                                                        <tr>
+                                                            <td style="vertical-align: middle; padding-right: 12px;">
+                                                                <div style="width: 40px; height: 40px; background-color: #10b981; color: #ffffff; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; line-height: 40px; text-align: center;">
+                                                                    📍
+                                                                </div>
+                                                            </td>
+                                                            <td style="vertical-align: middle;">
+                                                                <div style="color: #374151; font-size: 16px; font-weight: bold;">
+                                                                    Faridabad, Haryana
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    
+                    <!-- Final Message -->
+                    <tr>
+                        <td style="padding: 0 30px 30px;">
+                            <p style="color: #6b7280; font-size: 16px; margin: 0 0 30px 0; line-height: 1.6;">
+                                If you have any questions or need assistance, feel free to reach out. We're here to support your wellness journey every step of the way.
+                            </p>
+                            
+                            <!-- Signature -->
+                            <div style="text-align: center; padding-top: 25px; border-top: 1px solid #e5e7eb;">
+                                <p style="color: #2563eb; font-size: 18px; font-weight: bold; margin: 0 0 5px 0;">
+                                    Best regards,
+                                </p>
+                                <p style="color: #374151; font-size: 16px; font-weight: bold; margin: 0 0 5px 0;">
+                                    Dr. Rajneesh Kant & Team
+                                </p>
+                                <p style="color: #6b7280; font-size: 14px; margin: 0; font-style: italic;">
+                                    Physiotherapy & Chiropractic Care
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #1f2937; padding: 30px; text-align: center;">
+                            <div style="margin-bottom: 20px;">
+                                <a href="#" style="color: #9ca3af; text-decoration: none; margin: 0 12px; font-size: 14px;">Home</a>
+                                <a href="#" style="color: #9ca3af; text-decoration: none; margin: 0 12px; font-size: 14px;">Services</a>
+                                <a href="#" style="color: #9ca3af; text-decoration: none; margin: 0 12px; font-size: 14px;">About</a>
+                                <a href="#" style="color: #9ca3af; text-decoration: none; margin: 0 12px; font-size: 14px;">Contact</a>
+                            </div>
+                            
+                            <p style="color: #9ca3af; font-size: 12px; margin: 0; line-height: 1.5;">
+                                This is an automated message. Please do not reply.<br>
+                                © 2024 Dr. Rajneesh Kant. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+                    
+                </table>
+            </td>
+        </tr>
+    </table>
+    
+    <!-- Mobile Responsive Styles -->
+    <style>
+        @media only screen and (max-width: 600px) {
+            .container {
+                width: 100% !important;
+                margin: 0 !important;
+            }
+            
+            .mobile-padding {
+                padding: 20px !important;
+            }
+            
+            .mobile-text {
+                font-size: 14px !important;
+            }
+            
+            .mobile-title {
+                font-size: 24px !important;
+            }
+            
+            .mobile-button {
+                display: block !important;
+                width: 100% !important;
+                margin: 10px 0 !important;
+            }
+            
+            .mobile-stack {
+                display: block !important;
+                width: 100% !important;
+                text-align: center !important;
+                padding: 10px 0 !important;
+            }
+        }
+    </style>
+    
+</body>
+</html>`
+}

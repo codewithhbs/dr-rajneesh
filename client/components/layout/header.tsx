@@ -12,12 +12,13 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Menu, X, Phone, Mail, Facebook, Twitter, Instagram, Youtube, MapPin, Star, Users, Award, TrendingUp, Activity } from "lucide-react"
+import { Menu, X, Phone, Mail, Facebook, Twitter, Instagram, Youtube, LogOut, HelpCircle, LayoutDashboard, User } from "lucide-react"
 
 
 import { useMobile } from "@/hooks/use-mobile"
 import Image from "next/image"
 import { logo } from "@/constant/Images"
+import { useAuth } from "@/context/authContext/auth"
 
 const navigationItems = [
     { href: "/", label: "Home" },
@@ -55,8 +56,12 @@ const phoneNumbers = [
 export function Header() {
     const [isMenuOpen, setIsMenuOpen] = useState(false)
     const pathname = usePathname()
-    const isMobile = useMobile()
 
+    const { isAuthenticated, setToken } = useAuth()
+    const handleLogout = () => {
+        setToken('')
+        window.location.reload()
+    };
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen)
 
     return (
@@ -108,7 +113,7 @@ export function Header() {
                             {/* Logo */}
                             <Link href="/" className="flex items-center space-x-3">
                                 <div className="bg-gradient-to-r  text-white p-3 rounded-xl ">
-                                   <Image src={logo} alt="logo" width={50} height={50}  />
+                                    <Image src={logo} alt="logo" width={50} height={50} />
                                 </div>
                                 <div>
                                     <h1 className="text-sm md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
@@ -160,11 +165,61 @@ export function Header() {
                             </nav>
 
                             {/* Auth Buttons */}
+
                             <div className="hidden lg:flex items-center space-x-4">
-                                <Button variant="ghost" className="font-semibold text-gray-700 hover:text-blue-600">
-                                    <Link href={'/login'}>
-                                        Login</Link>
-                                </Button>
+                                {isAuthenticated ? (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button
+                                                variant="ghost"
+                                                className="font-semibold text-gray-800 hover:text-blue-600 transition duration-200"
+                                            >
+                                                Profile
+                                            </Button>
+                                        </DropdownMenuTrigger>
+
+                                        <DropdownMenuContent className="w-52 rounded-xl shadow-xl bg-white border border-gray-100 p-2">
+                                            <DropdownMenuLabel className="text-gray-500 px-2 py-1 text-sm">My Account</DropdownMenuLabel>
+                                            <DropdownMenuSeparator />
+
+                                            <DropdownMenuItem asChild className="hover:bg-blue-50 rounded-md px-3 py-2 cursor-pointer transition">
+                                                <Link href="/dashboard" className="flex items-center gap-2">
+                                                    <LayoutDashboard size={16} className="text-blue-600" />
+                                                    Dashboard
+                                                </Link>
+                                            </DropdownMenuItem>
+
+                                            <DropdownMenuItem asChild className="hover:bg-blue-50 rounded-md px-3 py-2 cursor-pointer transition">
+                                                <Link href="/help" className="flex items-center gap-2">
+                                                    <HelpCircle size={16} className="text-green-600" />
+                                                    Get Help
+                                                </Link>
+                                            </DropdownMenuItem>
+
+                                            <DropdownMenuItem asChild className="hover:bg-blue-50 rounded-md px-3 py-2 cursor-pointer transition">
+                                                <Link href="/profile" className="flex items-center gap-2">
+                                                    <User size={16} className="text-purple-600" />
+                                                    Profile
+                                                </Link>
+                                            </DropdownMenuItem>
+
+                                            <DropdownMenuSeparator />
+
+                                            <DropdownMenuItem
+                                                onClick={handleLogout}
+                                                className="hover:bg-red-50 text-red-600 hover:text-red-700 rounded-md px-3 py-2 flex items-center gap-2 transition cursor-pointer"
+                                            >
+                                                <LogOut size={16} />
+                                                Logout
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                ) : (
+                                    <Button variant="ghost" className="font-semibold text-gray-700 hover:text-blue-600">
+                                        <Link href="/login">Login</Link>
+                                    </Button>
+                                )}
+
                                 <Link href="/shop/med-store" passHref>
                                     <Button
                                         className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base"
@@ -172,7 +227,6 @@ export function Header() {
                                         Buy Medicine from Store
                                     </Button>
                                 </Link>
-
                             </div>
 
                             {/* Mobile Menu Button */}
@@ -235,21 +289,68 @@ export function Header() {
                                 </nav>
 
                                 <div className="pt-4 border-t space-y-2">
-                                    <Button variant="outline" className="w-full">
-                                        Login
+                                  {isAuthenticated ? (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button
+                                                variant="ghost"
+                                                className="font-semibold text-gray-800 hover:text-blue-600 transition duration-200"
+                                            >
+                                                Profile
+                                            </Button>
+                                        </DropdownMenuTrigger>
+
+                                        <DropdownMenuContent className="w-52 rounded-xl shadow-xl bg-white border border-gray-100 p-2">
+                                            <DropdownMenuLabel className="text-gray-500 px-2 py-1 text-sm">My Account</DropdownMenuLabel>
+                                            <DropdownMenuSeparator />
+
+                                            <DropdownMenuItem asChild className="hover:bg-blue-50 rounded-md px-3 py-2 cursor-pointer transition">
+                                                <Link href="/dashboard" className="flex items-center gap-2">
+                                                    <LayoutDashboard size={16} className="text-blue-600" />
+                                                    Dashboard
+                                                </Link>
+                                            </DropdownMenuItem>
+
+                                            <DropdownMenuItem asChild className="hover:bg-blue-50 rounded-md px-3 py-2 cursor-pointer transition">
+                                                <Link href="/help" className="flex items-center gap-2">
+                                                    <HelpCircle size={16} className="text-green-600" />
+                                                    Get Help
+                                                </Link>
+                                            </DropdownMenuItem>
+
+                                            <DropdownMenuItem asChild className="hover:bg-blue-50 rounded-md px-3 py-2 cursor-pointer transition">
+                                                <Link href="/profile" className="flex items-center gap-2">
+                                                    <User size={16} className="text-purple-600" />
+                                                    Profile
+                                                </Link>
+                                            </DropdownMenuItem>
+
+                                            <DropdownMenuSeparator />
+
+                                            <DropdownMenuItem
+                                                onClick={handleLogout}
+                                                className="hover:bg-red-50 text-red-600 hover:text-red-700 rounded-md px-3 py-2 flex items-center gap-2 transition cursor-pointer"
+                                            >
+                                                <LogOut size={16} />
+                                                Logout
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                ) : (
+                                    <Button variant="ghost" className="font-semibold text-gray-700 hover:text-blue-600">
+                                        <Link href="/login">Login</Link>
                                     </Button>
-                                    <Button className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700">
-                                        Get Appointment
-                                    </Button>
+                                )}
                                 </div>
+                                
                             </div>
                         </div>
                     )}
                 </div>
-            </header>
+            </header >
 
             {/* Hero Section */}
 
-        </div>
+        </div >
     )
 }

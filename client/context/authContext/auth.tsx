@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import React, {
   createContext,
   useState,
@@ -8,16 +8,13 @@ import React, {
   SetStateAction,
   useContext,
 } from "react";
+import Cookies from "js-cookie";
 
-type User = {
-  id: string;
-  name: string;
-  email: string;
-};
+type token = string;
 
 interface AuthContextType {
-  user: User | null;
-  setUser: Dispatch<SetStateAction<User | null>>;
+  token: string | null;
+  setToken: Dispatch<SetStateAction<token | null>>;
   loading: boolean;
   setLoading: Dispatch<SetStateAction<boolean>>;
   isAuthenticated: boolean;
@@ -30,31 +27,41 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<token | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const isAuthenticated = user !== null;
+  const isAuthenticated = token !== null;
 
   useEffect(() => {
     try {
-      const storedUser = localStorage.getItem("user");
-      if (storedUser) {
-        const parsedUser: User = JSON.parse(storedUser);
-        setUser(parsedUser);
+      const cookieToken = Cookies.get("token");
+      if (cookieToken) {
+        setToken(cookieToken);
       }
     } catch (error) {
-      console.error("Failed to load user from localStorage", error);
-      setUser(null);
+      console.error("Failed to load token from cookie", error);
+      setToken(null);
     } finally {
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+      }, 5000)
     }
   }, []);
+
+
+  useEffect(() => {
+    if (token) {
+      Cookies.set("token", token, { expires: 7 }); 
+    } else {
+      Cookies.remove("token");
+    }
+  }, [token]);
 
   return (
     <AuthContext.Provider
       value={{
-        user,
-        setUser,
+        token,
+        setToken,
         loading,
         setLoading,
         isAuthenticated,
@@ -65,7 +72,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
 };
 
-// Custom hook to use the AuthContext
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {

@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema({
     email: {
         type: String,
         required: [true, 'Email is required'],
-     
+
         trim: true,
         lowercase: true,
         match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email'],
@@ -23,10 +23,21 @@ const userSchema = new mongoose.Schema({
 
     phone: {
         type: String,
-        required: [true, 'Phone number is required'],
+        required: function () {
+            return !this.isGoogleAuth;
+        },
+        validate: {
+            validator: function (value) {
+                if (!this.isGoogleAuth) {
+                    return /^\d{10}$/.test(value);
+                }
+                return true;
+            },
+            message: 'Phone number must be 10 digits'
+        },
         unique: true,
         trim: true,
-        match: [/^\d{10}$/, 'Phone number must be 10 digits'],
+
 
     },
 
@@ -35,7 +46,7 @@ const userSchema = new mongoose.Schema({
         url: {
             type: String,
             trim: true,
-           
+
         },
         publicId: {
             type: String,

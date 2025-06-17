@@ -9,7 +9,8 @@ const createToken = (payload) => {
 };
 
 // Send token as cookie + response
-const sendToken = async (user, statusCode, res, message) => {
+const sendToken = async (user, statusCode, res, message, isSendResponse = true) => {
+  console.log("isSendResponse",isSendResponse)
   try {
     console.log('🔐 Generating token...');
 
@@ -43,23 +44,28 @@ const sendToken = async (user, statusCode, res, message) => {
 
     // Send response
     console.log('📤 Sending response...');
-    res.status(statusCode).json({
-      success: true,
-      message,
-      token,
+    if (isSendResponse) {
 
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        isGoogleAuth: user.isGoogleAuth,
-        profileImage: user.profileImage?.url || null,
-        status: user.status,
-        termsAccepted: user.termsAccepted,
-        emailVerified: user.emailVerification?.isVerified || false
-      }
-    });
+      res.status(statusCode).json({
+        success: true,
+        message,
+        token,
+
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          phone: user.isGoogleAuth ? '' :user.phone,
+          isGoogleAuth: user.isGoogleAuth,
+          profileImage: user.profileImage?.url || null,
+          status: user.status,
+          termsAccepted: user.termsAccepted,
+          emailVerified: user.emailVerification?.isVerified || false
+        }
+      });
+    } else {
+      return { token, user }
+    }
 
   } catch (error) {
     console.error('❌ Error in sendToken:', error);

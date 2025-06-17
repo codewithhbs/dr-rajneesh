@@ -46,10 +46,17 @@ const app = express();
 
 
 app.use(helmet());
+
+
 app.use(cors({
-  origin: '*',   //['http://localhost:5173']
-  credentials: true,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    return callback(null, true);
+  },
+  credentials: true
 }));
+
 app.use(compression());
 app.set('trust proxy', true);
 
