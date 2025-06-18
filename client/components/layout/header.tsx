@@ -19,33 +19,8 @@ import { useMobile } from "@/hooks/use-mobile"
 import Image from "next/image"
 import { logo } from "@/constant/Images"
 import { useAuth } from "@/context/authContext/auth"
+import { useService } from "@/hooks/use-service"
 
-const navigationItems = [
-    { href: "/", label: "Home" },
-    { href: "/pages/about", label: "About" },
-    {
-        href: "/treatments",
-        label: "Treatments",
-        submenu: [
-            "Back Pain",
-            "Neck Pain",
-            "Shoulder Pain",
-            "Headache",
-            "Scoliosis",
-            "Disc Injury",
-            "Pinching Nerve (Nerve Entrapment)",
-            "Joint Pain",
-            "Knee Pain Physiotherapy",
-            "Sciatica Pain Treatment",
-            "Spine Alignment Therapy",
-            "Ankylosing Spondylitis",
-            "Sports Injury Rehabilitation"
-        ]
-    },
-
-    { href: "/pages/contact", label: "Contact" },
-    { href: "/pages/gallery", label: "Gallery" },
-]
 
 const phoneNumbers = [
     "+91-9308511357",
@@ -56,12 +31,28 @@ const phoneNumbers = [
 export function Header() {
     const [isMenuOpen, setIsMenuOpen] = useState(false)
     const pathname = usePathname()
-
+    const { services } = useService()
     const { isAuthenticated, setToken } = useAuth()
     const handleLogout = () => {
         setToken('')
         window.location.reload()
     };
+
+    const navigationItems = [
+        { href: "/", label: "Home" },
+        { href: "/pages/about", label: "About" },
+        {
+            href: "/treatments",
+            label: "Treatments",
+            submenu: services
+        },
+
+        { href: "/pages/contact", label: "Contact" },
+        { href: "/pages/gallery", label: "Gallery" },
+    ]
+
+
+
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen)
 
     return (
@@ -142,8 +133,8 @@ export function Header() {
                                                     <DropdownMenuSeparator />
                                                     {item.submenu.map((treatment, index) => (
                                                         <DropdownMenuItem key={index} asChild>
-                                                            <Link href={`/treatments/${treatment.toLowerCase().replace(/\s+/g, '-')}`}>
-                                                                {treatment}
+                                                            <Link href={`/treatments/${treatment?.service_name.toLowerCase().replace(/\s+/g, '-')}`}>
+                                                                {treatment?.service_name}
                                                             </Link>
                                                         </DropdownMenuItem>
                                                     ))}
@@ -263,10 +254,10 @@ export function Header() {
                                                         {item.submenu.map((treatment, index) => (
                                                             <DropdownMenuItem key={index} asChild>
                                                                 <Link
-                                                                    href={`/treatments/${treatment.toLowerCase().replace(/\s+/g, '-')}`}
+                                                                    href={`/treatments/${treatment?.service_name.toLowerCase().replace(/\s+/g, '-')}`}
                                                                     onClick={() => setIsMenuOpen(false)}
                                                                 >
-                                                                    {treatment}
+                                                                    {treatment?.service_name}
                                                                 </Link>
                                                             </DropdownMenuItem>
                                                         ))}
@@ -289,60 +280,60 @@ export function Header() {
                                 </nav>
 
                                 <div className="pt-4 border-t space-y-2">
-                                  {isAuthenticated ? (
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button
-                                                variant="ghost"
-                                                className="font-semibold text-gray-800 hover:text-blue-600 transition duration-200"
-                                            >
-                                                Profile
-                                            </Button>
-                                        </DropdownMenuTrigger>
-
-                                        <DropdownMenuContent className="w-52 rounded-xl shadow-xl bg-white border border-gray-100 p-2">
-                                            <DropdownMenuLabel className="text-gray-500 px-2 py-1 text-sm">My Account</DropdownMenuLabel>
-                                            <DropdownMenuSeparator />
-
-                                            <DropdownMenuItem asChild className="hover:bg-blue-50 rounded-md px-3 py-2 cursor-pointer transition">
-                                                <Link href="/dashboard" className="flex items-center gap-2">
-                                                    <LayoutDashboard size={16} className="text-blue-600" />
-                                                    Dashboard
-                                                </Link>
-                                            </DropdownMenuItem>
-
-                                            <DropdownMenuItem asChild className="hover:bg-blue-50 rounded-md px-3 py-2 cursor-pointer transition">
-                                                <Link href="/help" className="flex items-center gap-2">
-                                                    <HelpCircle size={16} className="text-green-600" />
-                                                    Get Help
-                                                </Link>
-                                            </DropdownMenuItem>
-
-                                            <DropdownMenuItem asChild className="hover:bg-blue-50 rounded-md px-3 py-2 cursor-pointer transition">
-                                                <Link href="/profile" className="flex items-center gap-2">
-                                                    <User size={16} className="text-purple-600" />
+                                    {isAuthenticated ? (
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button
+                                                    variant="ghost"
+                                                    className="font-semibold text-gray-800 hover:text-blue-600 transition duration-200"
+                                                >
                                                     Profile
-                                                </Link>
-                                            </DropdownMenuItem>
+                                                </Button>
+                                            </DropdownMenuTrigger>
 
-                                            <DropdownMenuSeparator />
+                                            <DropdownMenuContent className="w-52 rounded-xl shadow-xl bg-white border border-gray-100 p-2">
+                                                <DropdownMenuLabel className="text-gray-500 px-2 py-1 text-sm">My Account</DropdownMenuLabel>
+                                                <DropdownMenuSeparator />
 
-                                            <DropdownMenuItem
-                                                onClick={handleLogout}
-                                                className="hover:bg-red-50 text-red-600 hover:text-red-700 rounded-md px-3 py-2 flex items-center gap-2 transition cursor-pointer"
-                                            >
-                                                <LogOut size={16} />
-                                                Logout
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                ) : (
-                                    <Button variant="ghost" className="font-semibold text-gray-700 hover:text-blue-600">
-                                        <Link href="/login">Login</Link>
-                                    </Button>
-                                )}
+                                                <DropdownMenuItem asChild className="hover:bg-blue-50 rounded-md px-3 py-2 cursor-pointer transition">
+                                                    <Link href="/dashboard" className="flex items-center gap-2">
+                                                        <LayoutDashboard size={16} className="text-blue-600" />
+                                                        Dashboard
+                                                    </Link>
+                                                </DropdownMenuItem>
+
+                                                <DropdownMenuItem asChild className="hover:bg-blue-50 rounded-md px-3 py-2 cursor-pointer transition">
+                                                    <Link href="/help" className="flex items-center gap-2">
+                                                        <HelpCircle size={16} className="text-green-600" />
+                                                        Get Help
+                                                    </Link>
+                                                </DropdownMenuItem>
+
+                                                <DropdownMenuItem asChild className="hover:bg-blue-50 rounded-md px-3 py-2 cursor-pointer transition">
+                                                    <Link href="/profile" className="flex items-center gap-2">
+                                                        <User size={16} className="text-purple-600" />
+                                                        Profile
+                                                    </Link>
+                                                </DropdownMenuItem>
+
+                                                <DropdownMenuSeparator />
+
+                                                <DropdownMenuItem
+                                                    onClick={handleLogout}
+                                                    className="hover:bg-red-50 text-red-600 hover:text-red-700 rounded-md px-3 py-2 flex items-center gap-2 transition cursor-pointer"
+                                                >
+                                                    <LogOut size={16} />
+                                                    Logout
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    ) : (
+                                        <Button variant="ghost" className="font-semibold text-gray-700 hover:text-blue-600">
+                                            <Link href="/login">Login</Link>
+                                        </Button>
+                                    )}
                                 </div>
-                                
+
                             </div>
                         </div>
                     )}

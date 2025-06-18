@@ -1,8 +1,8 @@
 import ContactPage from '@/components/sections/contact'
 import React from 'react'
 
-const page = () => {
+const Page = () => {
   return <ContactPage/>
 }
 
-export default page
+export default Page

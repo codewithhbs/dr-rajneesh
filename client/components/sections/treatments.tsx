@@ -1,3 +1,4 @@
+"use client"
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,25 +20,35 @@ import {
     ArrowRight,
     Sparkles
 } from 'lucide-react';
+import { useService } from '@/hooks/use-service';
+import Link from 'next/link';
 
 const ChiropracticClinic = () => {
-    const treatmentConditions = [
-        { name: "Back Pain", icon: <Bone className="w-5 h-5" />, color: "bg-red-100 text-red-700" },
-        { name: "Neck Pain", icon: <Brain className="w-5 h-5" />, color: "bg-orange-100 text-orange-700" },
-        { name: "Shoulder Pain", icon: <Activity className="w-5 h-5" />, color: "bg-yellow-100 text-yellow-700" },
-        { name: "Headache", icon: <Brain className="w-5 h-5" />, color: "bg-purple-100 text-purple-700" },
-        { name: "Scoliosis", icon: <Bone className="w-5 h-5" />, color: "bg-blue-100 text-blue-700" },
-        { name: "Disc Injury", icon: <Target className="w-5 h-5" />, color: "bg-green-100 text-green-700" },
-        { name: "Pinched Nerve", icon: <Zap className="w-5 h-5" />, color: "bg-pink-100 text-pink-700" },
-        { name: "Joint Pain", icon: <Activity className="w-5 h-5" />, color: "bg-indigo-100 text-indigo-700" },
-        { name: "Knee Pain", icon: <Bone className="w-5 h-5" />, color: "bg-teal-100 text-teal-700" },
-        { name: "Sciatica Pain", icon: <Zap className="w-5 h-5" />, color: "bg-cyan-100 text-cyan-700" },
-        { name: "Spine Alignment", icon: <Target className="w-5 h-5" />, color: "bg-emerald-100 text-emerald-700" },
-        { name: "Ankylosing Spondylitis", icon: <Bone className="w-5 h-5" />, color: "bg-rose-100 text-rose-700" },
-        { name: "Massage", icon: <Activity className="w-5 h-5" />, color: "bg-amber-100 text-amber-700" },
-        { name: "Bone Fracture", icon: <Bone className="w-5 h-5" />, color: "bg-amber-100 text-amber-700" },
-        { name: "Other", icon: <Activity className="w-5 h-5" />, color: "bg-amber-100 text-amber-700" }
+
+    const { services: dbServices } = useService()
+    const icons = [<Bone className="w-5 h-5" />, <Brain className="w-5 h-5" />, <Activity className="w-5 h-5" />, <Target className="w-5 h-5" />, <Zap className="w-5 h-5" />];
+    const colors = [
+        "bg-red-100 text-red-700",
+        "bg-orange-100 text-orange-700",
+        "bg-yellow-100 text-yellow-700",
+        "bg-purple-100 text-purple-700",
+        "bg-blue-100 text-blue-700",
+        "bg-green-100 text-green-700",
+        "bg-pink-100 text-pink-700",
+        "bg-indigo-100 text-indigo-700",
+        "bg-teal-100 text-teal-700",
+        "bg-cyan-100 text-cyan-700",
+        "bg-emerald-100 text-emerald-700",
+        "bg-rose-100 text-rose-700",
+        "bg-amber-100 text-amber-700"
     ];
+
+
+    const treatmentConditions = dbServices?.map((service, index) => ({
+        name: service.service_name,
+        icon: icons[index % icons.length], // rotate icons
+        color: colors[index % colors.length] // rotate colors
+    }))
 
     const services = [
         {
@@ -117,7 +128,8 @@ const ChiropracticClinic = () => {
                         <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center">Conditions We Treat</h3>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 text-center xl:grid-cols-5 gap-4">
                             {treatmentConditions.map((condition, index) => (
-                                <div
+                                <Link
+                                 href={`/treatments/${condition?.name.toLowerCase().replace(/\s+/g, '-')}`}
                                     key={index}
                                     className="group bg-white rounded-xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border border-gray-100"
                                 >
@@ -126,7 +138,7 @@ const ChiropracticClinic = () => {
                                     </div>
                                     <h4 className="font-semibold mb-2 text-gray-900 text-sm leading-tight">{condition.name}</h4>
                                     <Button size={'sm'} variant={'outline'}>Book Now</Button>
-                                </div>
+                                </Link>
                             ))}
                         </div>
                     </div>

@@ -1,8 +1,8 @@
 import FeaturedTreatmentReels from '@/components/sections/TreatmentReels'
 import React from 'react'
 
-const page = () => {
+const Page = () => {
   return <FeaturedTreatmentReels/>
 }
 
-export default page
+export default Page
