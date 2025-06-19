@@ -1,0 +1,65 @@
+{
+ 
+    "app_name": "Dr. Rajneesh Kant Physiotherapy & Chiropractic Care",
+    "app_id": "DRK2024",
+    "website_url": "https://drrajneeshkant.com/",
+    "booking_config": {
+      "slots_per_hour": 5,
+      "booking_limit_per_slot": 3
+    },
+    "special_slot_restrictions": [
+      {
+        "date": "2025-07-25T00:00:00.000Z",
+        "time_slots": [
+          {
+            "start_time": "09:00",
+            "end_time": "12:00"
+          },
+          {
+            "start_time": "14:00",
+            "end_time": "17:00"
+          }
+        ],
+        "clinic_id": "685265fb3adc27bc56b0392c",
+        "is_active": true
+      }
+    ],
+    "payment_config": {
+      "enabled_methods": ["razorpay","cash"],
+      "default_currency": "INR",
+      "tax_percentage": 18,
+      "convenience_fee": 10,
+      "credit_card_fee": 2.5
+    },
+    "branding": {
+      "logo": {
+        "url": "https://res.cloudinary.com/demo/image/upload/v1234567890/logo.png",
+        "public_id": "healthcare_logo_2024"
+      }
+    },
+    "social_links": {
+      "facebook": "https://www.facebook.com/backtonaturespineclinicbydrrajneeshkant/",
+      "instagram": "https://www.instagram.com/backtonaturespineclinic/",
+      "whatsapp": "https://api.whatsapp.com/send?phone=91-9031554875",
+      "youtube": "https://www.youtube.com/@drrajneeshkant"
+     
+    },
+    "contact_details": {
+      "phone_number": "+919031554875",
+      "email": "rajnish8989@gmail.com",
+      "support_email": "support@drrajneeshkant.com"
+    },
+    "system_settings": {
+      "maintenance_mode": false,
+      "allow_registrations": true,
+      "max_file_upload_size": 10
+    },
+    "seo_settings": {
+      "google_analytics_id": "GA-123456789",
+      "facebook_pixel_id": "FB-987654321"
+    },
+    "version": "1.0.0",
+    "is_active": true
+  }
+
+

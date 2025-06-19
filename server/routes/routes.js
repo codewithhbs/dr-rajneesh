@@ -3,7 +3,8 @@ const { upload } = require('../middleware/multer');
 const { createClinic, updateClinic, DeleteClinic, GetAllClinic, GetSingleClinic } = require('../controllers/clinic/clinic.controllers');
 const { createDoctor, updateDoctor, DeleteDoctor, getAllDoctor, getSingleDoctor } = require('../controllers/doctor/doctor.controllers');
 const { createService, getAllServices, getServiceById, updateService, deleteService, getServicesByDoctor, getServicesByClinic, updateServiceStatus, getServiceBySlug } = require('../controllers/service/service.controller');
-const { createReview, getAllReviews, getReviewById, updateReview, deleteReview } = require('../controllers/service/review.controller');
+const { getAllReviews, getReviewById, updateReview, deleteReview } = require('../controllers/service/review.controller');
+const { createSettings, getOnlyOneSettings } = require('../controllers/settings/settings');
 const router = express.Router()
 
 
@@ -35,14 +36,15 @@ router.get('/get-service-by-clinic/:id', getServicesByClinic)
 router.put('/update-service-status/:id', updateServiceStatus)
 
 
-router.post('/review',createReview);
+
 router.get('/reviews',getAllReviews);
 router.get('/review/:id',getReviewById);
 router.put('/review/:id',updateReview);
 router.delete('/review/:id',deleteReview);
 
 
-
+router.post('/add-setting',createSettings)
+router.get('/get-setting',getOnlyOneSettings)
 
 
 

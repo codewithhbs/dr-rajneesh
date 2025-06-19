@@ -4,30 +4,15 @@ import { useState, useCallback, useEffect } from "react";
 import axios from "axios";
 import { API_ENDPOINT } from "@/constant/url";
 import { toast } from "sonner";
+import { ServiceData } from "@/types/service";
 
 
 const API_URL = API_ENDPOINT;
 
-type ServiceType = {
-    _id: string;
-    service_name: string;
-    service_small_desc: string;
-    service_desc: string;
-    service_status: string;
-    service_session_allowed_limit: number;
-    service_per_session_price: number;
-    service_per_session_discount_price: number;
-    service_per_session_discount_percentage: number;
-    service_tag: string;
-    service_doctor: string;
-    service_available_at_clinics: string[];
-    service_reviews: any[];
-    position: number;
-    images: string[];
-};
+
 
 export const useService = () => {
-    const [services, setServices] = useState<ServiceType[]>([]);
+    const [services, setServices] = useState<ServiceData[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
 
     const fetchServices = useCallback(async () => {
@@ -60,7 +45,7 @@ export const useService = () => {
 };
 
 export const useServiceBySlug = (slug: string) => {
-    const [service, setService] = useState<ServiceType | null>(null);
+    const [service, setService] = useState<ServiceData | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
 
     const fetchServiceBySlug = useCallback(async () => {

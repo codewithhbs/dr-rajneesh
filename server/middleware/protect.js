@@ -1,65 +1,63 @@
-const ClinicRegister = require("../models/ClinicRegister/ClinicRegister");
-const PetRegister = require("../models/petAndAuth/petregister");
-const AppError = require("../utils/ApiError");
+const userModel = require("../models/users/user.model");
 const { verifyToken } = require("../utils/sendToken");
 
 exports.isAuthenticated = async (req, res, next) => {
   try {
     let token;
 
-
+    // Check for token in headers or cookies
     if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
       token = req.headers.authorization.split(" ")[1];
-    } 
-
-    else if (req.cookies && req.cookies._usertoken) {
+    } else if (req.cookies && req.cookies._usertoken) {
       token = req.cookies._usertoken;
     }
+    console.log("token",token)
 
     if (!token) {
-      return next(
-        new AppError("You are not logged in. Please login to access this resource", 401)
-      );
+      return res.status(401).json({
+        success: false,
+        message: "You are not logged in. Please login to access this resource.",
+      });
     }
 
     // Verify token
-    const decoded = verifyToken(token); // Assumes this throws on failure
+    const decoded = verifyToken(token);
     if (!decoded?.id) {
-      return next(new AppError("Invalid token. Please log in again", 401));
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token. Please log in again.",
+      });
     }
 
-    // Look for user in ClinicRegister first
-    let user = await ClinicRegister.findById(decoded.id);
-
-    // If not found, try PetRegister
+    // Find user
+    const user = await userModel.findById(decoded.id);
     if (!user) {
-      user = await PetRegister.findById(decoded.id);
+      return res.status(401).json({
+        success: false,
+        message: "User no longer exists.",
+      });
     }
 
-    // If still not found
-    if (!user) {
-      return next(new AppError("User no longer exists", 401));
-    }
-
-    // Attach user to request
     req.user = user;
     next();
   } catch (error) {
-    console.error("Authentication error:", error);
-    return next(new AppError("Authentication failed. Please log in again", 401));
+    console.error("Authentication error:", error.message);
+    return res.status(401).json({
+      success: false,
+      message: "Authentication failed. Please log in again.",
+      error: error.message,
+    });
   }
 };
 
-// Authorization middleware based on roles
+
 exports.authorizeRoles = (...roles) => {
   return (req, res, next) => {
     if (!req.user || !roles.includes(req.user.role)) {
-      return next(
-        new AppError(
-          `Role (${req.user?.role || "Unknown"}) is not allowed to access this resource`,
-          403
-        )
-      );
+      return res.status(403).json({
+        success: false,
+        message: `Access denied. Role (${req.user?.role || "Unknown"}) is not authorized.`,
+      });
     }
     next();
   };

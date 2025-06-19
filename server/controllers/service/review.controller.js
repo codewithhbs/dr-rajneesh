@@ -6,28 +6,61 @@ const { cleanRedisDataFlush, getRedisClient } = require("../../utils/redis.utils
 exports.createReview = async (req, res) => {
     try {
         const redisClient = getRedisClient(req, res);
-        const review = new Review(req.body);
+        const userId = req.user._id;
 
-        const foundService = await Service.findById(req.body.review_for_what_service);
-        if (!foundService) {
-            return res.status(404).json({ success: false, message: "Service not found" });
+        const {
+            review_message,
+            review_ratings,
+            review_for_what_service,
+            review_status = "Draft"
+        } = req.body;
+
+        // Validate required fields
+        if (!review_message || !review_ratings || !review_for_what_service) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing required fields: review_message, review_ratings, or review_for_what_service"
+            });
         }
 
-        // Save the review first
+        // Check if the service exists
+        const foundService = await Service.findById(review_for_what_service);
+        if (!foundService) {
+            return res.status(404).json({
+                success: false,
+                message: "Service not found"
+            });
+        }
+
+        // Create review object
+        const review = new Review({
+            reviewer_id: userId,
+            review_message,
+            review_ratings,
+            review_for_what_service,
+            review_status
+        });
+
+        // Save review and link to service
         await review.save();
-
-
         foundService.service_reviews.push(review._id);
         await foundService.save();
+
+        // Clear relevant cache
         await cleanRedisDataFlush(redisClient, 'service*');
-        res.status(201).json({
+
+        return res.status(201).json({
             success: true,
             message: "Review created and linked to service successfully",
             data: review
         });
     } catch (error) {
         console.error("Error creating review:", error);
-        res.status(500).json({ success: false, message: error.message });
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message
+        });
     }
 };
 

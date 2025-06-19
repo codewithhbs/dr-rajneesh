@@ -232,11 +232,17 @@ userSchema.statics.findVerified = function () {
 userSchema.set('toJSON', {
     virtuals: true,
     transform: function (doc, ret) {
-        delete ret.password;
-        delete ret.emailVerification.token;
-        delete ret.passwordReset.token;
-        delete ret.loginAttempts;
-        delete ret.lockUntil;
+        delete ret?.password;
+        delete ret?.loginAttempts;
+        delete ret?.lockUntil;
+
+        if (ret?.emailVerification?.token) {
+            delete ret.emailVerification.token;
+        }
+        if (ret?.passwordReset?.token) {
+            delete ret.passwordReset.token;
+        }
+
         return ret;
     }
 });

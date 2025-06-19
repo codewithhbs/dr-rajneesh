@@ -1,0 +1,87 @@
+ {
+"_id": "68527834c3400e96369d85d1",
+"service_name": "Neck Pain Relief",
+"service_small_desc": "Effective sessions to relieve chronic and acute neck pain.",
+"service_desc": "<p><img src=\"https://drrajneeshkant.com/wp-content/uploads/2023/08/neck.jpg\" alt=\"Cervical Pain Treatment in Mumbai\" style=\"float: right;\">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; </p><div class=\"elementor-element elementor-element-8913501 elementor-widget elementor-widget-heading\" data-id=\"8913501\" data-element_type=\"widget\" data-widget_type=\"heading.default\" style=\"box-sizing: border-box; --flex-direction: initial; --flex-wrap: initial; --justify-content: initial; --align-items: initial; --align-content: initial; --gap: initial; --flex-basis: initial; --flex-grow: initial; --flex-shrink: initial; --order: initial; --align-self: initial; align-self: auto; flex: 0 1 auto; order: 0; place-content: normal; align-items: normal; flex-flow: row; gap: normal; position: relative; --widgets-spacing: 30px 30px; --widgets-spacing-row: 30px; --widgets-spacing-column: 30px; width: 540px; margin-bottom: 20px; margin-block-end: 30px; text-align: left; color: rgb(0, 0, 0); font-family: &quot;Open Sans&quot;, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; font-size: 15px;\">",
+"service_images": [
+{
+"url": "https://res.cloudinary.com/dlupgvbu8/image/upload/v1750245146/uploads/uvltcfbsrc3nqcmxqyjd.webp",
+"public_id": "uploads/uvltcfbsrc3nqcmxqyjd",
+"_id": "68529f42c2c942225f58f62d"
+},
+{
+"url": "https://res.cloudinary.com/dlupgvbu8/image/upload/v1750245146/uploads/kgc1xhpiic5idoxdohue.webp",
+"public_id": "uploads/kgc1xhpiic5idoxdohue",
+"_id": "68529f42c2c942225f58f62e"
+}
+],
+"service_status": "Booking Open",
+"service_session_allowed_limit": 4,
+"service_per_session_price": 12000,
+"service_per_session_discount_price": 10000,
+"service_per_session_discount_percentage": 25,
+"service_tag": "pain-relief",
+"service_doctor": {
+"_id": "68526dc0730bac32941b587c",
+"doctor_name": "Dr. Rajneesh Kant",
+"doctor_images": [],
+"specialization": [
+"Chiropractic Care",
+"Physiotherapy",
+"Many More +"
+],
+"languagesSpoken": [
+"Hindi",
+"English"
+],
+"doctor_status": "Booking takes",
+"doctor_ratings": 4.9,
+"any_special_note": "Expert in spinal alignment and postural therapy. Known for personalized patient care and recovery-focused sessions.",
+"clinic_ids": [
+"685265fb3adc27bc56b0392c",
+"6852668f3adc27bc56b0392f"
+],
+"createdAt": "2025-06-18T07:41:52.477Z",
+"updatedAt": "2025-06-18T07:45:41.926Z",
+"__v": 0
+},
+"service_reviews": [
+{
+"_id": "6852a61be5e9e4c1af9d6304",
+"reviewer_id": "6851027c5727c8d679ccdf2f",
+"review_message": "Great experience! The doctor explained everything clearly and the therapy was effective.",
+"review_ratings": 5,
+"review_for_what_service": "68527834c3400e96369d85d1",
+"review_status": "Published",
+"createdAt": "2025-06-18T11:42:19.190Z",
+"updatedAt": "2025-06-18T11:42:19.190Z",
+"__v": 0
+},
+{
+"_id": "6852a61be5e9e4c1af9d6304",
+"reviewer_id": "6851027c5727c8d679ccdf2f",
+"review_message": "Great experience! The doctor explained everything clearly and the therapy was effective.",
+"review_ratings": 5,
+"review_for_what_service": "68527834c3400e96369d85d1",
+"review_status": "Published",
+"createdAt": "2025-06-18T11:42:19.190Z",
+"updatedAt": "2025-06-18T11:42:19.190Z",
+"__v": 0
+},
+{
+"_id": "6852a61be5e9e4c1af9d6304",
+"reviewer_id": "6851027c5727c8d679ccdf2f",
+"review_message": "Great experience! The doctor explained everything clearly and the therapy was effective.",
+"review_ratings": 5,
+"review_for_what_service": "68527834c3400e96369d85d1",
+"review_status": "Published",
+"createdAt": "2025-06-18T11:42:19.190Z",
+"updatedAt": "2025-06-18T11:42:19.190Z",
+"__v": 0
+}
+],
+"position": 1,
+"createdAt": "2025-06-18T08:26:28.802Z",
+"updatedAt": "2025-06-18T12:21:14.664Z",
+"__v": 1
+}

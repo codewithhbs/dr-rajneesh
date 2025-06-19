@@ -7,7 +7,7 @@ const settingsSchema = new mongoose.Schema({
         required: [true, 'App name is required'],
         trim: true,
         minlength: [2, 'App name must be at least 2 characters'],
-        maxlength: [50, 'App name cannot exceed 50 characters']
+        maxlength: [120, 'App name cannot exceed 50 characters']
     },
 
     app_id: {
@@ -99,8 +99,8 @@ const settingsSchema = new mongoose.Schema({
         },
         credit_card_fee: {
             type: Number,
-            default: 2,
-            min: [10, 'Convenience fee cannot be negative']
+            default: 3,
+           
         }
     },
 
@@ -133,20 +133,15 @@ const settingsSchema = new mongoose.Schema({
             trim: true,
             match: [/^https?:\/\/(www\.)?instagram\.com\/.*/, 'Please enter a valid Instagram URL']
         },
-        twitter: {
+        whatsapp: {
             type: String,
             trim: true,
-            match: [/^https?:\/\/(www\.)?twitter\.com\/.*/, 'Please enter a valid Twitter URL']
+           
         },
         youtube: {
             type: String,
             trim: true,
             match: [/^https?:\/\/(www\.)?youtube\.com\/.*/, 'Please enter a valid YouTube URL']
-        },
-        linkedin: {
-            type: String,
-            trim: true,
-            match: [/^https?:\/\/(www\.)?linkedin\.com\/.*/, 'Please enter a valid LinkedIn URL']
         }
     },
 

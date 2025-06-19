@@ -1,712 +1,803 @@
-"use client"
+"use client";
+import React, { useState } from "react";
+import {
+    Carousel,
+    CarouselContent,
+    CarouselItem,
+    CarouselNext,
+    CarouselPrevious,
+} from "@/components/ui/carousel";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-import { useServiceBySlug } from "@/hooks/use-service"
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Progress } from "@/components/ui/progress"
 import {
     Star,
     Clock,
-    IndianRupee,
-    Calendar,
     Award,
     Users,
     CheckCircle,
-    ArrowRight,
-    Heart,
-    Share2,
-    MessageCircle,
-    Zap,
-    Timer,
-    TrendingUp,
-    Shield,
-    Target,
-    Sparkles,
-    Phone,
-    Globe,
-    Quote,
-    ChevronLeft,
-    ChevronRight,
-    Play,
-    Pause,
-} from "lucide-react"
+    Calendar,
+    IndianRupee,
+    Tag,
+    Plus,
+    MessageSquare,
+} from "lucide-react";
+import { useServiceBySlug } from "@/hooks/use-service";
+import Image from "next/image";
+import { ServiceData } from "@/types/service";
+import { useAuth } from "@/context/authContext/auth";
+import { useRouter } from "next/navigation";
+import ReviewModal from "./ReviewModel";
+import { ReviewFormData } from "@/types/review";
+import { drImageurl } from "@/constant/Images";
+import { API_ENDPOINT } from "@/constant/url";
+import Link from "next/link";
 
-const Treatments = ({ slug }) => {
-    const { service } = useServiceBySlug(slug)
-    const [currentImageIndex, setCurrentImageIndex] = useState(0)
-    const [currentReviewIndex, setCurrentReviewIndex] = useState(0)
-    const [isLoading, setIsLoading] = useState(true)
-    const [timeLeft, setTimeLeft] = useState(24 * 60 * 60)
-    const [isReviewsAutoPlay, setIsReviewsAutoPlay] = useState(true)
+const Treatments: React.FC<{ slug: string }> = ({ slug }) => {
+    const { service } = useServiceBySlug(slug) as {
+        service: ServiceData | null;
+        fetchServiceBySlug: () => Promise<void>;
+    };
+    const { isAuthenticated, token } = useAuth();
+    const router = useRouter();
 
-    // Auto-play image slider
-    useEffect(() => {
-        if (service?.service_images?.length > 1) {
-            const interval = setInterval(() => {
-                setCurrentImageIndex((prev) => (prev + 1) % service.service_images.length)
-            }, 4000)
-            return () => clearInterval(interval)
+    const [selectedSessions, setSelectedSessions] = useState(1);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+    const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+    const [reviewForm, setReviewForm] = useState<ReviewFormData>({
+        review_message: "",
+        review_ratings: 0,
+        review_for_what_service: service?._id || "",
+    });
+
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 1500);
+        return () => clearTimeout(timer);
+    }, []);
+
+    React.useEffect(() => {
+        if (service?._id) {
+            setReviewForm((prev) => ({
+                ...prev,
+                review_for_what_service: service._id,
+            }));
         }
-    }, [service?.service_images?.length])
+    }, [service?._id]);
 
-    // Auto-play reviews slider
-    useEffect(() => {
-        if (service?.service_reviews?.length > 1 && isReviewsAutoPlay) {
-            const interval = setInterval(() => {
-                setCurrentReviewIndex((prev) => (prev + 1) % service.service_reviews.length)
-            }, 5000)
-            return () => clearInterval(interval)
+    const calculateTotalPrice = (sessions: number) => {
+        if (!service) return 0;
+        return service.service_per_session_discount_price * sessions;
+    };
+
+    const calculateSavings = (sessions: number) => {
+        if (!service) return 0;
+        return (
+            (service.service_per_session_price -
+                service.service_per_session_discount_price) *
+            sessions
+        );
+    };
+
+    const renderStars = (
+        rating: number,
+        interactive = false,
+        onStarClick?: (rating: number) => void
+    ) => {
+        return Array.from({ length: 5 }, (_, i) => (
+            <Star
+                key={i}
+                className={`w-4 h-4 ${i < rating ? "text-yellow-400 fill-current" : "text-gray-300"
+                    } ${interactive
+                        ? "cursor-pointer hover:text-yellow-400 transition-colors"
+                        : ""
+                    }`}
+                onClick={() => interactive && onStarClick && onStarClick(i + 1)}
+            />
+        ));
+    };
+
+    const handleReviewSubmit = async () => {
+        if (!isAuthenticated) {
+            alert("Please login to submit a review");
+            setIsReviewModalOpen(false);
+            router.push("/login");
+            return;
         }
-    }, [service?.service_reviews?.length, isReviewsAutoPlay])
 
-    // Countdown timer
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0))
-        }, 1000)
-        return () => clearInterval(timer)
-    }, [])
-
-    useEffect(() => {
-        if (service) {
-            setIsLoading(false)
+        if (!reviewForm.review_message.trim() || reviewForm.review_ratings === 0) {
+            alert("Please provide both rating and review message");
+            return;
         }
-    }, [service])
 
-    const formatTime = (seconds) => {
-        const hours = Math.floor(seconds / 3600)
-        const minutes = Math.floor((seconds % 3600) / 60)
-        const secs = seconds % 60
-        return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs
-            .toString()
-            .padStart(2, "0")}`
-    }
+        setIsSubmittingReview(true);
 
-    const nextReview = () => {
-        setCurrentReviewIndex((prev) => (prev + 1) % service.service_reviews.length)
-    }
+        try {
+            // Replace with your actual API call
+            const response = await fetch(`${API_ENDPOINT}/user/review`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(reviewForm),
+            });
 
-    const prevReview = () => {
-        setCurrentReviewIndex((prev) => (prev - 1 + service.service_reviews.length) % service.service_reviews.length)
-    }
+            if (response.ok) {
+                alert("Review submitted successfully!");
+                setIsReviewModalOpen(false);
+                setReviewForm({
+                    review_message: "",
+                    review_ratings: 0,
+                    review_for_what_service: service?._id || "",
+                });
+                // Optionally refresh the service data to show new review
+                // fetchServiceBySlug()
+            } else {
+                throw new Error("Failed to submit review");
+            }
+        } catch (error) {
+            console.error("Error submitting review:", error);
+            alert("Failed to submit review. Please try again.");
+        } finally {
+            setIsSubmittingReview(false);
+        }
+    };
+
+    const resetReviewForm = () => {
+        setReviewForm({
+            review_message: "",
+            review_ratings: 0,
+            review_for_what_service: service?._id || "",
+        });
+    };
+
+    const NoReviewsSection = () => (
+        <div className="text-center py-12">
+            <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h4 className="text-xl font-semibold text-gray-700 mb-2">
+                No Reviews Yet
+            </h4>
+            <p className="text-gray-500 mb-6">
+                Be the first to share your experience with this treatment
+            </p>
+            <Button
+                onClick={() => setIsReviewModalOpen(true)}
+                className="bg-green-600 hover:bg-green-700 text-white"
+            >
+                <Plus className="w-4 h-4 mr-2" />
+                Write First Review
+            </Button>
+        </div>
+    );
+
+    const ReviewsCarousel = () => (
+        <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                <h4 className="text-base md:text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    Patient Experiences ({service?.service_reviews.length})
+                </h4>
+                <Button
+                    onClick={() => setIsReviewModalOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="border-green-200 text-green-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-teal-50 hover:border-green-300 transition-all duration-300 font-medium rounded-full px-4"
+                >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Share Experience
+                </Button>
+            </div>
+
+            <Carousel className="w-full mb-8">
+                <CarouselContent className="-ml-2 md:-ml-4">
+                    {service?.service_reviews.map((review, index) => (
+                        <CarouselItem
+                            key={review._id + index}
+                            className="pl-2 pb-4 md:pl-4 basis-full lg:basis-1/2"
+                        >
+                            <Card className="h-full border-0 shadow-lg bg-gradient-to-br from-white to-green-50 hover:shadow-2xl transition-all duration-300 group overflow-hidden relative rounded-2xl">
+                                {/* User Info Section */}
+                                <CardContent className="p-4 md:p-6 relative z-10">
+                                    <div className="flex items-center gap-4 mb-4">
+                                        {/* Profile Image */}
+                                        <Image
+                                            src={review?.reviewer_id?.profileImage?.url || 'https://via.placeholder.com/80'}
+                                            alt={review?.reviewer_id?.name || 'User'}
+                                            className="w-12 h-12 md:w-14 md:h-14 rounded-full border-2 border-green-300 object-cover shadow-sm"
+                                            width={120}
+                                            height={120}
+                                        />
+
+                                        {/* Name and Rating */}
+                                        <div className="flex flex-col">
+                                            <h4 className="font-semibold text-gray-800 text-base md:text-lg">
+                                                {review?.reviewer_id?.name || 'Anonymous User'}
+                                            </h4>
+                                            <div className="flex items-center gap-1 text-sm text-yellow-600">
+                                                {renderStars(review.review_ratings)}
+                                                <span className="ml-1 text-green-700 font-bold bg-green-100 px-2 py-0.5 rounded-full text-xs">
+                                                    {review.review_ratings}/5
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Review Text */}
+                                    <div className="mb-4 p-3 bg-white/80 backdrop-blur border border-green-100 rounded-xl shadow-inner">
+                                        <p className="text-gray-700 text-sm md:text-base leading-relaxed">
+                                            “{review.review_message}”
+                                        </p>
+                                    </div>
+
+                                    {/* Date */}
+                                    <div className="flex items-center gap-2 text-xs md:text-sm text-gray-500">
+                                        <div className="w-2 h-2 bg-green-400 rounded-full" />
+                                        <span>
+                                            {new Date(review.createdAt).toLocaleDateString("en-IN", {
+                                                year: "numeric",
+                                                month: "short",
+                                                day: "numeric",
+                                            })}
+                                        </span>
+                                    </div>
+                                </CardContent>
+
+                                {/* Decorative Elements */}
+                                <div className="absolute top-2 right-2 w-6 h-6 bg-green-200 opacity-20 rounded-full group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300" />
+                                <div className="absolute bottom-2 left-2 w-4 h-4 bg-teal-200 opacity-30 rounded-full group-hover:translate-y-1 group-hover:animate-pulse" />
+                            </Card>
+
+                        </CarouselItem>
+                    ))}
+                </CarouselContent>
+
+                {/* Navigation Arrows - Hidden on mobile */}
+                <CarouselPrevious className="hidden md:flex -left-4 bg-white hover:bg-green-50 border-green-200 text-green-700" />
+                <CarouselNext className="hidden md:flex -right-4 bg-white hover:bg-green-50 border-green-200 text-green-700" />
+            </Carousel>
+
+            {/* Mobile Navigation Dots */}
+            <div className="flex justify-center mt-4 md:hidden">
+                <div className="flex space-x-2">
+                    {service?.service_reviews.map((_, index) => (
+                        <div
+                            key={index}
+                            className="w-2 h-2 bg-gradient-to-r from-green-300 to-teal-400 rounded-full opacity-60 hover:opacity-100 transition-opacity"
+                        ></div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
 
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-                <div className="relative">
-                    <div className="animate-spin rounded-full h-20 w-20 border-4 border-blue-200 border-t-blue-600"></div>
-                    <div
-                        className="absolute inset-0 rounded-full border-4 border-transparent border-t-purple-400 animate-spin"
-                        style={{ animationDelay: "0.15s" }}
-                    ></div>
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <h2 className="text-2xl font-semibold text-gray-700 mb-2">
+                        Loading Service Details...
+                    </h2>
+                    <p className="text-gray-500">
+                        Please wait while we fetch the information
+                    </p>
                 </div>
             </div>
-        )
+        );
     }
 
     if (!service) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
-                <Card className="p-8 text-center shadow-sm border-0 bg-white/80 backdrop-blur-sm">
-                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Target className="h-8 w-8 text-red-600" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Service Not Found</h2>
-                    <p className="text-gray-600">The requested treatment could not be found.</p>
-                </Card>
+            <div className="container mx-auto px-4 py-8">
+                <div className="text-center">
+                    <h2 className="text-2xl font-bold text-gray-800">
+                        Service not found
+                    </h2>
+                    <p className="text-gray-600 mt-2">
+                        The service &quot;{slug}&quot; could not be found.
+                    </p>
+                </div>
             </div>
-        )
+        );
     }
-
-    const getStatusColor = (status) => {
-        switch (status) {
-            case "Booking Open":
-                return "bg-emerald-100 text-emerald-800 border-emerald-200"
-            case "Booking Close":
-                return "bg-rose-100 text-rose-800 border-rose-200"
-            case "Published":
-                return "bg-blue-100 text-blue-800 border-blue-200"
-            default:
-                return "bg-gray-100 text-gray-800 border-gray-200"
-        }
-    }
-
-    const renderStars = (rating) => {
-        return Array.from({ length: 5 }, (_, i) => (
-            <Star
-                key={i}
-                className={`h-4 w-4 transition-colors ${i < Math.floor(rating) ? "fill-amber-400 text-amber-400" : "text-gray-300"
-                    }`}
-            />
-        ))
-    }
-
-    const averageRating =
-        service.service_reviews?.length > 0
-            ? service.service_reviews.reduce((acc, review) => acc + review.review_ratings, 0) / service.service_reviews.length
-            : 0
-
-    const discountAmount = service.service_per_session_price - service.service_per_session_discount_price
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-            {/* Floating Actions */}
-            <div className="fixed top-6 right-6 z-50 flex flex-col gap-3">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    className="bg-white/90 backdrop-blur-md border-white/20 shadow-lg hover:shadow-sm transition-all duration-300 rounded-full w-12 h-12 p-0"
-                >
-                    <Heart className="h-4 w-4 text-rose-500" />
-                </Button>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    className="bg-white/90 backdrop-blur-md border-white/20 shadow-lg hover:shadow-sm transition-all duration-300 rounded-full w-12 h-12 p-0"
-                >
-                    <Share2 className="h-4 w-4 text-blue-500" />
-                </Button>
-            </div>
-
-            <div className=" mx-auto">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
+            <div className="container mx-auto px-4 py-8">
                 {/* Hero Section */}
-                <section className="relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-purple-600/5"></div>
-                    <div className="relative px-4 sm:px-6 lg:px-8 py-12 lg:py-20">
-                        <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-                            {/* Image Section */}
-                            <div className="lg:col-span-7">
-                                <div className="relative group">
-                                    <div className="relative aspect-[16/10] rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-blue-100 to-purple-100">
-                                        {service.service_images && service.service_images.length > 0 ? (
-                                            <>
-                                                <img
-                                                    src={service.service_images[currentImageIndex]?.url || "/placeholder.svg"}
-                                                    alt={`${service.service_name} ${currentImageIndex + 1}`}
-                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                <div className="grid lg:grid-cols-2 gap-8 mb-12">
+                    {/* Left Side - Service Images Carousel */}
+                    <div className="space-y-4">
+                        <Carousel className="w-full">
+                            <CarouselContent>
+                                {service.service_images.map((image, index) => (
+                                    <CarouselItem key={image._id}>
+                                        <Card className="border-0 shadow-xs overflow-hidden">
+                                            <CardContent className="p-0 aspect-[16/12] relative">
+                                                <Image
+                                                    src={
+                                                        image.url ||
+                                                        "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=800&h=600&fit=crop"
+                                                    }
+                                                    alt={`${service.service_name} - Image ${index + 1}`}
+                                                    fill
+                                                    sizes="(max-width: 768px) 100vw, 50vw"
+                                                    className="object-contain rounded-lg"
                                                 />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+                                            </CardContent>
+                                        </Card>
+                                    </CarouselItem>
+                                ))}
+                            </CarouselContent>
+                            <CarouselPrevious className="left-4" />
+                            <CarouselNext className="right-4" />
+                        </Carousel>
+                    </div>
 
-                                                {/* Image Navigation */}
-                                                {service.service_images.length > 1 && (
-                                                    <>
-                                                        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-2">
-                                                            {service.service_images.map((_, index) => (
-                                                                <button
-                                                                    key={index}
-                                                                    onClick={() => setCurrentImageIndex(index)}
-                                                                    className={`w-3 h-3 rounded-full transition-all duration-300 ${index === currentImageIndex
-                                                                        ? "bg-white shadow-lg scale-125"
-                                                                        : "bg-white/60 hover:bg-white/80"
-                                                                        }`}
-                                                                />
-                                                            ))}
-                                                        </div>
-                                                        <div className="absolute top-6 right-6 bg-black/20 backdrop-blur-sm rounded-full px-3 py-1">
-                                                            <span className="text-white text-sm font-medium">
-                                                                {currentImageIndex + 1} / {service.service_images.length}
-                                                            </span>
-                                                        </div>
-                                                    </>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center">
-                                                <img
-                                                    src="/images/neck-pain-treatment.png"
-                                                    alt="Treatment"
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
+                    {/* Right Side - Service Details */}
+                    <div className="space-y-6">
+                        <div>
+                            <Badge
+                                variant="secondary"
+                                className={`mb-4 ${service.service_status === "Booking Open"
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-red-100 text-red-800"
+                                    }`}
+                            >
+                                <CheckCircle className="w-4 h-4 mr-1" />
+                                {service.service_status}
+                            </Badge>
+                            <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+                                {service.service_name}
+                            </h1>
+                            <p className="text-lg text-gray-600 mb-6">
+                                {service.service_small_desc}
+                            </p>
+                        </div>
 
-                                    {/* Floating Stats */}
-                                    <div className="absolute -bottom-6 -right-6 bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-xl flex items-center justify-center">
-                                                <TrendingUp className="h-6 w-6 text-white" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-600">Success Rate</p>
-                                                <p className="text-2xl font-bold text-gray-900">95%</p>
-                                            </div>
+                        {/* Pricing Card */}
+                        <Card className="border-0 shadow-xs bg-gradient-to-r from-blue-50 to-indigo-50">
+                            <CardContent className="p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div>
+                                        <p className="text-sm text-gray-500 line-through">
+                                            ₹{service.service_per_session_price.toLocaleString()} per
+                                            session
+                                        </p>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-3xl font-bold text-blue-600">
+                                                ₹
+                                                {service.service_per_session_discount_price.toLocaleString()}
+                                            </span>
+                                            <Badge variant="destructive" className="bg-red-500">
+                                                {service.service_per_session_discount_percentage}% OFF
+                                            </Badge>
                                         </div>
                                     </div>
+                                    <Tag className="w-8 h-8 text-blue-600" />
                                 </div>
-                            </div>
 
-                            {/* Content Section */}
-                            <div className="lg:col-span-5 space-y-8">
-                                <div>
-                                    <div className="flex flex-wrap items-center gap-3 mb-6">
-                                        <Badge
-                                            className={`px-4 py-2 text-sm font-semibold border-2 ${getStatusColor(service.service_status)}`}
-                                        >
-                                            <Sparkles className="w-4 h-4 mr-2" />
-                                            {service.service_status}
-                                        </Badge>
-                                        <Badge
-                                            variant="outline"
-                                            className="px-3 py-1 border-2 border-indigo-200 text-indigo-700 bg-indigo-50"
-                                        >
-                                            #{service.service_tag}
-                                        </Badge>
+                                {/* Session Selection */}
+                                <div className="mb-6">
+                                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                                        Select Number of Sessions (Max:{" "}
+                                        {service.service_session_allowed_limit})
+                                    </label>
+                                    <div className="flex gap-2 flex-wrap">
+                                        {Array.from(
+                                            { length: service.service_session_allowed_limit },
+                                            (_, i) => i + 1
+                                        ).map((num) => (
+                                            <Button
+                                                key={num}
+                                                variant={
+                                                    selectedSessions === num ? "default" : "outline"
+                                                }
+                                                size="sm"
+                                                onClick={() => setSelectedSessions(num)}
+                                                className="min-w-12"
+                                            >
+                                                {num}
+                                            </Button>
+                                        ))}
                                     </div>
+                                </div>
 
-                                    <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6 leading-tight">
-                                        <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                                            {service.service_name}
+                                {/* Total Calculation */}
+                                <div className="bg-white rounded-lg p-4 mb-6 shadow-sm">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-gray-600">
+                                            Total ({selectedSessions} sessions)
                                         </span>
-                                    </h1>
-                                    <p className="text-xl text-gray-600 leading-relaxed mb-8">{service.service_small_desc}</p>
-                                </div>
-
-                                {/* Pricing Card */}
-                                <Card className="shadow-2xl border-0 bg-white/90 backdrop-blur-sm overflow-hidden">
-                                    {/* Urgency Header */}
-                                    <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-4">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <Timer className="w-5 h-5 animate-pulse" />
-                                                <span className="font-bold">Limited Time Offer!</span>
-                                            </div>
-                                            <div className="font-mono text-lg font-bold">{formatTime(timeLeft)}</div>
-                                        </div>
-                                        <Progress value={(timeLeft / (24 * 60 * 60)) * 100} className="mt-3 h-2 bg-white/20" />
+                                        <span className="font-semibold text-lg">
+                                            ₹{calculateTotalPrice(selectedSessions).toLocaleString()}
+                                        </span>
                                     </div>
-
-                                    <CardContent className="p-6 space-y-6">
-                                        <div className="flex items-center justify-between">
-                                            <h3 className="text-xl font-bold text-gray-900">Session Pricing</h3>
-                                            <div className="flex items-center gap-2 text-gray-600">
-                                                <Clock className="h-4 w-4" />
-                                                <span className="text-sm">Max {service.service_session_allowed_limit} sessions</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center gap-6">
-                                            {service.service_per_session_discount_price < service.service_per_session_price ? (
-                                                <>
-                                                    <div className="flex items-center gap-2">
-                                                        <IndianRupee className="h-8 w-8 text-emerald-600" />
-                                                        <span className="text-4xl font-bold text-emerald-600">
-                                                            {service.service_per_session_discount_price.toLocaleString()}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <span className="text-xl text-gray-500 line-through">
-                                                            ₹{service.service_per_session_price.toLocaleString()}
-                                                        </span>
-                                                        <Badge className="bg-red-100 text-red-800 font-bold">
-                                                            Save ₹{discountAmount.toLocaleString()}
-                                                        </Badge>
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                <div className="flex items-center gap-2">
-                                                    <IndianRupee className="h-8 w-8 text-blue-600" />
-                                                    <span className="text-4xl font-bold text-blue-600">
-                                                        {service.service_per_session_price.toLocaleString()}
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* CTA Buttons */}
-                                        <div className="flex flex-col sm:flex-row gap-4">
-                                            <Button
-                                                size="lg"
-                                                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-sm transform hover:scale-[1.02] transition-all duration-300"
-                                            >
-                                                <Calendar className="mr-2 h-5 w-5" />
-                                                Book Session Now
-                                                <ArrowRight className="ml-2 h-5 w-5" />
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                size="lg"
-                                                className="border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-50 transition-all duration-300"
-                                            >
-                                                <Phone className="h-5 w-5" />
-                                            </Button>
-                                        </div>
-
-                                        {/* Trust Indicators */}
-                                        <div className="flex items-center justify-center gap-8 pt-6 border-t border-gray-100">
-                                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                                                <Shield className="h-4 w-4 text-emerald-500" />
-                                                <span className="font-medium">100% Safe</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                                                <CheckCircle className="h-4 w-4 text-blue-500" />
-                                                <span className="font-medium">Certified</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                                                <Star className="h-4 w-4 text-amber-500" />
-                                                <span className="font-medium">Top Rated</span>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                {/* Main Content Grid */}
-                <section className="px-4 sm:px-6 lg:px-8 py-12 bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 min-h-screen">
-                    <div className=" mx-auto">
-                        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-
-                            {/* Doctor Profile Card - 1 Column */}
-                            {service.service_doctor && (
-                                <div className="xl:col-span-1">
-                                    <Card className="h-full shadow-lg border-0 bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
-                                        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100/50">
-                                            <CardTitle className="text-xl text-slate-800 flex items-center gap-3">
-                                                <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center">
-                                                    <Award className="h-5 w-5 text-blue-600" />
-                                                </div>
-                                                Your Doctor
-                                            </CardTitle>
-                                        </CardHeader>
-
-                                        <CardContent className="p-6">
-                                            {/* Doctor Info */}
-                                            <div className="text-center mb-6">
-                                                <Avatar className="h-24 w-24 mx-auto mb-4 ring-4 ring-blue-100 shadow-lg">
-                                                    <AvatarImage
-                                                        src={service.service_doctor.doctor_images?.[0] || "/api/placeholder/150/150"}
-                                                        alt={service.service_doctor.doctor_name}
-                                                        className="object-cover"
-                                                    />
-                                                    <AvatarFallback className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-xl font-bold">
-                                                        {service.service_doctor.doctor_name
-                                                            .split(" ")
-                                                            .map((n) => n[0])
-                                                            .join("")}
-                                                    </AvatarFallback>
-                                                </Avatar>
-
-                                                <h3 className="font-bold text-xl text-slate-800 mb-2">
-                                                    {service.service_doctor.doctor_name}
-                                                </h3>
-
-                                                <div className="flex items-center justify-center gap-2 mb-3">
-                                                    <div className="flex">{renderStars(service.service_doctor.doctor_ratings)}</div>
-                                                    <span className="text-lg font-semibold text-slate-700">
-                                                        {service.service_doctor.doctor_ratings}
-                                                    </span>
-                                                </div>
-
-                                                <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 px-3 py-1">
-                                                    <div className="w-2 h-2 bg-emerald-500 rounded-full mr-2"></div>
-                                                    {service.service_doctor.doctor_status}
-                                                </Badge>
-                                            </div>
-
-                                            {/* Specializations */}
-                                            <div className="mb-6">
-                                                <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                                                    <Award className="h-4 w-4 text-blue-600" />
-                                                    Specializations
-                                                </h4>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {service.service_doctor.specialization?.map((spec, index) => (
-                                                        <Badge
-                                                            key={index}
-                                                            variant="outline"
-                                                            className="text-sm bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 transition-colors"
-                                                        >
-                                                            {spec}
-                                                        </Badge>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            {/* Languages */}
-                                            <div className="mb-6">
-                                                <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                                                    <Globe className="h-4 w-4 text-indigo-600" />
-                                                    Languages
-                                                </h4>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {service.service_doctor.languagesSpoken?.map((lang, index) => (
-                                                        <Badge
-                                                            key={index}
-                                                            variant="outline"
-                                                            className="text-sm bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 transition-colors"
-                                                        >
-                                                            {lang}
-                                                        </Badge>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            {/* Special Note */}
-                                            {service.service_doctor.any_special_note && (
-                                                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
-                                                    <Quote className="h-5 w-5 text-blue-400 mb-2" />
-                                                    <p className="text-sm text-slate-700 leading-relaxed italic">
-                                                        "{service.service_doctor.any_special_note}"
-                                                    </p>
-                                                </div>
-                                            )}
-                                        </CardContent>
-                                    </Card>
+                                    <div className="flex justify-between items-center text-sm text-green-600">
+                                        <span>You save</span>
+                                        <span className="font-semibold">
+                                            ₹{calculateSavings(selectedSessions).toLocaleString()}
+                                        </span>
+                                    </div>
                                 </div>
-                            )}
 
-                            {/* Reviews Section - 2 Columns */}
-                            {service.service_reviews && service.service_reviews.length > 0 && (
-                                <div className="xl:col-span-2">
-                                    <Card className="h-full shadow-lg border-0 bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
-                                        <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-100/50">
-                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                                <CardTitle className="text-2xl text-slate-800 flex items-center gap-3">
-                                                    <div className="w-8 h-8 bg-amber-100 rounded-xl flex items-center justify-center">
-                                                        <MessageCircle className="h-5 w-5 text-amber-600" />
-                                                    </div>
-                                                    Patient Reviews
-                                                </CardTitle>
-
-                                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="flex">{renderStars(averageRating)}</div>
-                                                        <span className="text-2xl font-bold text-slate-800">
-                                                            {averageRating.toFixed(1)}
-                                                        </span>
-                                                        <span className="text-slate-600 font-medium">
-                                                            ({service.service_reviews.length} reviews)
-                                                        </span>
-                                                    </div>
-
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => setIsReviewsAutoPlay(!isReviewsAutoPlay)}
-                                                        className="border-amber-200 hover:bg-amber-50 text-amber-700"
-                                                    >
-                                                        {isReviewsAutoPlay ? (
-                                                            <><Pause className="h-4 w-4 mr-2" /> Pause</>
-                                                        ) : (
-                                                            <><Play className="h-4 w-4 mr-2" /> Auto Play</>
-                                                        )}
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </CardHeader>
-
-                                        <CardContent className="p-8">
-                                            {/* Reviews Slider */}
-                                            <div className="relative">
-                                                <div className="overflow-hidden rounded-2xl">
-                                                    <div
-                                                        className="flex transition-transform duration-500 ease-in-out"
-                                                        style={{ transform: `translateX(-${currentReviewIndex * 100}%)` }}
-                                                    >
-                                                        {service.service_reviews.map((review, index) => (
-                                                            <div key={review._id} className="w-full flex-shrink-0 px-2">
-                                                                <div className="bg-gradient-to-br from-slate-50 to-blue-50/50 rounded-2xl p-6 lg:p-8 border border-slate-100 relative min-h-[200px] shadow-sm hover:shadow-md transition-shadow">
-                                                                    <Quote className="absolute top-4 right-4 h-8 w-8 text-slate-200" />
-
-                                                                    <div className="flex flex-col sm:flex-row items-start gap-4">
-                                                                        <Avatar className="h-14 w-14 border-3 border-white shadow-lg flex-shrink-0">
-                                                                            <AvatarFallback className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold text-lg">
-                                                                                P{index + 1}
-                                                                            </AvatarFallback>
-                                                                        </Avatar>
-
-                                                                        <div className="flex-1 min-w-0">
-                                                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                                                                                <div className="flex items-center gap-3">
-                                                                                    <div className="flex">{renderStars(review.review_ratings)}</div>
-                                                                                    <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-xs">
-                                                                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1"></div>
-                                                                                        {review.review_status}
-                                                                                    </Badge>
-                                                                                </div>
-                                                                                <div className="flex items-center gap-2 text-sm text-slate-500">
-                                                                                    <Calendar className="h-4 w-4" />
-                                                                                    <time className="font-medium">
-                                                                                        {new Date(review.createdAt).toLocaleDateString("en-US", {
-                                                                                            year: "numeric",
-                                                                                            month: "short",
-                                                                                            day: "numeric",
-                                                                                        })}
-                                                                                    </time>
-                                                                                </div>
-                                                                            </div>
-
-                                                                            <blockquote className="text-slate-700 text-base lg:text-lg leading-relaxed">
-                                                                                "{review.review_message}"
-                                                                            </blockquote>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-
-                                                {/* Navigation Buttons */}
-                                                {service.service_reviews.length > 1 && (
-                                                    <>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={prevReview}
-                                                            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/95 backdrop-blur-sm border-white/30 shadow-lg hover:shadow-xl rounded-full w-12 h-12 p-0 hover:scale-110 transition-all"
-                                                        >
-                                                            <ChevronLeft className="h-5 w-5" />
-                                                        </Button>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={nextReview}
-                                                            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/95 backdrop-blur-sm border-white/30 shadow-lg hover:shadow-xl rounded-full w-12 h-12 p-0 hover:scale-110 transition-all"
-                                                        >
-                                                            <ChevronRight className="h-5 w-5" />
-                                                        </Button>
-                                                    </>
-                                                )}
-
-                                                {/* Dots Indicator */}
-                                                {service.service_reviews.length > 1 && (
-                                                    <div className="flex justify-center gap-2 mt-8">
-                                                        {service.service_reviews.map((_, index) => (
-                                                            <button
-                                                                key={index}
-                                                                onClick={() => setCurrentReviewIndex(index)}
-                                                                className={`w-3 h-3 rounded-full transition-all duration-300 ${index === currentReviewIndex
-                                                                        ? "bg-blue-600 scale-125 shadow-md"
-                                                                        : "bg-slate-300 hover:bg-slate-400"
-                                                                    }`}
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </section>
-
-                {/* Treatment Benefits Section */}
-                <section className="px-4 sm:px-6 lg:px-8 py-16 bg-white/50 backdrop-blur-sm">
-                    <div className="text-center mb-12">
-                        <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Why Choose Our Treatment?</h2>
-                        <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                            Experience the difference with our comprehensive approach to healing
-                        </p>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        <Card className="shadow-sm border-0 bg-gradient-to-br from-emerald-50 to-teal-50 hover:shadow-2xl transition-all duration-300 group">
-                            <CardContent className="p-8 text-center">
-                                <div className="w-16 h-16 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                                    <CheckCircle className="h-8 w-8 text-white" />
-                                </div>
-                                <h3 className="text-xl font-bold text-emerald-800 mb-4">What We Treat</h3>
-                                <ul className="space-y-2 text-emerald-700">
-                                    <li>• Cervical spine misalignment</li>
-                                    <li>• Muscle tension and spasms</li>
-                                    <li>• Herniated discs in the neck</li>
-                                    <li>• Whiplash injuries</li>
-                                    <li>• Postural neck pain</li>
-                                </ul>
-                            </CardContent>
-                        </Card>
-
-                        <Card className="shadow-sm border-0 bg-gradient-to-br from-blue-50 to-indigo-50 hover:shadow-2xl transition-all duration-300 group">
-                            <CardContent className="p-8 text-center">
-                                <div className="w-16 h-16 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                                    <Target className="h-8 w-8 text-white" />
-                                </div>
-                                <h3 className="text-xl font-bold text-blue-800 mb-4">Expected Results</h3>
-                                <p className="text-blue-700">
-                                    Most patients experience significant improvement within 3-5 sessions, with complete recovery typically
-                                    achieved within the recommended treatment period.
-                                </p>
-                            </CardContent>
-                        </Card>
-
-                        <Card className="shadow-sm border-0 bg-gradient-to-br from-purple-50 to-pink-50 hover:shadow-2xl transition-all duration-300 group md:col-span-2 lg:col-span-1">
-                            <CardContent className="p-8 text-center">
-                                <div className="w-16 h-16 bg-gradient-to-r from-purple-400 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                                    <Award className="h-8 w-8 text-white" />
-                                </div>
-                                <h3 className="text-xl font-bold text-purple-800 mb-4">Expert Care</h3>
-                                <p className="text-purple-700">
-                                    Our certified specialists use advanced techniques and personalized treatment plans to ensure optimal
-                                    recovery outcomes.
-                                </p>
+                                <Button
+                                    size="lg"
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                                >
+                                    <Calendar className="w-5 h-5 mr-2" />
+                                    <Link
+                                        href={`/booking-sessions?sessions=${selectedSessions}&price=${calculateTotalPrice(selectedSessions)
+                                            .toLocaleString()
+                                            .replace(/[^\d.]/g, '')}&service=${slug}`}
+                                    >
+                                        Book Appointment Now
+                                    </Link>
+                                </Button>
                             </CardContent>
                         </Card>
                     </div>
-                </section>
+                </div>
 
-                {/* Service Description Section - Moved to End */}
-                <section className="px-4 sm:px-6 lg:px-8 py-16">
-                    <Card className="shadow-2xl border-0 bg-white/90 backdrop-blur-sm overflow-hidden">
-                        <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
-                            <CardTitle className="text-3xl text-gray-900 flex items-center gap-4">
-                                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center">
-                                    <Target className="h-6 w-6 text-white" />
+                <div className="w-full lg:flex items-start gap-6 justify-between space-y-6 lg:space-y-0">
+                    {/* Doctor Section */}
+                    <Card className="lg:w-[32%] mb-5 border-0 shadow-xl bg-gradient-to-br from-blue-50 via-white to-indigo-50 overflow-hidden relative group hover:shadow-2xl transition-all duration-500">
+                        <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white relative overflow-hidden">
+                            <div className="absolute inset-0 bg-white opacity-10 transform -skew-y-3"></div>
+                            <CardTitle className="text-xl md:text-2xl flex items-center gap-3 relative z-10">
+                                <div className="p-2 mt-2 bg-white bg-opacity-20 rounded-full">
+                                    <Award className="w-5 text-blue-500 h-5 md:w-6 md:h-6" />
                                 </div>
-                                Complete Treatment Guide
+                                Meet Your Doctor
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="p-8 lg:p-12">
-                            <div className="prose prose-lg max-w-none">
-                                <h3 className="text-2xl font-bold text-gray-900 mb-6 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                                    Neck Pain: Comprehensive Insights from Dr. Rajneesh Kant
+
+                        <CardContent className="p-4 md:p-6 relative">
+                            {/* Doctor Profile */}
+                            <div className="text-center mb-6">
+                                <div className="relative inline-block">
+                                    <Avatar className="w-20 h-20 md:w-24 md:h-24 border-4 border-blue-200 shadow-lg mx-auto">
+                                        <AvatarImage
+                                            src={
+                                                service.service_doctor.doctor_images[0] || drImageurl
+                                            }
+                                            alt={service.service_doctor.doctor_name}
+                                            className="object-cover"
+                                        />
+                                        <AvatarFallback className="text-xl md:text-2xl font-bold bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-700">
+                                            {service.service_doctor.doctor_name
+                                                .split(" ")
+                                                .map((n) => n[0])
+                                                .join("")}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+                                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                                    </div>
+                                </div>
+
+                                <h3 className="text-lg md:text-xl font-bold text-gray-900 mt-4 mb-2">
+                                    Dr. {service.service_doctor.doctor_name}
                                 </h3>
-                                <div
-                                    className="text-gray-700 leading-relaxed space-y-6 text-lg"
-                                    dangerouslySetInnerHTML={{ __html: service.service_desc }}
-                                />
+
+                                <div className="flex items-center justify-center gap-2 mb-3">
+                                    <div className="flex items-center gap-1">
+                                        {renderStars(
+                                            Math.floor(service.service_doctor.doctor_ratings)
+                                        )}
+                                    </div>
+                                    <span className="font-bold text-blue-700 text-sm md:text-base">
+                                        {service.service_doctor.doctor_ratings}/5
+                                    </span>
+                                </div>
+
+                                <Badge
+                                    variant="secondary"
+                                    className={`${service.service_doctor.doctor_status === "Booking takes"
+                                        ? "bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-200"
+                                        : "bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 border-gray-300"
+                                        } px-3 py-1 text-xs md:text-sm font-medium`}
+                                >
+                                    ✓ {service.service_doctor.doctor_status}
+                                </Badge>
+                            </div>
+
+                            {/* Specializations */}
+                            <div className="mb-4">
+                                <h4 className="font-bold text-gray-900 mb-3 text-sm md:text-base flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                    Specializations
+                                </h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {service.service_doctor.specialization.map((spec, index) => (
+                                        <Badge
+                                            key={index}
+                                            variant="outline"
+                                            className="bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border-blue-200 hover:from-blue-100 hover:to-indigo-100 transition-colors text-xs px-2 py-1"
+                                        >
+                                            {spec}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Languages */}
+                            <div className="">
+                                <h4 className="font-bold text-gray-900 mb-3 text-sm md:text-base flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                                    Languages
+                                </h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {service.service_doctor.languagesSpoken.map((lang, index) => (
+                                        <Badge
+                                            key={index}
+                                            variant="outline"
+                                            className="bg-gradient-to-r from-gray-50 to-slate-50 text-gray-700 border-gray-200 hover:from-gray-100 hover:to-slate-100 transition-colors text-xs px-2 py-1"
+                                        >
+                                            🗣️ {lang}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Special Note */}
+                            {/* <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-indigo-500"></div>
+                <div className="flex items-start gap-3">
+                    <div className="text-blue-500 text-lg">💬</div>
+                    <p className="text-gray-700 italic text-sm md:text-base leading-relaxed">
+                        &quot;{service.service_doctor.any_special_note}&quot;
+                    </p>
+                </div>
+            </div> */}
+
+                            {/* Decorative elements */}
+                            <div className="absolute top-4 right-4 w-8 h-8 bg-blue-200 opacity-20 rounded-full blur-sm"></div>
+                            <div className="absolute bottom-4 left-4 w-6 h-6 bg-indigo-200 opacity-30 rounded-full blur-sm"></div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Reviews Section */}
+                    <Card className="lg:w-[66%] border-0 shadow-xl bg-gradient-to-br from-green-50 via-white to-teal-50 overflow-hidden relative">
+                        <CardHeader className="bg-gradient-to-r from-green-500 to-teal-600 text-white relative overflow-hidden">
+                            <div className="absolute inset-0 bg-white opacity-10 transform skew-y-3"></div>
+                            <CardTitle className="text-lg md:text-2xl flex items-center gap-3 relative z-10">
+                                <div className="p-2 mt-2 bg-white bg-opacity-20 rounded-full">
+                                    <Users className="w-4 h-4 text-blue-500 md:w-6 md:h-6" />
+                                </div>
+                                Patient Reviews ({service.service_reviews.length})
+                            </CardTitle>
+                        </CardHeader>
+
+                        <CardContent className="p-4 md:p-6">
+                            <div className="grid grid-cols-1 xl:grid-cols-10 gap-4 md:gap-6">
+                                {/* Doctor Profile Side - Responsive */}
+                                <div className="xl:col-span-3">
+                                    <div className="text-center p-4 md:p-6 bg-gradient-to-br from-green-50 to-teal-50 rounded-2xl border border-green-100 shadow-sm hover:shadow-md transition-shadow">
+                                        <Avatar className="w-14 h-14 md:w-18 md:h-18 lg:w-20 lg:h-20 mx-auto mb-4 border-4 border-green-200 shadow-lg">
+                                            <AvatarImage
+                                                src={
+                                                    service.service_doctor.doctor_images[0] || drImageurl
+                                                }
+                                                alt={service.service_doctor.doctor_name}
+                                                className="object-cover"
+                                            />
+                                            <AvatarFallback className="text-sm md:text-lg lg:text-xl font-bold bg-gradient-to-br from-green-100 to-teal-100 text-green-700">
+                                                {service.service_doctor.doctor_name
+                                                    .split(" ")
+                                                    .map((n) => n[0])
+                                                    .join("")}
+                                            </AvatarFallback>
+                                        </Avatar>
+
+                                        <h4 className="font-bold text-gray-900 mb-2 text-sm md:text-base">
+                                            Dr. {service.service_doctor.doctor_name}
+                                        </h4>
+
+                                        <div className="flex items-center justify-center gap-1 mb-2">
+                                            {renderStars(
+                                                Math.floor(service.service_doctor.doctor_ratings)
+                                            )}
+                                        </div>
+
+                                        <span className="text-lg md:text-2xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
+                                            {service.service_doctor.doctor_ratings}/5
+                                        </span>
+
+                                        <p className="text-xs md:text-sm text-gray-600 mt-2 bg-white bg-opacity-50 rounded-lg px-2 py-1">
+                                            📊 {service.service_reviews.length} reviews
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Reviews Content - Responsive */}
+                                <div className="xl:col-span-7">
+                                    {service.service_reviews.length > 0 ? (
+                                        <ReviewsCarousel />
+                                    ) : (
+                                        <NoReviewsSection />
+                                    )}
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
-                </section>
+                </div>
 
-                {/* Contact Section */}
-                <section className="px-4 sm:px-6 lg:px-8 py-16 bg-gradient-to-r from-blue-600 to-purple-600">
-                    <div className="text-center text-white">
-                        <h2 className="text-3xl lg:text-4xl font-bold mb-6">Ready to Start Your Healing Journey?</h2>
-                        <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-                            Don't let pain hold you back. Book your consultation today and take the first step towards recovery.
-                        </p>
-                        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                            <Button
-                                size="lg"
-                                className="bg-white text-blue-600 hover:bg-gray-100 font-bold shadow-sm hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
-                            >
-                                <Calendar className="mr-2 h-5 w-5" />
-                                Book Appointment Now
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="lg"
-                                className="border-2 border-white text-white hover:bg-white hover:text-blue-600 font-bold"
-                            >
-                                <Phone className="mr-2 h-5 w-5" />
-                                Call: +91-9876543210
-                            </Button>
+                {/* Service Description */}
+                <Card className="mb-12 border-0 shadow-lg">
+                    <CardHeader className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-lg">
+                        <CardTitle className="text-xl md:text-2xl">
+                            About This Treatment
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 md:p-8">
+                        <div className="mb-6">
+                            <div
+                                className="text-gray-800 text-base leading-relaxed break-words whitespace-normal w-full"
+                                dangerouslySetInnerHTML={{ __html: service.service_desc }}
+                            />
                         </div>
-                    </div>
-                </section>
-            </div>
-        </div>
-    )
-}
 
-export default Treatments
+                        <div className="mt-8 p-4 md:p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
+                            <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2 text-sm md:text-base">
+                                <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-green-600" />
+                                Treatment Highlights
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="flex items-center gap-2">
+                                    <Clock className="w-3 h-3 md:w-4 md:h-4 text-blue-600 flex-shrink-0" />
+                                    <span className="text-xs md:text-sm text-gray-700">
+                                        Max {service.service_session_allowed_limit} sessions allowed
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <IndianRupee className="w-3 h-3 md:w-4 md:h-4 text-green-600 flex-shrink-0" />
+                                    <span className="text-xs md:text-sm text-gray-700">
+                                        {service.service_per_session_discount_percentage}% discount
+                                        available
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Award className="w-3 h-3 md:w-4 md:h-4 text-purple-600 flex-shrink-0" />
+                                    <span className="text-xs md:text-sm text-gray-700">
+                                        Expert care by {service.service_doctor.doctor_name}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Users className="w-3 h-3 md:w-4 md:h-4 text-teal-600 flex-shrink-0" />
+                                    <span className="text-xs md:text-sm text-gray-700">
+                                        {service.service_reviews.length}+ satisfied patients
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Hurry Up Section */}
+                <Card className="border-0 shadow-2xl bg-gradient-to-br from-blue-50 via-white to-blue-100 overflow-hidden relative group hover:shadow-3xl transition-all duration-500">
+                    <CardContent className="p-8 relative z-10">
+                        <div className="text-center">
+                            {/* Floating discount badge */}
+                            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full mb-6 shadow-lg animate-pulse">
+                                <span className="text-lg font-bold">
+                                    {service.service_per_session_discount_percentage}%
+                                </span>
+                                <span className="text-xs block">OFF</span>
+                            </div>
+
+                            <h3 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-700 to-blue-900 bg-clip-text text-transparent">
+                                🎉 Special Offer!
+                            </h3>
+
+                            <p className="text-xl mb-8 text-blue-700 font-medium leading-relaxed">
+                                Save{" "}
+                                <span className="font-bold text-blue-800">
+                                    ₹{calculateSavings(selectedSessions).toLocaleString()}
+                                </span>{" "}
+                                on your {selectedSessions} session
+                                {selectedSessions > 1 ? "s" : ""}
+                            </p>
+
+                            {/* Price showcase */}
+                            <div className="bg-white rounded-2xl p-6 mb-8 shadow-lg border border-blue-100">
+                                <div className="flex justify-center items-center gap-6">
+                                    <div className="text-center">
+                                        <p className="text-sm text-gray-500 mb-1">Original Price</p>
+                                        <span className="text-xl text-gray-400 line-through">
+                                            ₹
+                                            {(
+                                                calculateTotalPrice(selectedSessions) +
+                                                calculateSavings(selectedSessions)
+                                            ).toLocaleString()}
+                                        </span>
+                                    </div>
+                                    <div className="w-px h-12 bg-blue-200"></div>
+                                    <div className="text-center">
+                                        <p className="text-sm text-blue-600 mb-1 font-medium">
+                                            Your Price
+                                        </p>
+                                        <span className="text-3xl font-bold text-blue-800">
+                                            ₹{calculateTotalPrice(selectedSessions).toLocaleString()}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Savings highlight */}
+                                <div className="mt-4 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                                    <p className="text-green-700 font-semibold text-sm flex items-center justify-center">
+                                        💰 You save ₹
+                                        {calculateSavings(selectedSessions).toLocaleString()} today!
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* CTA Button */}
+                            <Button
+                                size="lg"
+                                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold px-10 py-6 text-lg shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 rounded-full group-hover:animate-bounce"
+                            >
+                                <Calendar className="w-6 h-6 mr-3" />
+                                <Link
+                                    href={`/booking-sessions?sessions=${selectedSessions}&price=${calculateTotalPrice(selectedSessions)
+                                        .toLocaleString()
+                                        .replace(/[^\d.]/g, '')}&service=${slug}`}
+                                >
+
+                                    Book Now & Save Big!
+                                </Link>
+                                <span className="ml-2">→</span>
+                            </Button>
+
+                            {/* Trust indicators */}
+                            <div className="mt-6 flex justify-center items-center gap-4 text-sm text-blue-600">
+                                <div className="flex items-center">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                                    Instant Confirmation
+                                </div>
+                                <div className="flex items-center">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                                    Secure Payment
+                                </div>
+                                <div className="flex items-center">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                                    Money Back Guarantee
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+
+                    {/* Decorative elements */}
+                    <div className="absolute top-0 right-0 -mt-8 -mr-8 w-40 h-40 bg-gradient-to-br from-blue-200 to-blue-300 opacity-20 rounded-full blur-xl"></div>
+                    <div className="absolute bottom-0 left-0 -mb-6 -ml-6 w-32 h-32 bg-gradient-to-tr from-blue-300 to-blue-400 opacity-15 rounded-full blur-lg"></div>
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-100 to-transparent opacity-30 rounded-full blur-3xl -z-0"></div>
+
+                    {/* Floating particles */}
+                    <div className="absolute top-4 left-4 w-3 h-3 bg-blue-400 rounded-full opacity-60 animate-ping"></div>
+                    <div className="absolute top-12 right-8 w-2 h-2 bg-blue-500 rounded-full opacity-40 animate-pulse"></div>
+                    <div className="absolute bottom-8 left-8 w-4 h-4 bg-blue-300 rounded-full opacity-50 animate-bounce"></div>
+                </Card>
+            </div>
+
+            {/* Review Modal */}
+            <ReviewModal
+                isReviewModalOpen={isReviewModalOpen}
+                setIsReviewModalOpen={setIsReviewModalOpen}
+                reviewForm={reviewForm}
+                setReviewForm={setReviewForm}
+                service={service}
+                renderStars={renderStars}
+                handleReviewSubmit={handleReviewSubmit}
+                isSubmittingReview={isSubmittingReview}
+                resetReviewForm={resetReviewForm}
+            />
+        </div>
+    );
+};
+
+export default Treatments;

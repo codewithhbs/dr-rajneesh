@@ -236,25 +236,20 @@ exports.getServiceBySlug = async (req, res) => {
     try {
         const { slug } = req.params;
         const serviceName = slugToTitle(slug);
-
-
         const cacheKey = `service:${serviceName}`;
 
-        // Check Redis cache
+        // 1. Try Redis cache
         const cachedData = await redisClient.get(cacheKey);
         if (cachedData) {
             return res.status(200).json(JSON.parse(cachedData));
         }
 
-        const service = await Service.findOne({ service_name: serviceName }).select('-service_available_at_clinics')
-            .populate('service_doctor')
-            .populate('service_reviews')
-            .populate({
-                path: 'service_reviews.reviewer_id'
-            })
-          
+        // 2. Fetch service without clinic data
+        let service = await Service.findOne({ service_name: serviceName })
+            .select('-service_available_at_clinics')
+            .populate('service_doctor');
 
-
+        // ❗ 3. Null check before populating reviews
         if (!service) {
             return res.status(404).json({
                 success: false,
@@ -262,26 +257,45 @@ exports.getServiceBySlug = async (req, res) => {
             });
         }
 
+
+        if (
+            Array.isArray(service.service_reviews) &&
+            service.service_reviews.length > 0
+        ) {
+
+            await service.populate({
+                path: 'service_reviews',
+                populate: { path: 'reviewer_id' }
+            });
+
+
+            service.service_reviews = service.service_reviews.filter(
+                review => review.review_status === 'Published'
+            );
+        }
+
+
         const responseData = {
             success: true,
             message: 'Service retrieved successfully',
             data: service
         };
 
-        // Cache the response
+        // 6. Cache for 5 minutes
         await redisClient.set(cacheKey, JSON.stringify(responseData), 'EX', 300);
 
-        res.status(200).json(responseData);
+        return res.status(200).json(responseData);
 
     } catch (error) {
-        console.log(error)
-        res.status(500).json({
+        console.error('Error retrieving service by slug:', error);
+        return res.status(500).json({
             success: false,
             message: 'Error retrieving service',
             error: error.message
         });
     }
 };
+
 // Update Service
 exports.updateService = async (req, res) => {
     const redisClient = getRedisClient(req, res);
