@@ -242,7 +242,7 @@ exports.getBookingsByDateAndTimePeriodOnB = async ({ date, time, service_id, cli
             }
         }
 
- 
+
         const startOfDay = new Date(bookingDate);
         startOfDay.setHours(0, 0, 0, 0);
 
@@ -294,8 +294,8 @@ exports.getBookingsByDateAndTimePeriodOnB = async ({ date, time, service_id, cli
                 }
             });
         });
-console.log("Total Booked Slots:", totalBookedSlots);
-console.log("Booking Details:", bookingDetails);
+        console.log("Total Booked Slots:", totalBookedSlots);
+        console.log("Booking Details:", bookingDetails);
         // Calculate availability
         const currentBookings = bookings.length > 0 ? bookings[0].bookingCount : 0;
         const maxBookingsPerSlot = bookingConfig.booking_limit_per_slot;
