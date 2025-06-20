@@ -20,12 +20,7 @@ const BookingSessionSchema = new mongoose.Schema({
         type: Number,
         required: true,
         min: [1, 'At least one session must be booked'],
-        validate: {
-            validator: function (v) {
-                return v === this.SessionDates.length;
-            },
-            message: 'Number of sessions must match SessionDates array length'
-        }
+
     },
 
     // paitent details
@@ -153,7 +148,9 @@ const BookingSessionSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
-
+    payment_verified_at: {
+        type: Date,
+    },
 
     // Booking source and metadata
     bookingSource: {

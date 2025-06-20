@@ -22,7 +22,7 @@ exports.getBookingsByDateAndTimePeriod = async (req, res) => {
 
         // Validate date format
         const bookingDate = new Date(date)
-        console.log("bookingDate", bookingDate)
+       
         if (isNaN(bookingDate.getTime())) {
             return res.status(400).json({
                 success: false,
@@ -79,54 +79,106 @@ exports.getBookingsByDateAndTimePeriod = async (req, res) => {
         }
 
         // Find existing bookings for the specified date and time
-        const foundBookedSessions = await Bookings.aggregate([
-            {
-                $match: {
-                    treatment_id: new mongoose.Types.ObjectId(service_id),
-                    ...(clinic_id && { session_booking_for_clinic: new mongoose.Types.ObjectId(clinic_id) })
-                }
-            },
-            {
-                $unwind: "$SessionDates"
-            },
-            {
-                $match: {
-                    "SessionDates.date": {
-                        $gte: new Date(bookingDate.setHours(0, 0, 0, 0)),
-                        $lt: new Date(bookingDate.setHours(23, 59, 59, 999))
-                    },
-                    "session_booking_for_clinic": clinic_id,
-                    "SessionDates.time": time,
-                    "SessionDates.status": {
-                        $in: ['Pending', 'Confirmed', 'Rescheduled']
-                    }
-                }
-            },
-            {
-                $group: {
-                    _id: {
-                        date: "$SessionDates.date",
-                        time: "$SessionDates.time"
-                    },
-                    bookingCount: { $sum: 1 },
-                    bookings: {
-                        $push: {
-                            bookingId: "$_id",
-                            sessionNumber: "$SessionDates.sessionNumber",
-                            status: "$SessionDates.status",
-                            user: "$session_booking_user",
-                            doctor: "$session_booking_for_doctor",
-                            clinic: "$session_booking_for_clinic",
-                            rescheduleHistory: "$SessionDates.rescheduleHistory"
-                        }
-                    }
-                }
-            }
-        ]);
+        // const foundBookedSessions = await Bookings.aggregate([
+        //     {
+        //         $match: {
+        //             treatment_id: new mongoose.Types.ObjectId(service_id),
+        //             ...(clinic_id && { session_booking_for_clinic: new mongoose.Types.ObjectId(clinic_id) })
+        //         }
+        //     },
+        //     {
+        //         $unwind: "$SessionDates"
+        //     },
+        //     {
+        //         $match: {
+        //             "SessionDates.date": {
+        //                 $gte: new Date(bookingDate.setHours(0, 0, 0, 0)),
+        //                 $lt: new Date(bookingDate.setHours(23, 59, 59, 999))
+        //             },
+        //             "session_booking_for_clinic": clinic_id,
+        //             "SessionDates.time": time,
+        //             "SessionDates.status": {
+        //                 $in: ['Pending', 'Confirmed', 'Rescheduled']
+        //             }
+        //         }
+        //     },
+        //     {
+        //         $group: {
+        //             _id: {
+        //                 date: "$SessionDates.date",
+        //                 time: "$SessionDates.time"
+        //             },
+        //             bookingCount: { $sum: 1 },
+        //             bookings: {
+        //                 $push: {
+        //                     bookingId: "$_id",
+        //                     sessionNumber: "$SessionDates.sessionNumber",
+        //                     status: "$SessionDates.status",
+        //                     user: "$session_booking_user",
+        //                     doctor: "$session_booking_for_doctor",
+        //                     clinic: "$session_booking_for_clinic",
+        //                     rescheduleHistory: "$SessionDates.rescheduleHistory"
+        //                 }
+        //             }
+        //         }
+        //     }
+        // ]);
+        const startOfDay = new Date(bookingDate);
+        startOfDay.setHours(0, 0, 0, 0);
 
-        console.log("foundBookedSessions", foundBookedSessions)
+        const endOfDay = new Date(bookingDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        // Build query filter
+        const filter = {
+            treatment_id: new mongoose.Types.ObjectId(service_id),
+            ...(clinic_id && {
+                session_booking_for_clinic: new mongoose.Types.ObjectId(clinic_id),
+            }),
+            SessionDates: {
+                $elemMatch: {
+                    date: { $gte: startOfDay, $lt: endOfDay },
+                    time: time,
+                    status: { $in: ["Pending", "Confirmed", "Rescheduled"] },
+                },
+            },
+        };
+
+        // Fetch bookings
+        const bookings = await Bookings.find(filter);
+
+        // Extract matching sessions
+        let totalBookedSlots = 0;
+        const bookingDetails = [];
+
+        bookings.forEach((booking) => {
+            booking.SessionDates.forEach((session) => {
+                const sessionDate = new Date(session.date);
+                sessionDate.setHours(0, 0, 0, 0);
+
+                if (
+                    sessionDate.getTime() === startOfDay.getTime() &&
+                    session.time === time &&
+                    ["Pending", "Confirmed", "Rescheduled"].includes(session.status)
+                ) {
+                    totalBookedSlots++;
+                    bookingDetails.push({
+                        bookingId: booking._id,
+                        sessionNumber: session.sessionNumber,
+                        status: session.status,
+                        user: booking.session_booking_user,
+                        doctor: booking.session_booking_for_doctor,
+                        clinic: booking.session_booking_for_clinic,
+                        rescheduleHistory: session.rescheduleHistory,
+                    });
+                }
+            });
+        });
+        console.log("Total Booked Slots: Have Bia req", totalBookedSlots);
+
+       
         // Calculate availability
-        const currentBookings = foundBookedSessions.length > 0 ? foundBookedSessions[0].bookingCount : 0;
+        const currentBookings = bookings.length > 0 ? bookings[0].bookingCount : 0;
         const maxBookingsPerSlot = bookingConfig.booking_limit_per_slot;
         const availableSlots = Math.max(0, maxBookingsPerSlot - currentBookings);
 
@@ -143,7 +195,7 @@ exports.getBookingsByDateAndTimePeriod = async (req, res) => {
             time: time,
             service_id: service_id,
             clinic_id: clinic_id,
-            bookingDetails: foundBookedSessions.length > 0 ? foundBookedSessions[0].bookings : [],
+            bookingDetails: bookings.length > 0 ? bookings[0].bookings : [],
             configuration: {
                 slotsPerHour: bookingConfig.slots_per_hour,
                 bookingLimitPerSlot: bookingConfig.booking_limit_per_slot
@@ -295,7 +347,7 @@ exports.getBookingsByDateAndTimePeriodOnB = async ({ date, time, service_id, cli
             });
         });
         console.log("Total Booked Slots:", totalBookedSlots);
-        console.log("Booking Details:", bookingDetails);
+
         // Calculate availability
         const currentBookings = bookings.length > 0 ? bookings[0].bookingCount : 0;
         const maxBookingsPerSlot = bookingConfig.booking_limit_per_slot;

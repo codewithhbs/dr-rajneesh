@@ -1,11 +1,11 @@
 import Link from "next/link"
-import { MapPin, Phone, Mail, Heart, Star, Facebook, Twitter, Instagram, Youtube, Linkedin } from "lucide-react"
+import { MapPin, Phone, Mail, Heart, Star, Facebook, Instagram, Youtube, } from "lucide-react"
 import Image from "next/image"
 import { logo } from "@/constant/Images"
 
 export function Footer() {
   return (
-    <footer className="bg-gray-100">
+    <footer className="bg-gray-100 footer-p">
       {/* Main footer content */}
       <div className="px-4 md:px-8 lg:px-12 py-12">
         <div className="container mx-auto">
@@ -13,20 +13,10 @@ export function Footer() {
             {/* Column 1: About */}
             <div>
               <div className="flex items-center gap-2 mb-4">
-                {/* <div className="bg-[#1e7fd0] rounded-md p-2 w-12 h-12 flex items-center justify-center">
-                  <svg
-                    viewBox="0 0 24 24"
-                    className="h-8 w-8 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M3 12h4l3 8 4-16 3 8h4" />
-                  </svg>
-                </div> */}
+
                 <div className="bg-gradient-to-r  text-white p-3 rounded-xl ">
-                                   <Image src={logo} alt="logo" width={50} height={50}  />
-                                </div>
+                  <Image src={logo} alt="logo" width={50} height={50} />
+                </div>
                 <div>
                   <h3 className="font-bold text-[#1e7fd0] text-xl">Dr. Rajneesh Kant</h3>
                   <p className="text-sm text-gray-600">Physiotherapy & Chiropractic Care</p>
@@ -43,7 +33,7 @@ export function Footer() {
               </div>
               <div className="flex items-center gap-2 text-sm text-blue-600 font-medium">
                 <Heart className="h-4 w-4 text-blue-600" />
-                <span>India's Most Trusted Chiropractic Care</span>
+                <span>{`India's Most Trusted Chiropractic Care`}</span>
               </div>
 
               {/* Social Media Links */}
@@ -86,7 +76,7 @@ export function Footer() {
                   >
                     <Youtube className="h-4 w-4" />
                   </a>
-                 
+
                 </div>
               </div>
             </div>
@@ -101,22 +91,22 @@ export function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/about" className="text-gray-600 hover:text-[#1e7fd0] transition-colors">
+                  <Link href="/pages/about" className="text-gray-600 hover:text-[#1e7fd0] transition-colors">
                     About
                   </Link>
                 </li>
                 <li>
-                  <Link href="/treatments" className="text-gray-600 hover:text-[#1e7fd0] transition-colors">
+                  <Link href="/pages/treatments" className="text-gray-600 hover:text-[#1e7fd0] transition-colors">
                     Treatments
                   </Link>
                 </li>
                 <li>
-                  <Link href="/blog" className="text-gray-600 hover:text-[#1e7fd0] transition-colors">
+                  <Link href="/pages/blogs" className="text-gray-600 hover:text-[#1e7fd0] transition-colors">
                     Blog
                   </Link>
                 </li>
                 <li>
-                  <Link href="/contact" className="text-gray-600 hover:text-[#1e7fd0] transition-colors">
+                  <Link href="/pages/contact" className="text-gray-600 hover:text-[#1e7fd0] transition-colors">
                     Contact
                   </Link>
                 </li>
@@ -131,22 +121,22 @@ export function Footer() {
               <h3 className="font-bold text-lg mt-6 mb-4">Legal</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/privacy-policy" className="text-gray-600 hover:text-[#1e7fd0] transition-colors">
+                  <Link href="/pages/policy/privacy-policy" className="text-gray-600 hover:text-[#1e7fd0] transition-colors">
                     Privacy Policy
                   </Link>
                 </li>
                 <li>
-                  <Link href="/terms-conditions" className="text-gray-600 hover:text-[#1e7fd0] transition-colors">
+                  <Link href="/pages/policy/terms-conditions" className="text-gray-600 hover:text-[#1e7fd0] transition-colors">
                     Terms & Conditions
                   </Link>
                 </li>
                 <li>
-                  <Link href="/refund-policy" className="text-gray-600 hover:text-[#1e7fd0] transition-colors">
+                  <Link href="/pages/policy/refund-policy" className="text-gray-600 hover:text-[#1e7fd0] transition-colors">
                     Refund Policy
                   </Link>
                 </li>
                 <li>
-                  <Link href="/disclaimer" className="text-gray-600 hover:text-[#1e7fd0] transition-colors">
+                  <Link href="/pages/policy/disclaimer" className="text-gray-600 hover:text-[#1e7fd0] transition-colors">
                     Disclaimer
                   </Link>
                 </li>
@@ -211,7 +201,7 @@ export function Footer() {
 
               <div className="mt-6">
                 <Link
-                  href="/book-appointment"
+                  href="/pages/treatments"
                   className="bg-[#1e7fd0] text-white py-2 px-4 rounded-md inline-block hover:bg-blue-700 transition-colors"
                 >
                   Book Appointment

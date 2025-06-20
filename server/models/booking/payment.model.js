@@ -24,7 +24,10 @@ const paymentSchema = new mongoose.Schema({
         enum: ['pending', 'completed', 'failed', 'refunded'],
         default: 'pending'
     },
-    razarpay_transactionId: {
+    razorpay_payment_id: {
+        type: String
+    },
+    failure_reason: {
         type: String
     },
     razorpay_order_id: {
@@ -33,12 +36,28 @@ const paymentSchema = new mongoose.Schema({
     paidAt: {
         type: Date
     },
+    completed_at: {
+        type: Date
+    },
+    razorpay_signature: {
+        type: String
+    },
     payment_details: {
         subtotal: String,
         tax: String,
         creditCardFee: String,
         total: String
+    },
+    verification_timestamp: {
+        type: Date
+    },
+    verification_ip: {
+        type: String
+    },
+    verification_user_agent: {
+        type: String
     }
+
 
 }, { timestamps: true });
 

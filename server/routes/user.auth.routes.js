@@ -3,7 +3,7 @@ const { registerNormalUser, verifyEmailOtp, googleAuthRegisterAndLogin } = requi
 const { createReview } = require('../controllers/service/review.controller');
 const { isAuthenticated } = require('../middleware/protect');
 const { getBookingsByDateAndTimePeriod } = require('../controllers/bookings/BookingService');
-const { createAorderForSession } = require('../controllers/bookings/CreateBooking');
+const { createAorderForSession, verifyPayment, handlePaymentFailure, foundBookingViaId} = require('../controllers/bookings/CreateBooking');
 const user_auth_router = express.Router()
 const { CLIENT_ID, REDIRECT_URI } = process.env;
 
@@ -26,6 +26,10 @@ user_auth_router.get('/google/callback', googleAuthRegisterAndLogin);
 
 user_auth_router.post('/bookings/availability', isAuthenticated, getBookingsByDateAndTimePeriod);
 user_auth_router.post('/bookings/sessions', isAuthenticated, createAorderForSession);
+
+user_auth_router.post('/bookings/verify-payment', verifyPayment);
+user_auth_router.post('/bookings/payemnt-failed', isAuthenticated, handlePaymentFailure);
+user_auth_router.get('/found-booking/:id', isAuthenticated, foundBookingViaId);
 
 
 

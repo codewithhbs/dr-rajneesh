@@ -56,7 +56,7 @@ export function Header() {
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen)
 
     return (
-        <div className="bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50">
+        <div className="bg-gradient-to-br headers-p from-blue-50 via-cyan-50 to-teal-50">
             {/* Header */}
             <header className="relative z-50 bg-white/90 backdrop-blur-md">
                 {/* Top Header */}
@@ -174,26 +174,20 @@ export function Header() {
                                             <DropdownMenuSeparator />
 
                                             <DropdownMenuItem asChild className="hover:bg-blue-50 rounded-md px-3 py-2 cursor-pointer transition">
-                                                <Link href="/dashboard" className="flex items-center gap-2">
+                                                <Link href="/profile" className="flex items-center gap-2">
                                                     <LayoutDashboard size={16} className="text-blue-600" />
                                                     Dashboard
                                                 </Link>
                                             </DropdownMenuItem>
 
                                             <DropdownMenuItem asChild className="hover:bg-blue-50 rounded-md px-3 py-2 cursor-pointer transition">
-                                                <Link href="/help" className="flex items-center gap-2">
+                                                <Link href="/pages/contact" className="flex items-center gap-2">
                                                     <HelpCircle size={16} className="text-green-600" />
                                                     Get Help
                                                 </Link>
                                             </DropdownMenuItem>
 
-                                            <DropdownMenuItem asChild className="hover:bg-blue-50 rounded-md px-3 py-2 cursor-pointer transition">
-                                                <Link href="/profile" className="flex items-center gap-2">
-                                                    <User size={16} className="text-purple-600" />
-                                                    Profile
-                                                </Link>
-                                            </DropdownMenuItem>
-
+                                           
                                             <DropdownMenuSeparator />
 
                                             <DropdownMenuItem

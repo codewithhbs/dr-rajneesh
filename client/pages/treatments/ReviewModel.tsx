@@ -149,20 +149,8 @@ const ReviewModal = memo(({
             </div>
           </div>
 
-          {/* Progress indicator */}
-          {(reviewForm.review_ratings > 0 || reviewForm.review_message.trim()) && (
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
-              <div className="flex items-center gap-3">
-                <div className="flex gap-1">
-                  <div className={`w-3 h-3 rounded-full ${reviewForm.review_ratings > 0 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                  <div className={`w-3 h-3 rounded-full ${reviewForm.review_message.trim() ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                </div>
-                <span className="text-sm text-gray-600">
-                  {isFormValid ? '🎉 Ready to submit!' : 'Please complete all required fields'}
-                </span>
-              </div>
-            </div>
-          )}
+   
+         
         </div>
 
         <DialogFooter className="flex-col sm:flex-row gap-3 pt-6 border-t border-blue-100">

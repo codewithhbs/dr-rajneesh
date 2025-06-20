@@ -13,3 +13,12 @@ exports.cleanRedisDataFlush = async (redisClient, key = "clinic*") => {
         await redisClient.del(keys);
     }
 };
+
+exports.flushAllData = async (redisClient) => {
+  try {
+    await redisClient.flushAll(); // ✅ Correct for redis@4
+    console.log("✅ Redis cache cleared using flushAll()");
+  } catch (err) {
+    console.error("❌ Redis flushAll failed:", err.message);
+  }
+};
