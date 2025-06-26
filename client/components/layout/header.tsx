@@ -14,8 +14,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Menu, X, Phone, Mail, Facebook, Twitter, Instagram, Youtube, LogOut, HelpCircle, LayoutDashboard, User } from "lucide-react"
 
-
-import { useMobile } from "@/hooks/use-mobile"
 import Image from "next/image"
 import { logo } from "@/constant/Images"
 import { useAuth } from "@/context/authContext/auth"
@@ -205,11 +203,11 @@ export function Header() {
                                     </Button>
                                 )}
 
-                                <Link href="/shop/med-store" passHref>
+                                <Link href="/book-now-consultation" passHref>
                                     <Button
                                         className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base"
                                     >
-                                        Buy Medicine from Store
+                                     Book Now Consultation
                                     </Button>
                                 </Link>
                             </div>

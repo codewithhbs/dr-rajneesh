@@ -6,6 +6,7 @@ const { createService, getAllServices, getServiceById, updateService, deleteServ
 const { getAllReviews, getReviewById, updateReview, deleteReview } = require('../controllers/service/review.controller');
 const { createSettings, getOnlyOneSettings } = require('../controllers/settings/settings');
 const { getAdminAllBookings, getAdminSingleBookings, getAdminChangeSessionInformation, addAndUpdateSessionPrescriptions, addNextSessionDate } = require('../controllers/bookings/CreateBooking');
+const { getAvailableDates } = require('../controllers/D_Booking/D_Booking_Controoller');
 const router = express.Router()
 
 
@@ -56,5 +57,7 @@ router.post('/admin-add-updated-prescriptions', upload.single('image'), addAndUp
 router.post('/admin-add-next-sessions', addNextSessionDate);
 
 
+// New Bookings
+router.get('/get-available-date',getAvailableDates)
 
 module.exports = router;   

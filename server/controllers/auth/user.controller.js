@@ -1,59 +1,59 @@
-
 const userModel = require("../../models/users/user.model");
 const emailQueue = require("../../queues/emailQueue");
 const generateOtp = require("../../utils/otp");
 const { sendEmail } = require("../../utils/sendEmail");
 const { sendToken } = require("../../utils/sendToken");
-const axios = require('axios')
+const axios = require("axios");
 const Bookings = require("../../models/booking/bookings.sessions.model");
-
-
 
 const createOtpExpiry = (minutes = 10) => {
     return new Date(Date.now() + minutes * 60 * 1000);
 };
 
-
 exports.registerNormalUser = async (req, res, next) => {
     try {
-        const { name, email, phone, password, confirmPassword, termsAccepted } = req.body;
+        const { name, email, phone, password, confirmPassword, termsAccepted } =
+            req.body;
 
         if (!name || !email || !phone || !password || !confirmPassword) {
             return res.status(400).json({
                 success: false,
-                message: 'All fields are required'
+                message: "All fields are required",
             });
         }
 
         if (password !== confirmPassword) {
             return res.status(400).json({
                 success: false,
-                message: 'Passwords do not match'
+                message: "Passwords do not match",
             });
         }
 
         if (!termsAccepted) {
             return res.status(400).json({
                 success: false,
-                message: 'Please accept terms and conditions'
+                message: "Please accept terms and conditions",
             });
         }
 
         const existingUser = await userModel.findOne({
-            $or: [{ email }, { phone }]
+            $or: [{ email }, { phone }],
         });
 
         const otp = generateOtp();
         const otpExpiry = createOtpExpiry(30); // expires in 30 minutes
 
         if (existingUser) {
-            if (existingUser.status === 'active' && existingUser.emailVerification?.isVerified) {
+            if (
+                existingUser.status === "active" &&
+                existingUser.emailVerification?.isVerified
+            ) {
                 return res.status(409).json({
                     success: false,
                     message:
                         existingUser.email === email
-                            ? 'Email already registered'
-                            : 'Phone number already registered'
+                            ? "Email already registered"
+                            : "Phone number already registered",
                 });
             }
 
@@ -64,14 +64,14 @@ exports.registerNormalUser = async (req, res, next) => {
             existingUser.termsAccepted = termsAccepted;
             existingUser.profileImage = {
                 url: `https://api.dicebear.com/9.x/initials/svg?seed=${name}`,
-                publicId: ''
+                publicId: "",
             };
             existingUser.emailVerification = {
                 isVerified: false,
                 otp,
-                otpExpiry
+                otpExpiry,
             };
-            existingUser.status = 'un-verified';
+            existingUser.status = "un-verified";
 
             await existingUser.save();
 
@@ -91,21 +91,25 @@ exports.registerNormalUser = async (req, res, next) => {
         </div>
       `;
 
-            emailQueue.add({
-                type: 'register',
-                to: email,
-                subject: 'Verify Your Email Address',
-                html: emailHtml
-            }).then(job => {
-                console.log('✅ Job added to queue with ID:', job.id);
-            }).catch(error => {
-                console.error('❌ Error adding job to queue:', error);
-            });
+            emailQueue
+                .add({
+                    type: "register",
+                    to: email,
+                    subject: "Verify Your Email Address",
+                    html: emailHtml,
+                })
+                .then((job) => {
+                    console.log("✅ Job added to queue with ID:", job.id);
+                })
+                .catch((error) => {
+                    console.error("❌ Error adding job to queue:", error);
+                });
 
             return res.status(200).json({
                 success: true,
-                message: 'Your account is not verified. A new OTP has been sent to your email.',
-                userId: existingUser._id
+                message:
+                    "Your account is not verified. A new OTP has been sent to your email.",
+                userId: existingUser._id,
             });
         }
 
@@ -118,14 +122,14 @@ exports.registerNormalUser = async (req, res, next) => {
             termsAccepted,
             profileImage: {
                 url: `https://api.dicebear.com/9.x/initials/svg?seed=${name}`,
-                publicId: ''
+                publicId: "",
             },
             emailVerification: {
                 isVerified: false,
                 otp,
-                otpExpiry
+                otpExpiry,
             },
-            status: 'un-verified'
+            status: "un-verified",
         });
 
         await newUser.save();
@@ -144,23 +148,115 @@ exports.registerNormalUser = async (req, res, next) => {
       </div>
     `;
 
-        emailQueue.add({
-            type: 'register',
-            to: email,
-            subject: 'Verify Your Email Address',
-            html: emailHtml
-        }).then(job => {
-            console.log('✅ Job added to queue with ID:', job.id);
-        }).catch(error => {
-            console.error('❌ Error adding job to queue:', error);
-        });
+        emailQueue
+            .add({
+                type: "register",
+                to: email,
+                subject: "Verify Your Email Address",
+                html: emailHtml,
+            })
+            .then((job) => {
+                console.log("✅ Job added to queue with ID:", job.id);
+            })
+            .catch((error) => {
+                console.error("❌ Error adding job to queue:", error);
+            });
 
         res.status(201).json({
             success: true,
-            message: 'Registration successful! Please check your email for verification OTP.',
-            userId: newUser._id
+            message:
+                "Registration successful! Please check your email for verification OTP.",
+            userId: newUser._id,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+exports.registerNormal = async (req, res, next) => {
+    try {
+        const { name, phone, termsAccepted = true } = req.body;
+
+        if (!name || !phone) {
+            return res.status(400).json({
+                success: false,
+                message: "All fields are required",
+            });
+        }
+
+        const existingUser = await userModel.findOne({
+            $or: [{ phone }],
         });
 
+        const otp = generateOtp();
+        const otpExpiry = createOtpExpiry(30); // expires in 30 minutes
+
+        if (existingUser) {
+            if (
+                existingUser.status === "active" &&
+                existingUser.phoneNumber?.isVerified
+            ) {
+                return res.status(409).json({
+                    success: false,
+                    message:
+                        existingUser.phone === phone
+                            ? "Phone already registered"
+                            : "Phone number already registered",
+                });
+            }
+
+            // User exists but not verified or inactive → update existing user
+            existingUser.name = name.trim();
+            existingUser.phone = phone.trim();
+            existingUser.termsAccepted = termsAccepted;
+            existingUser.profileImage = {
+                url: `https://api.dicebear.com/9.x/initials/svg?seed=${name}`,
+                publicId: "",
+            };
+            existingUser.phoneNumber = {
+                isVerified: false,
+                otp,
+                otpExpiry,
+            };
+            existingUser.status = "un-verified";
+
+            await existingUser.save();
+
+
+            return res.status(200).json({
+                success: true,
+                message:
+                    "Your account is not verified. A new OTP has been sent to your phone number.",
+                userId: existingUser._id,
+            });
+        }
+
+        // New User creation
+        const newUser = new userModel({
+            name: name.trim(),
+            phone: phone.trim(),
+            termsAccepted,
+            profileImage: {
+                url: `https://api.dicebear.com/9.x/initials/svg?seed=${name}`,
+                publicId: "",
+            },
+            phoneNumber: {
+                isVerified: false,
+                otp,
+                otpExpiry,
+            },
+            status: "un-verified",
+        });
+
+        await newUser.save();
+
+
+        res.status(201).json({
+            success: true,
+            message:
+                "Registration successful! Please check your Phone for verification OTP.",
+            userId: newUser._id,
+        });
     } catch (error) {
         next(error);
     }
@@ -171,31 +267,31 @@ exports.googleAuthRegisterAndLogin = async (req, res) => {
     const { CLIENT_ID, CLIENT_SECRET, REDIRECT_URI } = process.env;
     const code = req.query.code;
 
-    if (!code) return res.status(400).send('Missing authorization code.');
+    if (!code) return res.status(400).send("Missing authorization code.");
 
     try {
         const params = new URLSearchParams();
-        params.append('code', code);
-        params.append('client_id', CLIENT_ID);
-        params.append('client_secret', CLIENT_SECRET);
-        params.append('redirect_uri', REDIRECT_URI);
-        params.append('grant_type', 'authorization_code');
+        params.append("code", code);
+        params.append("client_id", CLIENT_ID);
+        params.append("client_secret", CLIENT_SECRET);
+        params.append("redirect_uri", REDIRECT_URI);
+        params.append("grant_type", "authorization_code");
 
         const { data: tokenData } = await axios.post(
-            'https://oauth2.googleapis.com/token',
+            "https://oauth2.googleapis.com/token",
             params,
-            { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+            { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
         );
 
         const accessToken = tokenData.access_token;
-        if (!accessToken) return res.status(400).send('Token exchange failed');
+        if (!accessToken) return res.status(400).send("Token exchange failed");
 
         const { data: userInfo } = await axios.get(
-            'https://www.googleapis.com/oauth2/v2/userinfo',
+            "https://www.googleapis.com/oauth2/v2/userinfo",
             { headers: { Authorization: `Bearer ${accessToken}` } }
         );
 
-        if (!userInfo.email) return res.status(400).send('No email from Google');
+        if (!userInfo.email) return res.status(400).send("No email from Google");
 
         const existingUser = await userModel.findOne({ email: userInfo.email });
 
@@ -203,14 +299,24 @@ exports.googleAuthRegisterAndLogin = async (req, res) => {
             if (!existingUser.isGoogleAuth) {
                 return res.status(403).json({
                     success: false,
-                    message: 'This email is already registered. Please login using email and password.'
+                    message:
+                        "This email is already registered. Please login using email and password.",
                 });
             }
 
-            console.log('Old user via Google login:', existingUser);
-            const { token } = await sendToken(existingUser, 200, res, 'Login successful', false);
-            return res.redirect(`http://localhost:3000/login/login-success?token=${encodeURIComponent(token)}`);
-
+            console.log("Old user via Google login:", existingUser);
+            const { token } = await sendToken(
+                existingUser,
+                200,
+                res,
+                "Login successful",
+                false
+            );
+            return res.redirect(
+                `http://localhost:3000/login/login-success?token=${encodeURIComponent(
+                    token
+                )}`
+            );
         }
 
         const newUser = new userModel({
@@ -218,37 +324,49 @@ exports.googleAuthRegisterAndLogin = async (req, res) => {
             email: userInfo.email.toLowerCase().trim(),
             termsAccepted: true,
             profileImage: {
-                url: userInfo.picture || '',
-                publicId: ''
+                url: userInfo.picture || "",
+                publicId: "",
             },
             emailVerification: {
-                isVerified: userInfo.verified_email || false
+                isVerified: userInfo.verified_email || false,
             },
             isGoogleAuth,
-            status: 'active'
+            status: "active",
         });
 
         await newUser.save();
 
-        console.log('data is save', newUser)
+        console.log("data is save", newUser);
 
         const emailHtml = welcome(newUser);
-        emailQueue.add({
-            type: 'welcome',
-            to: newUser.email,
-            subject: 'Thank you for registering with us',
-            html: emailHtml
-        }).then(job => {
-            console.log('✅ Email job queued:', job.id);
-        }).catch(error => {
-            console.error('❌ Email queue error:', error);
-        });
-        const { token, user } = await sendToken(newUser, 200, res, 'Thank you for registering', false);
-        return res.redirect(`http://localhost:3000/login/login-success?token=${encodeURIComponent(token)}`);
-
+        emailQueue
+            .add({
+                type: "welcome",
+                to: newUser.email,
+                subject: "Thank you for registering with us",
+                html: emailHtml,
+            })
+            .then((job) => {
+                console.log("✅ Email job queued:", job.id);
+            })
+            .catch((error) => {
+                console.error("❌ Email queue error:", error);
+            });
+        const { token, user } = await sendToken(
+            newUser,
+            200,
+            res,
+            "Thank you for registering",
+            false
+        );
+        return res.redirect(
+            `http://localhost:3000/login/login-success?token=${encodeURIComponent(
+                token
+            )}`
+        );
     } catch (err) {
-        console.error('OAuth Error:', err.response?.data || err.message);
-        return res.status(500).send('Google authentication failed.');
+        console.error("OAuth Error:", err.response?.data || err.message);
+        return res.status(500).send("Google authentication failed.");
     }
 };
 
@@ -256,39 +374,43 @@ exports.googleAuthRegisterAndLogin = async (req, res) => {
 // Verify Email OTP
 exports.verifyEmailOtp = async (req, res, next) => {
     try {
-        const { email, otp } = req.body;
+        const { email, otp, number } = req.body;
 
-        if (!email || !otp) {
+        if (!otp || (!email && !number)) {
             return res.status(400).json({
                 success: false,
-                message: 'Email and OTP are required'
+                message: "OTP and either Email or Phone Number are required",
             });
         }
 
-        const user = await userModel.findOne({
-            email: email.toLowerCase().trim(),
-            'emailVerification.otp': otp,
-            'emailVerification.otpExpiry': { $gt: new Date() }
-        });
+        let user;
 
-        if (!user) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid or expired OTP'
+        // 🔹 Email OTP verification
+        if (email) {
+            user = await userModel.findOne({
+                email: email.toLowerCase().trim(),
+                "emailVerification.otp": otp,
+                "emailVerification.otpExpiry": { $gt: new Date() },
             });
-        }
 
-        // Update user verification status
-        await userModel.findByIdAndUpdate(user._id, {
-            'emailVerification.isVerified': true,
-            'status': 'active',
-            $unset: {
-                'emailVerification.otp': 1,
-                'emailVerification.otpExpiry': 1
+            if (!user) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid or expired email OTP",
+                });
             }
-        });
 
-        const emailHtml = `<!DOCTYPE html>
+            await userModel.findByIdAndUpdate(user._id, {
+                "emailVerification.isVerified": true,
+                status: "active",
+                $unset: {
+                    "emailVerification.otp": 1,
+                    "emailVerification.otpExpiry": 1,
+                },
+            });
+
+            // ✅ Send email only for email verification
+            const emailHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -586,22 +708,46 @@ exports.verifyEmailOtp = async (req, res, next) => {
     </style>
     
 </body>
-</html>`
+        </html>`;
 
 
-        emailQueue.add({
-            type: 'welcome',
-            to: email,
-            subject: 'Thankyou For Register With Us',
-            html: emailHtml
-        }).then(job => {
-            console.log('✅ Job added to queue with ID:', job.id);
-        }).catch(error => {
-            console.error('❌ Error adding job to queue:', error);
-        });
+            emailQueue
+                .add({
+                    type: "welcome",
+                    to: email,
+                    subject: "Thank you for registering with us",
+                    html: emailHtml,
+                })
+                .then((job) => console.log("✅ Email job added:", job.id))
+                .catch((error) => console.error("❌ Email job error:", error));
+        }
 
+        // 🔸 Phone OTP verification
+        else if (number) {
+            user = await userModel.findOne({
+                phone: number.trim(),
+                "phoneNumber.otp": otp,
+                "phoneNumber.otpExpiry": { $gt: new Date() },
+            });
 
-        await sendToken(user, 200, res, 'Thankyou For Register With Us')
+            if (!user) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid or expired phone OTP",
+                });
+            }
+
+            await userModel.findByIdAndUpdate(user._id, {
+                "phoneNumber.isVerified": true,
+                status: "active",
+                $unset: {
+                    "phoneNumber.otp": 1,
+                    "phoneNumber.otpExpiry": 1,
+                },
+            });
+        }
+
+        await sendToken(user, 200, res, "Verification successful");
     } catch (error) {
         next(error);
     }
@@ -615,19 +761,19 @@ exports.loginUser = async (req, res, next) => {
         if (!email || !password) {
             return res.status(400).json({
                 success: false,
-                message: 'Email and password are required'
+                message: "Email and password are required",
             });
         }
 
         // Find user and include password for comparison
         const user = await userModel.findOne({
-            email: email.toLowerCase().trim()
+            email: email.toLowerCase().trim(),
         });
 
         if (!user) {
             return res.status(401).json({
                 success: false,
-                message: 'Invalid email or password'
+                message: "Invalid email or password",
             });
         }
 
@@ -635,15 +781,16 @@ exports.loginUser = async (req, res, next) => {
         if (user.isLocked) {
             return res.status(423).json({
                 success: false,
-                message: 'Account temporarily locked due to too many failed login attempts'
+                message:
+                    "Account temporarily locked due to too many failed login attempts",
             });
         }
 
         // Check if account is active
-        if (user.status !== 'active') {
+        if (user.status !== "active") {
             return res.status(403).json({
                 success: false,
-                message: 'Account is suspended or deactivated'
+                message: "Account is suspended or deactivated",
             });
         }
 
@@ -654,7 +801,7 @@ exports.loginUser = async (req, res, next) => {
             await user.incLoginAttempts();
             return res.status(401).json({
                 success: false,
-                message: 'Invalid email or password'
+                message: "Invalid email or password",
             });
         }
 
@@ -662,7 +809,7 @@ exports.loginUser = async (req, res, next) => {
         if (!user.emailVerification.isVerified && !user.isGoogleAuth) {
             return res.status(403).json({
                 success: false,
-                message: 'Please verify your email before logging in'
+                message: "Please verify your email before logging in",
             });
         }
 
@@ -672,12 +819,11 @@ exports.loginUser = async (req, res, next) => {
         // Update user info
         await userModel.findByIdAndUpdate(user._id, {
             ipAddress: req.ip,
-            userAgent: req.get('User-Agent')
+            userAgent: req.get("User-Agent"),
         });
 
         // Send token
-        await sendToken(user, 200, res, 'Login successful');
-
+        await sendToken(user, 200, res, "Login successful");
     } catch (error) {
         next(error);
     }
@@ -686,18 +832,17 @@ exports.loginUser = async (req, res, next) => {
 // Logout User
 exports.logoutUser = async (req, res, next) => {
     try {
-        res.cookie('_usertoken', null, {
+        res.cookie("_usertoken", null, {
             expires: new Date(Date.now()),
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict'
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
         });
 
         res.status(200).json({
             success: true,
-            message: 'Logged out successfully'
+            message: "Logged out successfully",
         });
-
     } catch (error) {
         next(error);
     }
@@ -711,28 +856,32 @@ exports.requestPasswordReset = async (req, res, next) => {
         if (!email) {
             return res.status(400).json({
                 success: false,
-                message: 'Email is required'
+                message: "Email is required",
             });
         }
 
         const user = await userModel.findOne({
-            email: email.toLowerCase().trim()
+            email: email.toLowerCase().trim(),
         });
 
         if (!user) {
             // Don't reveal if email exists or not
             return res.status(200).json({
                 success: true,
-                message: 'If an account with this email exists, you will receive a password reset link.'
+                message:
+                    "If an account with this email exists, you will receive a password reset link.",
             });
         }
 
         // Check if user recently requested password reset
-        if (user.passwordReset.lastResetAt &&
-            new Date() - user.passwordReset.lastResetAt < 5 * 60 * 1000) { // 5 minutes
+        if (
+            user.passwordReset.lastResetAt &&
+            new Date() - user.passwordReset.lastResetAt < 5 * 60 * 1000
+        ) {
+            // 5 minutes
             return res.status(429).json({
                 success: false,
-                message: 'Please wait before requesting another password reset'
+                message: "Please wait before requesting another password reset",
             });
         }
 
@@ -741,9 +890,9 @@ exports.requestPasswordReset = async (req, res, next) => {
 
         // Update user with reset token
         await userModel.findByIdAndUpdate(user._id, {
-            'passwordReset.token': resetOtp,
-            'passwordReset.tokenExpiry': createOtpExpiry(15), // 15 minutes
-            'passwordReset.lastResetAt': new Date()
+            "passwordReset.token": resetOtp,
+            "passwordReset.tokenExpiry": createOtpExpiry(15), // 15 minutes
+            "passwordReset.lastResetAt": new Date(),
         });
 
         // Send reset email
@@ -764,15 +913,14 @@ exports.requestPasswordReset = async (req, res, next) => {
 
         await sendEmail({
             to: user.email,
-            subject: 'Password Reset OTP',
-            html: emailHtml
+            subject: "Password Reset OTP",
+            html: emailHtml,
         });
 
         res.status(200).json({
             success: true,
-            message: 'Password reset OTP sent to your email'
+            message: "Password reset OTP sent to your email",
         });
-
     } catch (error) {
         next(error);
     }
@@ -786,20 +934,20 @@ exports.verifyPasswordResetOtp = async (req, res, next) => {
         if (!email || !otp) {
             return res.status(400).json({
                 success: false,
-                message: 'Email and OTP are required'
+                message: "Email and OTP are required",
             });
         }
 
         const user = await userModel.findOne({
             email: email.toLowerCase().trim(),
-            'passwordReset.token': otp,
-            'passwordReset.tokenExpiry': { $gt: new Date() }
+            "passwordReset.token": otp,
+            "passwordReset.tokenExpiry": { $gt: new Date() },
         });
 
         if (!user) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid or expired OTP'
+                message: "Invalid or expired OTP",
             });
         }
 
@@ -807,16 +955,15 @@ exports.verifyPasswordResetOtp = async (req, res, next) => {
         const tempToken = generateSecureToken();
 
         await userModel.findByIdAndUpdate(user._id, {
-            'passwordReset.token': tempToken,
-            'passwordReset.tokenExpiry': createOtpExpiry(5) // 5 minutes to change password
+            "passwordReset.token": tempToken,
+            "passwordReset.tokenExpiry": createOtpExpiry(5), // 5 minutes to change password
         });
 
         res.status(200).json({
             success: true,
-            message: 'OTP verified successfully',
-            resetToken: tempToken
+            message: "OTP verified successfully",
+            resetToken: tempToken,
         });
-
     } catch (error) {
         next(error);
     }
@@ -830,26 +977,26 @@ const resetPassword = async (req, res, next) => {
         if (!resetToken || !newPassword || !confirmPassword) {
             return res.status(400).json({
                 success: false,
-                message: 'All fields are required'
+                message: "All fields are required",
             });
         }
 
         if (newPassword !== confirmPassword) {
             return res.status(400).json({
                 success: false,
-                message: 'Passwords do not match'
+                message: "Passwords do not match",
             });
         }
 
         const user = await userModel.findOne({
-            'passwordReset.token': resetToken,
-            'passwordReset.tokenExpiry': { $gt: new Date() }
+            "passwordReset.token": resetToken,
+            "passwordReset.tokenExpiry": { $gt: new Date() },
         });
 
         if (!user) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid or expired reset token'
+                message: "Invalid or expired reset token",
             });
         }
 
@@ -860,16 +1007,15 @@ const resetPassword = async (req, res, next) => {
         // Clear reset token
         await userModel.findByIdAndUpdate(user._id, {
             $unset: {
-                'passwordReset.token': 1,
-                'passwordReset.tokenExpiry': 1
-            }
+                "passwordReset.token": 1,
+                "passwordReset.tokenExpiry": 1,
+            },
         });
 
         res.status(200).json({
             success: true,
-            message: 'Password reset successfully'
+            message: "Password reset successfully",
         });
-
     } catch (error) {
         next(error);
     }
@@ -883,14 +1029,14 @@ exports.changePassword = async (req, res, next) => {
         if (!currentPassword || !newPassword || !confirmPassword) {
             return res.status(400).json({
                 success: false,
-                message: 'All fields are required'
+                message: "All fields are required",
             });
         }
 
         if (newPassword !== confirmPassword) {
             return res.status(400).json({
                 success: false,
-                message: 'New passwords do not match'
+                message: "New passwords do not match",
             });
         }
 
@@ -899,7 +1045,7 @@ exports.changePassword = async (req, res, next) => {
         if (!user) {
             return res.status(404).json({
                 success: false,
-                message: 'User not found'
+                message: "User not found",
             });
         }
 
@@ -909,7 +1055,7 @@ exports.changePassword = async (req, res, next) => {
         if (!isCurrentPasswordValid) {
             return res.status(401).json({
                 success: false,
-                message: 'Current password is incorrect'
+                message: "Current password is incorrect",
             });
         }
 
@@ -919,9 +1065,8 @@ exports.changePassword = async (req, res, next) => {
 
         res.status(200).json({
             success: true,
-            message: 'Password changed successfully'
+            message: "Password changed successfully",
         });
-
     } catch (error) {
         next(error);
     }
@@ -930,20 +1075,19 @@ exports.changePassword = async (req, res, next) => {
 // Get User Profile
 exports.getUserProfile = async (req, res, next) => {
     try {
-        const user = await userModel.findById(req.user.id).select('-password');
+        const user = await userModel.findById(req.user.id).select("-password");
 
         if (!user) {
             return res.status(404).json({
                 success: false,
-                message: 'User not found'
+                message: "User not found",
             });
         }
 
         res.status(200).json({
             success: true,
-            data: user
+            data: user,
         });
-
     } catch (error) {
         next(error);
     }
@@ -960,31 +1104,31 @@ exports.updateUserProfile = async (req, res, next) => {
             // Check if phone number is already taken by another user
             const existingUser = await userModel.findOne({
                 phone: phone.trim(),
-                _id: { $ne: req.user.id }
+                _id: { $ne: req.user.id },
             });
 
             if (existingUser) {
                 return res.status(409).json({
                     success: false,
-                    message: 'Phone number already registered'
+                    message: "Phone number already registered",
                 });
             }
 
             updates.phone = phone.trim();
         }
 
-        const user = await userModel.findByIdAndUpdate(
-            req.user.id,
-            updates,
-            { new: true, runValidators: true }
-        ).select('-password');
+        const user = await userModel
+            .findByIdAndUpdate(req.user.id, updates, {
+                new: true,
+                runValidators: true,
+            })
+            .select("-password");
 
         res.status(200).json({
             success: true,
-            message: 'Profile updated successfully',
-            user
+            message: "Profile updated successfully",
+            user,
         });
-
     } catch (error) {
         next(error);
     }
@@ -998,25 +1142,26 @@ exports.updateProfileImage = async (req, res, next) => {
         if (!imageUrl) {
             return res.status(400).json({
                 success: false,
-                message: 'Image URL is required'
+                message: "Image URL is required",
             });
         }
 
-        const user = await userModel.findByIdAndUpdate(
-            req.user.id,
-            {
-                'profileImage.url': imageUrl,
-                'profileImage.publicId': publicId || null
-            },
-            { new: true, runValidators: true }
-        ).select('-password');
+        const user = await userModel
+            .findByIdAndUpdate(
+                req.user.id,
+                {
+                    "profileImage.url": imageUrl,
+                    "profileImage.publicId": publicId || null,
+                },
+                { new: true, runValidators: true }
+            )
+            .select("-password");
 
         res.status(200).json({
             success: true,
-            message: 'Profile image updated successfully',
-            user
+            message: "Profile image updated successfully",
+            user,
         });
-
     } catch (error) {
         next(error);
     }
@@ -1027,10 +1172,10 @@ exports.deleteAccount = async (req, res, next) => {
     try {
         const { password, confirmDelete } = req.body;
 
-        if (!password || confirmDelete !== 'DELETE') {
+        if (!password || confirmDelete !== "DELETE") {
             return res.status(400).json({
                 success: false,
-                message: 'Password and confirmation are required'
+                message: "Password and confirmation are required",
             });
         }
 
@@ -1039,7 +1184,7 @@ exports.deleteAccount = async (req, res, next) => {
         if (!user) {
             return res.status(404).json({
                 success: false,
-                message: 'User not found'
+                message: "User not found",
             });
         }
 
@@ -1049,30 +1194,29 @@ exports.deleteAccount = async (req, res, next) => {
         if (!isPasswordValid) {
             return res.status(401).json({
                 success: false,
-                message: 'Password is incorrect'
+                message: "Password is incorrect",
             });
         }
 
         // Soft delete - update status instead of removing document
         await userModel.findByIdAndUpdate(req.user.id, {
-            status: 'deleted',
+            status: "deleted",
             email: `deleted_${Date.now()}_${user.email}`, // Prevent email conflicts
-            phone: `deleted_${Date.now()}_${user.phone}` // Prevent phone conflicts
+            phone: `deleted_${Date.now()}_${user.phone}`, // Prevent phone conflicts
         });
 
         // Clear cookie
-        res.cookie('_usertoken', null, {
+        res.cookie("_usertoken", null, {
             expires: new Date(Date.now()),
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict'
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
         });
 
         res.status(200).json({
             success: true,
-            message: 'Account deleted successfully'
+            message: "Account deleted successfully",
         });
-
     } catch (error) {
         next(error);
     }
@@ -1086,25 +1230,25 @@ exports.resendVerificationEmail = async (req, res, next) => {
         if (!email) {
             return res.status(400).json({
                 success: false,
-                message: 'Email is required'
+                message: "Email is required",
             });
         }
 
         const user = await userModel.findOne({
-            email: email.toLowerCase().trim()
+            email: email.toLowerCase().trim(),
         });
 
         if (!user) {
             return res.status(404).json({
                 success: false,
-                message: 'User not found'
+                message: "User not found",
             });
         }
 
         if (user.emailVerification.isVerified) {
             return res.status(400).json({
                 success: false,
-                message: 'Email is already verified'
+                message: "Email is already verified",
             });
         }
 
@@ -1112,8 +1256,8 @@ exports.resendVerificationEmail = async (req, res, next) => {
 
         // Update user with new OTP
         await userModel.findByIdAndUpdate(user._id, {
-            'emailVerification.token': otp,
-            'emailVerification.tokenExpiry': createOtpExpiry(30)
+            "emailVerification.token": otp,
+            "emailVerification.tokenExpiry": createOtpExpiry(30),
         });
 
         // Send verification email
@@ -1133,20 +1277,18 @@ exports.resendVerificationEmail = async (req, res, next) => {
 
         await sendEmail({
             to: user.email,
-            subject: 'Verify Your Email Address',
-            html: emailHtml
+            subject: "Verify Your Email Address",
+            html: emailHtml,
         });
 
         res.status(200).json({
             success: true,
-            message: 'Verification email sent successfully'
+            message: "Verification email sent successfully",
         });
-
     } catch (error) {
         next(error);
     }
 };
-
 
 //Get Booking History
 exports.getBookingHistory = async (req, res, next) => {
@@ -1156,16 +1298,16 @@ exports.getBookingHistory = async (req, res, next) => {
         if (!userId) {
             return res.status(400).json({
                 success: false,
-                message: 'User ID is required'
+                message: "User ID is required",
             });
         }
 
         // Fetch all bookings for the user
         const bookings = await Bookings.find({ session_booking_user: userId })
-            .populate('session_booking_for_clinic')
-            .populate('session_booking_for_doctor')
-            .populate('payment_id')
-            .populate('treatment_id')
+            .populate("session_booking_for_clinic")
+            .populate("session_booking_for_doctor")
+            .populate("payment_id")
+            .populate("treatment_id")
             .sort({ createdAt: -1 });
 
         const now = new Date();
@@ -1175,34 +1317,38 @@ exports.getBookingHistory = async (req, res, next) => {
         // Helper function to determine if booking is "current"
         const isCurrentBooking = (booking) => {
             const sessionDates = booking.SessionDates || [];
-            
+
             // Check if booking is completed or cancelled
-            if (['Completed', 'Cancelled'].includes(booking.session_status)) {
+            if (["Completed", "Cancelled"].includes(booking.session_status)) {
                 return false;
             }
 
             // Check for upcoming sessions (today or future)
-            const hasUpcomingSessions = sessionDates.some(session => {
+            const hasUpcomingSessions = sessionDates.some((session) => {
                 const sessionDate = new Date(session.date);
                 sessionDate.setHours(0, 0, 0, 0);
-                return sessionDate >= today && 
-                       ['Pending', 'Confirmed', 'Rescheduled'].includes(session.status);
+                return (
+                    sessionDate >= today &&
+                    ["Pending", "Confirmed", "Rescheduled"].includes(session.status)
+                );
             });
 
             // Check for sessions scheduled today
-            const hasTodaySession = sessionDates.some(session => {
+            const hasTodaySession = sessionDates.some((session) => {
                 const sessionDate = new Date(session.date);
                 sessionDate.setHours(0, 0, 0, 0);
-                return sessionDate.getTime() === today.getTime() && 
-                       ['Pending', 'Confirmed', 'Rescheduled'].includes(session.status);
+                return (
+                    sessionDate.getTime() === today.getTime() &&
+                    ["Pending", "Confirmed", "Rescheduled"].includes(session.status)
+                );
             });
 
             // Check if booking has partial completion (some sessions done, some pending)
-            const hasCompletedSessions = sessionDates.some(session => 
-                session.status === 'Completed'
+            const hasCompletedSessions = sessionDates.some(
+                (session) => session.status === "Completed"
             );
-            const hasPendingSessions = sessionDates.some(session => 
-                ['Pending', 'Confirmed', 'Rescheduled'].includes(session.status)
+            const hasPendingSessions = sessionDates.some((session) =>
+                ["Pending", "Confirmed", "Rescheduled"].includes(session.status)
             );
             const isPartiallyCompleted = hasCompletedSessions && hasPendingSessions;
 
@@ -1211,40 +1357,45 @@ exports.getBookingHistory = async (req, res, next) => {
         };
 
         // Process all bookings
-        const processedBookings = bookings.map(booking => {
+        const processedBookings = bookings.map((booking) => {
             const totalSessions = booking.no_of_session_book || 0;
             const sessionDates = booking.SessionDates || [];
 
             // Count completed sessions
             const completedSessions = sessionDates.filter(
-                session => session.status === 'Completed'
+                (session) => session.status === "Completed"
             ).length;
 
             // Calculate completion percentage
-            const completionPercent = totalSessions > 0
-                ? Math.round((completedSessions / totalSessions) * 100)
-                : 0;
+            const completionPercent =
+                totalSessions > 0
+                    ? Math.round((completedSessions / totalSessions) * 100)
+                    : 0;
 
             // Check if any session is scheduled today
-            const hasTodaySession = sessionDates.some(session => {
+            const hasTodaySession = sessionDates.some((session) => {
                 const sessionDate = new Date(session.date);
                 sessionDate.setHours(0, 0, 0, 0);
-                return sessionDate.getTime() === today.getTime() &&
-                       ['Pending', 'Confirmed', 'Rescheduled'].includes(session.status);
+                return (
+                    sessionDate.getTime() === today.getTime() &&
+                    ["Pending", "Confirmed", "Rescheduled"].includes(session.status)
+                );
             });
 
             // Find next upcoming session
             const nextSession = sessionDates
-                .filter(session => {
+                .filter((session) => {
                     const sessionDate = new Date(session.date);
-                    return sessionDate >= now && 
-                           ['Pending', 'Confirmed', 'Rescheduled'].includes(session.status);
+                    return (
+                        sessionDate >= now &&
+                        ["Pending", "Confirmed", "Rescheduled"].includes(session.status)
+                    );
                 })
                 .sort((a, b) => new Date(a.date) - new Date(b.date))[0];
 
             // Count pending/upcoming sessions
-            const pendingSessions = sessionDates.filter(session => 
-                ['Pending', 'Confirmed', 'Rescheduled'].includes(session.status)
+            const pendingSessions = sessionDates.filter((session) =>
+                ["Pending", "Confirmed", "Rescheduled"].includes(session.status)
             ).length;
 
             return {
@@ -1253,27 +1404,31 @@ exports.getBookingHistory = async (req, res, next) => {
                 hasTodaySession,
                 nextSession: nextSession || null,
                 pendingSessions,
-                isCurrentBooking: isCurrentBooking(booking)
+                isCurrentBooking: isCurrentBooking(booking),
             };
         });
 
         // Separate current and history bookings
-        const currentBookings = processedBookings.filter(booking => booking.isCurrentBooking);
-        const historyBookings = processedBookings.filter(booking => !booking.isCurrentBooking);
+        const currentBookings = processedBookings.filter(
+            (booking) => booking.isCurrentBooking
+        );
+        const historyBookings = processedBookings.filter(
+            (booking) => !booking.isCurrentBooking
+        );
 
         // Sort current bookings by priority (today's sessions first, then by next session date)
         currentBookings.sort((a, b) => {
             // Priority 1: Today's sessions first
             if (a.hasTodaySession && !b.hasTodaySession) return -1;
             if (!a.hasTodaySession && b.hasTodaySession) return 1;
-            
+
             // Priority 2: By next session date (earliest first)
             if (a.nextSession && b.nextSession) {
                 return new Date(a.nextSession.date) - new Date(b.nextSession.date);
             }
             if (a.nextSession && !b.nextSession) return -1;
             if (!a.nextSession && b.nextSession) return 1;
-            
+
             // Priority 3: By creation date (newest first)
             return new Date(b.createdAt) - new Date(a.createdAt);
         });
@@ -1287,11 +1442,11 @@ exports.getBookingHistory = async (req, res, next) => {
                     totalBookings: bookings.length,
                     currentBookingsCount: currentBookings.length,
                     historyBookingsCount: historyBookings.length,
-                    todaySessionsCount: processedBookings.filter(b => b.hasTodaySession).length
-                }
-            }
+                    todaySessionsCount: processedBookings.filter((b) => b.hasTodaySession)
+                        .length,
+                },
+            },
         });
-
     } catch (error) {
         console.error("Error in getBookingHistory:", error);
         next(error);
@@ -1599,5 +1754,8 @@ function welcome(user) {
     </style>
     
 </body>
-</html>`
+</html>`;
 }
+
+
+

@@ -5,6 +5,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { AuthProvider } from "@/context/authContext/auth";
 import Script from "next/script";
+import { Toaster } from "@/components/ui/sonner"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,10 +35,11 @@ export default function RootLayout({
           <Header />
           {children}
           <Footer />
+          <Toaster />
         </AuthProvider>
-         <Script id="payemnt" src="https://checkout.razorpay.com/v1/checkout.js"></Script>
+        <Script id="payemnt" src="https://checkout.razorpay.com/v1/checkout.js"></Script>
       </body>
-     
+
 
     </html>
   );

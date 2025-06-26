@@ -10,11 +10,12 @@ const BookingSessionSchema = new mongoose.Schema({
     // Treatment details
     treatment_id: {
         type: mongoose.Schema.Types.ObjectId,
-        required: true,
-        ref: 'service',
-        index: true
+        ref: 'service'
     },
-
+    direct_booking: {
+        type: Boolean,
+        default: false
+    },
     no_of_session_book: {
         type: Number,
         required: true,
