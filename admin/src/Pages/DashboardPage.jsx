@@ -43,6 +43,8 @@ import DashboardHeader from "@/own_components/DashboardHeader"
 import { ADMIN_WEB_NAME, menuSections } from "@/context/ui.constant"
 import AllServices from "./services/AllServices"
 import AddNewTreatMents from "./services/AddNewTreatMents"
+import AllSessions from "./sessions/AllSessions"
+import SessionDetails from "./sessions/SessionDetails"
 
 
 const DashboardPage = () => {
@@ -212,11 +214,15 @@ const DashboardPage = () => {
         </div>
 
         {/* Main Content */}
-        <main className="flex-1 p-4 md:p-6 overflow-auto">
+        <main className="flex-1 bg-white p-4 md:p-6 overflow-auto">
           <Routes>
             <Route path="/" element={<DashboardHome />} />
             <Route path="/treatments" element={<AllServices />} />
             <Route path="/add-or-update-treatments" element={<AddNewTreatMents />} />
+
+            {/* Sessions */}
+            <Route path="/Sessions" element={<AllSessions />} />
+            <Route path="/admin/sessions/:id" element={<SessionDetails />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>

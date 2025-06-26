@@ -10,6 +10,8 @@ const Bookings = require("../../models/booking/bookings.sessions.model");
 const Settings = require("../../models/settings/settings.model");
 const Payment = require("../../models/booking/payment.model"); // Assuming you have a payment model
 const { getBookingsByDateAndTimePeriodOnB } = require("./BookingService");
+const { uploadSingleFile, deleteFileCloud } = require("../../utils/upload");
+const { deleteFile } = require("../../middleware/multer");
 
 const razorpay = new RazorpayUtils(
     process.env.RAZORPAY_KEY_ID,
@@ -719,3 +721,390 @@ exports.foundBookingViaId = async (req, res) => {
         });
     }
 };
+
+
+// ================================ ADMIN  BOOKING API CONTROLLERS ================================
+exports.getAdminAllBookings = async (req, res) => {
+    try {
+
+        const bookings = await Bookings.find({})
+            .populate([
+                'session_booking_for_clinic',
+                'session_booking_for_doctor',
+                'session_booking_user',
+                'payment_id'
+            ]).populate('treatment_id', '-service_desc -service_available_at_clinics -service_reviews -service_session_allowed_limit -service_tag -service_doctor -createdAt -updatedAt')
+            .sort({ createdAt: -1 });
+        if (!bookings || bookings.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "No bookings found."
+            });
+        }
+        console.log(`Retrieved ${bookings.length} bookings successfully`);
+
+        return res.status(200).json({
+            success: true,
+            message: "Bookings retrieved successfully.",
+            data: bookings
+        });
+    } catch (error) {
+        console.error("Error retrieving bookings:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Unable to retrieve bookings. Please try again later."
+        });
+    }
+};
+exports.getAdminSingleBookings = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const bookings = await Bookings.findById(id)
+            .populate([
+                'session_booking_for_clinic',
+                'session_booking_for_doctor',
+                'session_booking_user',
+                'payment_id'
+            ]).populate('treatment_id', '-service_desc -service_available_at_clinics -service_reviews -service_session_allowed_limit -service_tag -service_doctor -createdAt -updatedAt')
+            .sort({ createdAt: -1 });
+        if (!bookings) {
+            return res.status(404).json({
+                success: false,
+                message: "No bookings found."
+            });
+        }
+        console.log(`Retrieved ${bookings._id} bookings successfully`);
+
+        return res.status(200).json({
+            success: true,
+            message: "Booking retrieved successfully.",
+            data: bookings
+        });
+    } catch (error) {
+        console.error("Error retrieving bookings:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Unable to retrieve bookings. Please try again later."
+        });
+    }
+};
+
+exports.getAdminChangeSessionInformation = async (req, res) => {
+    try {
+        const {
+            _id,
+            new_date,
+            new_time,
+            status,
+            isReschedule = false,
+            sessionNumber,
+            reason
+        } = req.body;
+
+        // Step 1: Validate required fields
+        if (!_id) {
+            return res.status(400).json({
+                success: false,
+                message: "Booking ID (_id) is required."
+            });
+        }
+
+        if ((isReschedule || status === 'Completed' || status === 'Cancelled') && !sessionNumber) {
+            return res.status(400).json({
+                success: false,
+                message: "Session number is required for this operation."
+            });
+        }
+
+        // Step 2: Fetch the booking with population
+        const currentSession = await Bookings.findById(_id)
+            .populate('session_booking_for_clinic')
+            .populate('session_booking_for_doctor')
+            .populate('session_booking_user')
+            .populate('payment_id')
+            .populate('treatment_id');
+
+        if (!currentSession) {
+            return res.status(404).json({
+                success: false,
+                message: "Session not found."
+            });
+        }
+
+        // Step 3: Prevent action if main session status is already final
+        if (['Completed', 'Cancelled'].includes(currentSession.session_status)) {
+            return res.status(400).json({
+                success: false,
+                message: "Cannot change session information for completed or cancelled bookings."
+            });
+        }
+
+        // Step 4: Find the specific session by sessionNumber
+        let matchedSession = null;
+        if (sessionNumber) {
+            matchedSession = currentSession.SessionDates.find(
+                session => session.sessionNumber === sessionNumber
+            );
+
+            if (!matchedSession) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Session number not found in the booking."
+                });
+            }
+        }
+
+        // Step 5: Handle Rescheduling
+        if (isReschedule) {
+            if (!new_date || !new_time) {
+                return res.status(400).json({
+                    success: false,
+                    message: "New date and time are required for rescheduling."
+                });
+            }
+
+            if (['Completed', 'Cancelled'].includes(matchedSession.status)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "This session is already completed or cancelled and cannot be rescheduled."
+                });
+            }
+
+            await currentSession.rescheduleSession(sessionNumber, new_date, new_time, reason);
+        }
+
+
+        else if (status === 'Completed') {
+            await currentSession.completeSession(sessionNumber);
+        }
+
+
+        else if (status === 'Cancelled') {
+            if (matchedSession.status === 'Cancelled') {
+                return res.status(400).json({
+                    success: false,
+                    message: "This session is already cancelled."
+                });
+            }
+
+            await currentSession.cancelSession(sessionNumber, reason);
+        }
+
+        // Step 8: Save and respond
+        await currentSession.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Session information updated successfully.",
+            data: currentSession
+        });
+
+    } catch (error) {
+        console.error("Error changing session information:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Unable to change session information. Please try again later.",
+            error: error.message
+        });
+    }
+};
+
+exports.addAndUpdateSessionPrescriptions = async (req, res) => {
+    const file = req.file || {};
+    const session = await mongoose.startSession();
+
+    try {
+        session.startTransaction();
+        const { _id, prescriptionType, sessionNumber } = req.body;
+        console.log("req.body", req.body)
+
+        // Validate required fields
+        if (!_id || !sessionNumber || !prescriptionType) {
+            if (file.path) deleteFile(file.path);
+            return res.status(400).json({
+                success: false,
+                message: "Booking ID (_id), sessionNumber, and prescriptionType are required."
+            });
+        }
+
+        const bookings = await Bookings.findById(_id).session(session)
+            .populate([
+                'session_booking_for_clinic',
+                'session_booking_for_doctor',
+                'session_booking_user',
+                'payment_id'
+            ])
+            .populate(
+                'treatment_id',
+                '-service_desc -service_available_at_clinics -service_reviews -service_session_allowed_limit -service_tag -service_doctor -createdAt -updatedAt'
+            );
+
+        if (!bookings) {
+            if (file.path) deleteFile(file.path);
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found."
+            });
+        }
+
+        const matchedSession = bookings.SessionDates.find(
+            session => session.sessionNumber === Number(sessionNumber)
+        );
+
+        if (!matchedSession) {
+            if (file.path) deleteFile(file.path);
+            return res.status(404).json({
+                success: false,
+                message: "Session number not found in the booking."
+            });
+        }
+
+        if (matchedSession.status !== 'Completed') {
+            if (file.path) deleteFile(file.path);
+            return res.status(400).json({
+                success: false,
+                message: "Cannot add prescription. This session has not been completed."
+            });
+        }
+
+        const no_of_session_book = bookings.no_of_session_book || 0;
+
+        if (bookings.session_prescriptions.length >= no_of_session_book) {
+            if (file.path) deleteFile(file.path);
+            return res.status(400).json({
+                success: false,
+                message: "Cannot add more session prescriptions than the allowed limit."
+            });
+        }
+
+        // Check if a prescription already exists for this sessionNumber
+        const existingPrescriptionIndex = bookings.session_prescriptions.findIndex(
+            p => p.sessionNumber === Number(sessionNumber)
+        );
+
+        let uploadedResult = null;
+
+        // Upload new file
+        if (file.path) {
+            uploadedResult = await uploadSingleFile(file);
+        }
+
+        // If prescription already exists, update it
+        if (existingPrescriptionIndex !== -1) {
+            const existing = bookings.session_prescriptions[existingPrescriptionIndex];
+
+            // Delete previous file from cloud if it exists
+            if (existing.public_id) {
+                await deleteFileCloud(existing.public_id);
+            }
+
+            // Update the entry
+            bookings.session_prescriptions[existingPrescriptionIndex] = {
+                sessionNumber: Number(sessionNumber),
+                date: new Date(),
+                prescriptionType,
+                url: uploadedResult?.url || '',
+                public_id: uploadedResult?.public_id || '',
+                uploadedAt: new Date()
+            };
+        } else {
+            // Add new prescription
+            bookings.session_prescriptions.push({
+                sessionNumber: Number(sessionNumber),
+                date: new Date(),
+                prescriptionType,
+                url: uploadedResult?.url || '',
+                public_id: uploadedResult?.public_id || '',
+                uploadedAt: new Date()
+            });
+        }
+
+        await bookings.save({ session });
+        await session.commitTransaction();
+        session.endSession();
+
+        return res.status(200).json({
+            success: true,
+            message: "Prescription added/updated successfully.",
+            data: bookings.session_prescriptions.find(p => p.sessionNumber === Number(sessionNumber))
+        });
+
+    } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+
+        console.error("Error adding/updating session prescription:", error);
+
+        if (file.path) {
+            deleteFile(file.path);
+        }
+
+        return res.status(500).json({
+            success: false,
+            message: "An error occurred while updating the prescription.",
+            error: error.message
+        });
+    }
+};
+
+exports.addNextSessionDate = async (req, res) => {
+    try {
+        const { bookingId, newDate, newTime } = req.body;
+
+        if (!bookingId || !newDate || !newTime) {
+            return res.status(400).json({
+                success: false,
+                message: "Booking ID, new date, and new time are required."
+            });
+        }
+
+        const booking = await Bookings.findById(bookingId);
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found."
+            });
+        }
+
+        // Check if the booking is already completed or cancelled
+        if (booking.session_status === 'Completed' || booking.session_status === 'Cancelled') {
+            return res.status(400).json({
+                success: false,
+                message: "Cannot add a session to a completed or cancelled booking."
+            });
+        }
+
+        //first check no_of_session_book is alloed to add new sessionNumber and Date
+        if (booking.SessionDates.length >= booking.no_of_session_book) {
+            return res.status(400).json({
+                success: false,
+                message: "Cannot add more sessions than the allowed limit."
+            });
+        }
+
+        // Add the new session date
+        const nextSessionNumber = booking.SessionDates.length + 1;
+        booking.SessionDates.push({
+            sessionNumber: nextSessionNumber,
+            date: new Date(newDate),
+            time: newTime,
+            status: 'Pending'
+        });
+
+        await booking.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Next session date added successfully.",
+            data: booking
+        });
+
+    } catch (error) {
+        console.error("Error adding next session date:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Unable to add next session date. Please try again later.",
+            error: error.message
+        });
+    }
+}

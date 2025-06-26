@@ -4,8 +4,7 @@ const BookingSessionSchema = new mongoose.Schema({
 
     bookingNumber: {
         type: String,
-        unique: true,
-        index: true
+
     },
 
     // Treatment details
@@ -248,12 +247,12 @@ BookingSessionSchema.methods.rescheduleSession = function (sessionNumber, newDat
 };
 
 // Method to complete a session
-BookingSessionSchema.methods.completeSession = function (sessionNumber, notes) {
+BookingSessionSchema.methods.completeSession = function (sessionNumber) {
     const session = this.SessionDates.find(s => s.sessionNumber === sessionNumber);
     if (session) {
         session.status = 'Completed';
         session.completedAt = new Date();
-        session.notes = notes;
+
 
         // Update overall status if all sessions completed
         if (this.completedSessionsCount === this.no_of_session_book - 1) {
@@ -263,6 +262,25 @@ BookingSessionSchema.methods.completeSession = function (sessionNumber, notes) {
     }
     throw new Error('Session not found');
 };
+
+
+
+BookingSessionSchema.methods.cancelSession = function (sessionNumber, cancellationReason) {
+    const session = this.SessionDates.find(s => s.sessionNumber === sessionNumber);
+    if (session) {
+        session.status = 'Cancelled';
+        session.cancellationReason = cancellationReason;
+        session.completedAt = new Date();
+
+        // Update overall status if all sessions completed
+        if (this.completedSessionsCount === this.no_of_session_book - 1) {
+            this.session_status = 'Completed';
+        }
+        return this.save();
+    }
+    throw new Error('Session not found');
+};
+
 
 
 

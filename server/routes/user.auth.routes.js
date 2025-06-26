@@ -1,9 +1,9 @@
 const express = require('express');
-const { registerNormalUser, verifyEmailOtp, googleAuthRegisterAndLogin } = require('../controllers/auth/user.controller');
+const { registerNormalUser, verifyEmailOtp, googleAuthRegisterAndLogin, getUserProfile, getBookingHistory } = require('../controllers/auth/user.controller');
 const { createReview } = require('../controllers/service/review.controller');
 const { isAuthenticated } = require('../middleware/protect');
 const { getBookingsByDateAndTimePeriod } = require('../controllers/bookings/BookingService');
-const { createAorderForSession, verifyPayment, handlePaymentFailure, foundBookingViaId} = require('../controllers/bookings/CreateBooking');
+const { createAorderForSession, verifyPayment, handlePaymentFailure, foundBookingViaId } = require('../controllers/bookings/CreateBooking');
 const user_auth_router = express.Router()
 const { CLIENT_ID, REDIRECT_URI } = process.env;
 
@@ -21,6 +21,7 @@ user_auth_router.get('/auth/google', (req, res) => {
 
 
 user_auth_router.post('/review', isAuthenticated, createReview);
+user_auth_router.get('/profile', isAuthenticated, getUserProfile);
 user_auth_router.get('/google/callback', googleAuthRegisterAndLogin);
 
 
@@ -31,6 +32,7 @@ user_auth_router.post('/bookings/verify-payment', verifyPayment);
 user_auth_router.post('/bookings/payemnt-failed', isAuthenticated, handlePaymentFailure);
 user_auth_router.get('/found-booking/:id', isAuthenticated, foundBookingViaId);
 
+user_auth_router.get('/found-bookings', isAuthenticated, getBookingHistory)
 
 
 

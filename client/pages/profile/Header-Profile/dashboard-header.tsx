@@ -1,0 +1,40 @@
+"use client"
+
+import type React from "react"
+
+import { Activity, LogOut } from "lucide-react"
+import { Button } from "@/components/ui/button"
+
+interface DashboardHeaderProps {
+  onLogout: () => void
+}
+
+export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onLogout }) => {
+  return (
+    <header className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 text-white shadow-lg">
+      <div className="container mx-auto px-6 py-4">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center space-x-3">
+            <div className="bg-white/20 rounded-full p-2">
+              <Activity className="h-8 w-8" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">Patient Dashboard</h1>
+              <p className="text-blue-100 text-sm">Manage your health journey</p>
+            </div>
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-white border-white/30 hover:bg-white/10 hover:border-white/50 transition-all duration-200"
+            onClick={onLogout}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Logout
+          </Button>
+        </div>
+      </div>
+    </header>
+  )
+}

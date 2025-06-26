@@ -176,7 +176,7 @@ const Treatments: React.FC<{ slug: string }> = ({ slug }) => {
     );
 
     const ReviewsCarousel = () => (
-        <div className="space-y-4">
+        <div className="">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                 <h4 className="text-base md:text-lg font-bold text-gray-900 flex items-center gap-2">
                     <div className="w-3 h-3 bg-green-500 rounded-full"></div>
@@ -193,7 +193,7 @@ const Treatments: React.FC<{ slug: string }> = ({ slug }) => {
                 </Button>
             </div>
 
-            <Carousel className="w-full mb-8">
+            <Carousel className="w-full mb-6">
                 <CarouselContent className="-ml-2 md:-ml-4">
                     {service?.service_reviews.map((review, index) => (
                         <CarouselItem
@@ -317,7 +317,7 @@ const Treatments: React.FC<{ slug: string }> = ({ slug }) => {
                             <CarouselContent>
                                 {service.service_images.map((image, index) => (
                                     <CarouselItem key={image._id}>
-                                        <Card className="border-0 shadow-xs overflow-hidden">
+                                        <Card className="border-0 py-0 shadow-xs overflow-hidden">
                                             <CardContent className="p-0 aspect-[16/12] relative">
                                                 <Image
                                                     src={
@@ -446,7 +446,7 @@ const Treatments: React.FC<{ slug: string }> = ({ slug }) => {
 
                 <div className="w-full lg:flex items-start gap-6 justify-between space-y-6 lg:space-y-0">
                     {/* Doctor Section */}
-                    <Card className="lg:w-[32%] mb-5 border-0 shadow-xl bg-gradient-to-br from-blue-50 via-white to-indigo-50 overflow-hidden relative group hover:shadow-2xl transition-all duration-500">
+                    <Card className="lg:w-[32%] py-0 mb-5 border-0 shadow-sm bg-gradient-to-br from-blue-50 via-white to-indigo-50 overflow-hidden relative group hover:shadow-2xl transition-all duration-500">
                         <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white relative overflow-hidden">
                             <div className="absolute inset-0 bg-white opacity-10 transform -skew-y-3"></div>
                             <CardTitle className="text-xl md:text-2xl flex items-center gap-3 relative z-10">
@@ -563,7 +563,7 @@ const Treatments: React.FC<{ slug: string }> = ({ slug }) => {
                     </Card>
 
                     {/* Reviews Section */}
-                    <Card className="lg:w-[66%] border-0 shadow-xl bg-gradient-to-br from-green-50 via-white to-teal-50 overflow-hidden relative">
+                    <Card className="lg:w-[66%] py-0 border-0 shadow-sm bg-gradient-to-br from-green-50 via-white to-teal-50 overflow-hidden relative">
                         <CardHeader className="bg-gradient-to-r from-green-500 to-teal-600 text-white relative overflow-hidden">
                             <div className="absolute inset-0 bg-white opacity-10 transform skew-y-3"></div>
                             <CardTitle className="text-lg md:text-2xl flex items-center gap-3 relative z-10">
@@ -576,47 +576,9 @@ const Treatments: React.FC<{ slug: string }> = ({ slug }) => {
 
                         <CardContent className="p-4 md:p-6">
                             <div className="grid grid-cols-1 xl:grid-cols-10 gap-4 md:gap-6">
-                                {/* Doctor Profile Side - Responsive */}
-                                <div className="xl:col-span-3">
-                                    <div className="text-center p-4 md:p-6 bg-gradient-to-br from-green-50 to-teal-50 rounded-2xl border border-green-100 shadow-sm hover:shadow-md transition-shadow">
-                                        <Avatar className="w-14 h-14 md:w-18 md:h-18 lg:w-20 lg:h-20 mx-auto mb-4 border-4 border-green-200 shadow-lg">
-                                            <AvatarImage
-                                                src={
-                                                    service.service_doctor.doctor_images[0] || drImageurl
-                                                }
-                                                alt={service.service_doctor.doctor_name}
-                                                className="object-cover"
-                                            />
-                                            <AvatarFallback className="text-sm md:text-lg lg:text-xl font-bold bg-gradient-to-br from-green-100 to-teal-100 text-green-700">
-                                                {service.service_doctor.doctor_name
-                                                    .split(" ")
-                                                    .map((n) => n[0])
-                                                    .join("")}
-                                            </AvatarFallback>
-                                        </Avatar>
-
-                                        <h4 className="font-bold text-gray-900 mb-2 text-sm md:text-base">
-                                            Dr. {service.service_doctor.doctor_name}
-                                        </h4>
-
-                                        <div className="flex items-center justify-center gap-1 mb-2">
-                                            {renderStars(
-                                                Math.floor(service.service_doctor.doctor_ratings)
-                                            )}
-                                        </div>
-
-                                        <span className="text-lg md:text-2xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
-                                            {service.service_doctor.doctor_ratings}/5
-                                        </span>
-
-                                        <p className="text-xs md:text-sm text-gray-600 mt-2 bg-white bg-opacity-50 rounded-lg px-2 py-1">
-                                            📊 {service.service_reviews.length} reviews
-                                        </p>
-                                    </div>
-                                </div>
-
+                              
                                 {/* Reviews Content - Responsive */}
-                                <div className="xl:col-span-7">
+                                <div className="xl:col-span-9">
                                     {service.service_reviews.length > 0 ? (
                                         <ReviewsCarousel />
                                     ) : (
@@ -629,9 +591,9 @@ const Treatments: React.FC<{ slug: string }> = ({ slug }) => {
                 </div>
 
                 {/* Service Description */}
-                <Card className="mb-12 border-0 shadow-lg">
-                    <CardHeader className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-lg">
-                        <CardTitle className="text-xl md:text-2xl">
+                <Card className="mb-12 py-0 border-0 shadow-lg">
+                    <CardHeader className="bg-gradient-to-r from-purple-400 to-pink-400 py-4 text-white rounded-t-lg">
+                        <CardTitle className="text-xl font-extrabold md:text-2xl">
                             About This Treatment
                         </CardTitle>
                     </CardHeader>
@@ -680,7 +642,7 @@ const Treatments: React.FC<{ slug: string }> = ({ slug }) => {
                 </Card>
 
                 {/* Hurry Up Section */}
-                <Card className="border-0 shadow-2xl bg-gradient-to-br from-blue-50 via-white to-blue-100 overflow-hidden relative group hover:shadow-3xl transition-all duration-500">
+                <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 via-white to-blue-100 overflow-hidden relative group hover:shadow-3xl transition-all duration-500">
                     <CardContent className="p-8 relative z-10">
                         <div className="text-center">
                             {/* Floating discount badge */}
@@ -705,7 +667,7 @@ const Treatments: React.FC<{ slug: string }> = ({ slug }) => {
                             </p>
 
                             {/* Price showcase */}
-                            <div className="bg-white rounded-2xl p-6 mb-8 shadow-lg border border-blue-100">
+                            <div className="bg-white rounded-2xl p-6 mb-8 shadow-sm border border-blue-100">
                                 <div className="flex justify-center items-center gap-6">
                                     <div className="text-center">
                                         <p className="text-sm text-gray-500 mb-1">Original Price</p>

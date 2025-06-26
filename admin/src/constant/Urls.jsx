@@ -10,3 +10,22 @@ export const fetcher = async (url) => {
         throw error;
     }
 };
+
+
+
+export const  statusOptions = ['Pending', 'Confirmed', 'Payment Not Completed', 'Cancelled', 'Completed', 'Rescheduled', 'Partially Completed'];
+export const statusOptionsSession = [
+  'Pending',
+  'Confirmed', 
+  'Cancelled',
+  'Completed',
+  'Rescheduled',
+  'No-Show'
+];
+
+export const prescriptionTypes = [
+  'Pre-Treatment',
+  'Post-Treatment', 
+  'Follow-up',
+  'Emergency'
+];

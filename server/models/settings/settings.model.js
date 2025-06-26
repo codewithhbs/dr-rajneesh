@@ -13,7 +13,6 @@ const settingsSchema = new mongoose.Schema({
     app_id: {
         type: String,
         required: [true, 'App ID is required'],
-        unique: true,
         trim: true,
         uppercase: true
     },

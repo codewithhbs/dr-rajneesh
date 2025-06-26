@@ -35,7 +35,7 @@ const userSchema = new mongoose.Schema({
             },
             message: 'Phone number must be 10 digits'
         },
-        unique: true,
+   
         trim: true,
 
 

@@ -1,6 +1,6 @@
-import Profile from '@/pages/profile/profile'
 import React from 'react'
 import type { Metadata } from "next";
+import PatientDashboard from '@/pages/profile/profile';
 
 export const metadata: Metadata = {
   title: "Profile:Dr. Rajneesh Kant",
@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 const Page = () => {
-  return <Profile/>
+  return <PatientDashboard/>
 }
 
 export default Page

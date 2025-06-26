@@ -5,6 +5,7 @@ const { createDoctor, updateDoctor, DeleteDoctor, getAllDoctor, getSingleDoctor 
 const { createService, getAllServices, getServiceById, updateService, deleteService, getServicesByDoctor, getServicesByClinic, updateServiceStatus, getServiceBySlug } = require('../controllers/service/service.controller');
 const { getAllReviews, getReviewById, updateReview, deleteReview } = require('../controllers/service/review.controller');
 const { createSettings, getOnlyOneSettings } = require('../controllers/settings/settings');
+const { getAdminAllBookings, getAdminSingleBookings, getAdminChangeSessionInformation, addAndUpdateSessionPrescriptions, addNextSessionDate } = require('../controllers/bookings/CreateBooking');
 const router = express.Router()
 
 
@@ -37,15 +38,23 @@ router.put('/update-service-status/:id', updateServiceStatus)
 
 
 
-router.get('/reviews',getAllReviews);
-router.get('/review/:id',getReviewById);
-router.put('/review/:id',updateReview);
-router.delete('/review/:id',deleteReview);
+router.get('/reviews', getAllReviews);
+router.get('/review/:id', getReviewById);
+router.put('/review/:id', updateReview);
+router.delete('/review/:id', deleteReview);
 
 
-router.post('/add-setting',createSettings)
-router.get('/get-setting',getOnlyOneSettings)
+router.post('/add-setting', createSettings)
+router.get('/get-setting', getOnlyOneSettings)
+
+
+// ADMIN WEB ROUTES
+router.get('/admin-bookings', getAdminAllBookings);
+router.get('/admin-bookings/:id', getAdminSingleBookings);
+router.post('/admin-changes-sessions', getAdminChangeSessionInformation);
+router.post('/admin-add-updated-prescriptions', upload.single('image'), addAndUpdateSessionPrescriptions);
+router.post('/admin-add-next-sessions', addNextSessionDate);
 
 
 
-module.exports = router;
+module.exports = router;   

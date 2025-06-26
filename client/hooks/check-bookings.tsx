@@ -31,7 +31,7 @@ export function useCheckBookings({ date, time, service_id, clinic_id }: BookingC
     const checkAvailability = useCallback(async () => {
         const cookieToken = Cookies.get("token");
 
-    
+
         setLoading(true);
         setError(null);
 

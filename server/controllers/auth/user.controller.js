@@ -5,6 +5,7 @@ const generateOtp = require("../../utils/otp");
 const { sendEmail } = require("../../utils/sendEmail");
 const { sendToken } = require("../../utils/sendToken");
 const axios = require('axios')
+const Bookings = require("../../models/booking/bookings.sessions.model");
 
 
 
@@ -607,7 +608,7 @@ exports.verifyEmailOtp = async (req, res, next) => {
 };
 
 // Login User
-const loginUser = async (req, res, next) => {
+exports.loginUser = async (req, res, next) => {
     try {
         const { email, password } = req.body;
 
@@ -683,7 +684,7 @@ const loginUser = async (req, res, next) => {
 };
 
 // Logout User
-const logoutUser = async (req, res, next) => {
+exports.logoutUser = async (req, res, next) => {
     try {
         res.cookie('_usertoken', null, {
             expires: new Date(Date.now()),
@@ -703,7 +704,7 @@ const logoutUser = async (req, res, next) => {
 };
 
 // Request Password Reset
-const requestPasswordReset = async (req, res, next) => {
+exports.requestPasswordReset = async (req, res, next) => {
     try {
         const { email } = req.body;
 
@@ -778,7 +779,7 @@ const requestPasswordReset = async (req, res, next) => {
 };
 
 // Verify Password Reset OTP
-const verifyPasswordResetOtp = async (req, res, next) => {
+exports.verifyPasswordResetOtp = async (req, res, next) => {
     try {
         const { email, otp } = req.body;
 
@@ -875,7 +876,7 @@ const resetPassword = async (req, res, next) => {
 };
 
 // Change Password (for logged-in users)
-const changePassword = async (req, res, next) => {
+exports.changePassword = async (req, res, next) => {
     try {
         const { currentPassword, newPassword, confirmPassword } = req.body;
 
@@ -927,7 +928,7 @@ const changePassword = async (req, res, next) => {
 };
 
 // Get User Profile
-const getUserProfile = async (req, res, next) => {
+exports.getUserProfile = async (req, res, next) => {
     try {
         const user = await userModel.findById(req.user.id).select('-password');
 
@@ -940,7 +941,7 @@ const getUserProfile = async (req, res, next) => {
 
         res.status(200).json({
             success: true,
-            user
+            data: user
         });
 
     } catch (error) {
@@ -949,7 +950,7 @@ const getUserProfile = async (req, res, next) => {
 };
 
 // Update User Profile
-const updateUserProfile = async (req, res, next) => {
+exports.updateUserProfile = async (req, res, next) => {
     try {
         const { name, phone } = req.body;
         const updates = {};
@@ -990,7 +991,7 @@ const updateUserProfile = async (req, res, next) => {
 };
 
 // Update Profile Image
-const updateProfileImage = async (req, res, next) => {
+exports.updateProfileImage = async (req, res, next) => {
     try {
         const { imageUrl, publicId } = req.body;
 
@@ -1022,7 +1023,7 @@ const updateProfileImage = async (req, res, next) => {
 };
 
 // Delete Account
-const deleteAccount = async (req, res, next) => {
+exports.deleteAccount = async (req, res, next) => {
     try {
         const { password, confirmDelete } = req.body;
 
@@ -1078,7 +1079,7 @@ const deleteAccount = async (req, res, next) => {
 };
 
 // Resend Verification Email
-const resendVerificationEmail = async (req, res, next) => {
+exports.resendVerificationEmail = async (req, res, next) => {
     try {
         const { email } = req.body;
 
@@ -1147,6 +1148,155 @@ const resendVerificationEmail = async (req, res, next) => {
 };
 
 
+//Get Booking History
+exports.getBookingHistory = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                message: 'User ID is required'
+            });
+        }
+
+        // Fetch all bookings for the user
+        const bookings = await Bookings.find({ session_booking_user: userId })
+            .populate('session_booking_for_clinic')
+            .populate('session_booking_for_doctor')
+            .populate('payment_id')
+            .populate('treatment_id')
+            .sort({ createdAt: -1 });
+
+        const now = new Date();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset time for accurate comparison
+
+        // Helper function to determine if booking is "current"
+        const isCurrentBooking = (booking) => {
+            const sessionDates = booking.SessionDates || [];
+            
+            // Check if booking is completed or cancelled
+            if (['Completed', 'Cancelled'].includes(booking.session_status)) {
+                return false;
+            }
+
+            // Check for upcoming sessions (today or future)
+            const hasUpcomingSessions = sessionDates.some(session => {
+                const sessionDate = new Date(session.date);
+                sessionDate.setHours(0, 0, 0, 0);
+                return sessionDate >= today && 
+                       ['Pending', 'Confirmed', 'Rescheduled'].includes(session.status);
+            });
+
+            // Check for sessions scheduled today
+            const hasTodaySession = sessionDates.some(session => {
+                const sessionDate = new Date(session.date);
+                sessionDate.setHours(0, 0, 0, 0);
+                return sessionDate.getTime() === today.getTime() && 
+                       ['Pending', 'Confirmed', 'Rescheduled'].includes(session.status);
+            });
+
+            // Check if booking has partial completion (some sessions done, some pending)
+            const hasCompletedSessions = sessionDates.some(session => 
+                session.status === 'Completed'
+            );
+            const hasPendingSessions = sessionDates.some(session => 
+                ['Pending', 'Confirmed', 'Rescheduled'].includes(session.status)
+            );
+            const isPartiallyCompleted = hasCompletedSessions && hasPendingSessions;
+
+            // Return true if any of these conditions are met
+            return hasUpcomingSessions || hasTodaySession || isPartiallyCompleted;
+        };
+
+        // Process all bookings
+        const processedBookings = bookings.map(booking => {
+            const totalSessions = booking.no_of_session_book || 0;
+            const sessionDates = booking.SessionDates || [];
+
+            // Count completed sessions
+            const completedSessions = sessionDates.filter(
+                session => session.status === 'Completed'
+            ).length;
+
+            // Calculate completion percentage
+            const completionPercent = totalSessions > 0
+                ? Math.round((completedSessions / totalSessions) * 100)
+                : 0;
+
+            // Check if any session is scheduled today
+            const hasTodaySession = sessionDates.some(session => {
+                const sessionDate = new Date(session.date);
+                sessionDate.setHours(0, 0, 0, 0);
+                return sessionDate.getTime() === today.getTime() &&
+                       ['Pending', 'Confirmed', 'Rescheduled'].includes(session.status);
+            });
+
+            // Find next upcoming session
+            const nextSession = sessionDates
+                .filter(session => {
+                    const sessionDate = new Date(session.date);
+                    return sessionDate >= now && 
+                           ['Pending', 'Confirmed', 'Rescheduled'].includes(session.status);
+                })
+                .sort((a, b) => new Date(a.date) - new Date(b.date))[0];
+
+            // Count pending/upcoming sessions
+            const pendingSessions = sessionDates.filter(session => 
+                ['Pending', 'Confirmed', 'Rescheduled'].includes(session.status)
+            ).length;
+
+            return {
+                ...booking.toObject(),
+                completionPercent,
+                hasTodaySession,
+                nextSession: nextSession || null,
+                pendingSessions,
+                isCurrentBooking: isCurrentBooking(booking)
+            };
+        });
+
+        // Separate current and history bookings
+        const currentBookings = processedBookings.filter(booking => booking.isCurrentBooking);
+        const historyBookings = processedBookings.filter(booking => !booking.isCurrentBooking);
+
+        // Sort current bookings by priority (today's sessions first, then by next session date)
+        currentBookings.sort((a, b) => {
+            // Priority 1: Today's sessions first
+            if (a.hasTodaySession && !b.hasTodaySession) return -1;
+            if (!a.hasTodaySession && b.hasTodaySession) return 1;
+            
+            // Priority 2: By next session date (earliest first)
+            if (a.nextSession && b.nextSession) {
+                return new Date(a.nextSession.date) - new Date(b.nextSession.date);
+            }
+            if (a.nextSession && !b.nextSession) return -1;
+            if (!a.nextSession && b.nextSession) return 1;
+            
+            // Priority 3: By creation date (newest first)
+            return new Date(b.createdAt) - new Date(a.createdAt);
+        });
+
+        res.status(200).json({
+            success: true,
+            bookings: {
+                current: currentBookings,
+                history: historyBookings,
+                summary: {
+                    totalBookings: bookings.length,
+                    currentBookingsCount: currentBookings.length,
+                    historyBookingsCount: historyBookings.length,
+                    todaySessionsCount: processedBookings.filter(b => b.hasTodaySession).length
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error("Error in getBookingHistory:", error);
+        next(error);
+    }
+};
 
 //welcome mail content
 

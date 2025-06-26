@@ -838,7 +838,7 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
                                             <CardDescription className="mt-2 text-base">
                                                 {dbService?.service_small_desc}
                                             </CardDescription>
-                                            <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-3">
+                                            <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-1">
                                                 <Badge
                                                     variant="default"
                                                     className="bg-blue-500 text-sm sm:text-base"
@@ -874,13 +874,16 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
 
                             {/* Doctor Information */}
                             {dbService?.service_doctor && (
-                                <Card className="border-2 border-purple-100 shadow-lg">
-                                    <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50">
-                                        <CardTitle className="flex items-center gap-2 text-purple-800">
-                                            <UserCheck className="w-6 h-6" />
-                                            Meet Your Expert Doctor
-                                        </CardTitle>
+                                <Card className="border-2 py-0 pb-4 border-purple-100 shadow-lg">
+                                    <CardHeader className="bg-gradient-to-r from-purple-100 to-pink-100 p-6 rounded-t-2xl shadow-sm">
+                                        <div className="flex items-center gap-3">
+                                            <UserCheck className="w-7 h-7 text-purple-700" />
+                                            <h2 className="text-lg sm:text-xl font-semibold text-purple-900">
+                                                Meet Your Expert Doctor
+                                            </h2>
+                                        </div>
                                     </CardHeader>
+
                                     <CardContent className="pt-6">
                                         <div className="flex items-start gap-4">
                                             <Avatar className="w-20 h-20 border-4 border-purple-200">
@@ -937,17 +940,22 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
                             )}
 
                             {/* Patient Details */}
-                            <Card className="border-2 border-green-100 shadow-lg">
-                                <CardHeader className="bg-gradient-to-r from-green-50 to-teal-50">
-                                    <CardTitle className="flex mt-2 mb-1 items-center gap-2 text-green-800">
-                                        <User className="w-6 h-6" />
-                                        Patient Information
-                                    </CardTitle>
-                                    <CardDescription>
-                                        Help us serve you better with your details
-                                    </CardDescription>
+                            <Card className="border-2 py-0 border-green-100 shadow-lg">
+                                <CardHeader className="bg-gradient-to-r from-green-100 to-teal-100 p-6 rounded-t-2xl shadow-sm">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                        <div className="flex items-center gap-3">
+                                            <User className="w-7 h-7 text-green-700" />
+                                            <h2 className="text-lg sm:text-xl font-semibold text-green-900">
+                                                Patient Information
+                                            </h2>
+                                        </div>
+                                        <p className="text-sm sm:text-base text-green-800 sm:text-right">
+                                            Help us serve you better with your details
+                                        </p>
+                                    </div>
                                 </CardHeader>
-                                <CardContent className="pt-6 space-y-4">
+
+                                <CardContent className="pt-6 py-6 space-y-4">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <Label
@@ -1039,16 +1047,21 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
                             </Card>
 
                             {/* Clinic Selection */}
-                            <Card className="border-2 border-orange-100 shadow-lg">
-                                <CardHeader className="bg-gradient-to-r from-orange-50 to-yellow-50">
-                                    <CardTitle className="flex items-center gap-2 text-orange-800">
-                                        <MapPin className="w-6 h-6" />
-                                        Choose Your Preferred Location
-                                    </CardTitle>
-                                    <CardDescription>
-                                        Select the clinic that's most convenient for you
-                                    </CardDescription>
+                            <Card className="border-2 py-0 pb-4 border-orange-100 shadow-lg">
+                                <CardHeader className="bg-gradient-to-r from-orange-100 to-yellow-100 p-6 rounded-t-2xl shadow-sm">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                        <div className="flex items-center gap-3">
+                                            <MapPin className="w-7 h-7 text-orange-600" />
+                                            <h2 className="text-lg sm:text-xl font-semibold text-orange-900">
+                                                Choose Your Preferred Location
+                                            </h2>
+                                        </div>
+                                        <p className="text-sm sm:text-base text-orange-700 sm:text-right">
+                                            {` Select the clinic that's most convenient for you.`}
+                                        </p>
+                                    </div>
                                 </CardHeader>
+
                                 <CardContent className="pt-6">
                                     <RadioGroup
                                         value={selectedClinic?._id}
@@ -1124,16 +1137,21 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
 
                             {/* Date Selection */}
                             {selectedClinic && (
-                                <Card className="border-2 border-indigo-100 shadow-lg">
-                                    <CardHeader className="bg-gradient-to-r from-indigo-50 to-blue-50">
-                                        <CardTitle className="flex items-center gap-2 text-indigo-800">
-                                            <CalendarIcon className="w-6 h-6" />
-                                            Pick Your Perfect Date
-                                        </CardTitle>
-                                        <CardDescription>
-                                            Choose a date that works best for your schedule
-                                        </CardDescription>
+                                <Card className="border-2 py-0 pb-4 border-indigo-100 shadow-lg">
+                                    <CardHeader className="bg-gradient-to-r from-indigo-100 to-blue-100 p-6 rounded-t-2xl shadow-sm">
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                            <div className="flex items-center gap-3">
+                                                <CalendarIcon className="w-7 h-7 text-indigo-700" />
+                                                <h2 className="text-lg sm:text-xl font-semibold text-indigo-900">
+                                                    Pick Your Perfect Date
+                                                </h2>
+                                            </div>
+                                            <p className="text-sm sm:text-base text-indigo-800 sm:text-right">
+                                                Choose a date that works best for your schedule
+                                            </p>
+                                        </div>
                                     </CardHeader>
+
                                     <CardContent className="pt-6">
                                         <Calendar
                                             mode="single"
@@ -1157,18 +1175,23 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
 
                             {/* Time Selection */}
                             {selectedDate && (
-                                <Card className="border-2 border-teal-100 shadow-lg">
-                                    <CardHeader className="bg-gradient-to-r from-teal-50 to-cyan-50">
-                                        <CardTitle className="flex items-center gap-2 text-teal-800">
-                                            <Clock className="w-6 h-6" />
-                                            Select Your Time Slot
-                                        </CardTitle>
-                                        <CardDescription>
-                                            {isCheckingAvailability
-                                                ? "Checking availability..."
-                                                : "Choose your preferred appointment time"}
-                                        </CardDescription>
+                                <Card className="border-2 py-0 pb-4 border-teal-100 shadow-lg">
+                                    <CardHeader className="bg-gradient-to-r from-teal-100 to-cyan-100 p-6 rounded-t-2xl shadow-sm">
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                            <div className="flex items-center gap-3">
+                                                <Clock className="w-7 h-7 text-teal-700" />
+                                                <h2 className="text-lg sm:text-xl font-semibold text-teal-900">
+                                                    Select Your Time Slot
+                                                </h2>
+                                            </div>
+                                            <p className="text-sm sm:text-base text-teal-800 sm:text-right">
+                                                {isCheckingAvailability
+                                                    ? "🔍 Checking availability..."
+                                                    : "🕒 Choose your preferred appointment time"}
+                                            </p>
+                                        </div>
                                     </CardHeader>
+
 
                                     <CardContent className="pt-6">
                                         {selectedTime && (
@@ -1248,17 +1271,21 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
 
                             {/* Payment Method */}
                             {selectedDate && selectedTime && (
-                                <Card className="border-2 border-purple-100 shadow-lg">
-                                    <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50">
-                                        <CardTitle className="flex items-center gap-2 text-purple-800">
-                                            <CreditCard className="w-6 h-6" />
-                                            Secure Payment Options
-                                        </CardTitle>
-                                        <CardDescription>
-                                            Choose your preferred payment method - all transactions
-                                            are 100% secure
-                                        </CardDescription>
+                                <Card className="border-2 py-0 pb-4 border-purple-100 shadow-lg">
+                                    <CardHeader className="bg-gradient-to-r from-purple-100 to-pink-100 p-6 rounded-t-2xl shadow-sm">
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                            <div className="flex items-center gap-3">
+                                                <CreditCard className="w-7 h-7 text-purple-700" />
+                                                <h2 className="text-lg sm:text-xl font-semibold text-purple-900">
+                                                    Secure Payment Options
+                                                </h2>
+                                            </div>
+                                            <p className="text-sm sm:text-base text-purple-800 sm:text-right">
+                                                Choose your preferred payment method — all transactions are 100% secure
+                                            </p>
+                                        </div>
                                     </CardHeader>
+
                                     <CardContent className="pt-6">
                                         <RadioGroup
                                             value={paymentMethod}
@@ -1336,16 +1363,19 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
 
                         {/* Booking Summary Sidebar */}
                         <div className="space-y-6">
-                            <Card className="sticky top-6 border-2 border-blue-200 shadow-xl">
-                                <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-                                    <CardTitle className="flex mt-2 items-center gap-2">
-                                        <Sparkles className="w-6 h-6" />
-                                        Booking Summary
-                                    </CardTitle>
-                                    <CardDescription className="text-blue-100">
-                                        Your wellness investment breakdown
-                                    </CardDescription>
+                            <Card className="sticky py-0 pb-4 top-6 border-2 border-blue-200 shadow-lg">
+                                <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-t-2xl shadow-md">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                        <div className="flex items-center gap-3">
+                                            <Sparkles className="w-7 h-7 text-white" />
+                                            <h2 className="text-lg sm:text-xl font-semibold">Booking Summary</h2>
+                                        </div>
+                                        <p className="text-sm sm:text-base text-blue-100 sm:text-right">
+                                            Your wellness investment breakdown
+                                        </p>
+                                    </div>
                                 </CardHeader>
+
                                 <CardContent className="pt-6 space-y-4">
                                     <div className="space-y-3">
                                         <div className="flex justify-between items-start">
