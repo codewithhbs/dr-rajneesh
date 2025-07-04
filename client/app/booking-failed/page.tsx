@@ -1,20 +1,29 @@
 "use client"
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { AlertTriangle, RefreshCw, Phone, Mail, Clock, ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useSettings } from '@/hooks/use-settings';
 
-type PageProps = {
-  searchParams?: {
-    reason?: string;
-    [key: string]: string | undefined;
-  };
-};
-const Page = ({ searchParams }: PageProps) => {
-    const reason = searchParams?.reason || 'Unknown error occurred';
-    const { settings } = useSettings()
+interface PageProps {
+    searchParams: Promise<{
+        reason?: string;
+        [key: string]: string | undefined;
+    }>;
+}
+
+const Page: React.FC<PageProps> = ({ searchParams }) => {
+    const [reason, setReason] = useState<string>('Unknown error occurred');
+    const { settings } = useSettings();
+
+    useEffect(() => {
+        const getSearchParams = async () => {
+            const params = await searchParams;
+            setReason(params?.reason || 'Unknown error occurred');
+        };
+        getSearchParams();
+    }, [searchParams]);
     const handleRetry = () => {
 
         window.history.back();
@@ -197,4 +206,4 @@ const Page = ({ searchParams }: PageProps) => {
     );
 };
 
-export default Page
+export default Page;
