@@ -114,14 +114,14 @@ useEffect(() => {
   useEffect(() => {
     const stepFromURL = getStepFromURL()
     setCurrentView(stepFromURL)
-  }, [getStepFromURL])
+  }, [])
 
 
 
   // Update URL whenever currentView changes
   useEffect(() => {
     updateURLWithStep(currentView)
-  }, [currentView,updateURLWithStep])
+  }, [currentView])
 
   // Redirect authenticated users
   useEffect(() => {

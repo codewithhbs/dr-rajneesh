@@ -89,14 +89,14 @@ const BookNowConsultations = ({ searchParams }) => {
   // Update URL when step changes
   useEffect(() => {
     updateURLParams({ step: currentStep })
-  }, [currentStep, updateURLParams])
+  }, [currentStep])
 
   // Update URL when booking status changes
   useEffect(() => {
     if (bookingStatus !== "booking") {
       updateURLParams({ status: bookingStatus })
     }
-  }, [bookingStatus, updateURLParams])
+  }, [bookingStatus])
 
   // Update URL when form data changes
   useEffect(() => {
@@ -128,7 +128,7 @@ const BookNowConsultations = ({ searchParams }) => {
         setIsOtpVerified(true)
       }
     }
-  }, [isAuthenticated, user, userLoading, patientName, patientPhone, isOtpVerified])
+  }, [isAuthenticated, user])
 
 
   // Load Razorpay script
@@ -248,7 +248,6 @@ const BookNowConsultations = ({ searchParams }) => {
     razorpayLoaded,
   }
 
-  console.log("clinic", selectedLocation)
 
   if (bookingStatus === "success") {
     return (
