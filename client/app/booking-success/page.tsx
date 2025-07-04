@@ -24,14 +24,9 @@ import Image from 'next/image';
 import { logo } from '@/constant/Images';
 import { useSearchParams } from 'next/navigation';
 
-interface PageProps {
-    searchParams: {
-        bookingId?: string;
-        [key: string]: string | undefined;
-    };
-}
 
-const Page: React.FC<PageProps> = () => {
+
+const Page: React.FC = () => {
     const searchParams = useSearchParams();
     const bookingId = searchParams.get('bookingId');
 
