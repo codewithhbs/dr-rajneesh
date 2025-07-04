@@ -295,7 +295,7 @@ exports.googleAuthRegisterAndLogin = async (req, res) => {
         if (existingUser) {
             const message = `This email is already registered. Please login using email and password`.replace(/\s+/g, '-');
             if (!existingUser.isGoogleAuth) {
-                res.redirect(`http://localhost:3000/login?message=${encodeURIComponent(message)}`);
+                res.redirect(`https://drkm.adsdigitalmedia.com/login?message=${encodeURIComponent(message)}`);
             }
 
 
@@ -308,7 +308,7 @@ exports.googleAuthRegisterAndLogin = async (req, res) => {
                 false
             );
             return res.redirect(
-                `http://localhost:3000/login/login-success?token=${encodeURIComponent(
+                `https://drkm.adsdigitalmedia.com/login/login-success?token=${encodeURIComponent(
                     token
                 )}`
             );
@@ -355,7 +355,7 @@ exports.googleAuthRegisterAndLogin = async (req, res) => {
             false
         );
         return res.redirect(
-            `http://localhost:3000/login/login-success?token=${encodeURIComponent(
+            `https://drkm.adsdigitalmedia.com/login/login-success?token=${encodeURIComponent(
                 token
             )}`
         );

@@ -337,7 +337,7 @@ exports.verifyPayment = async (req, res) => {
 
             await session.abortTransaction();
             return res.redirect(
-                `${process.env.FRONTEND_URL || 'http://localhost:3000'}/booking-failed?reason=missing-parameters&missing=${missingParams.join(',')}&booking_id=${booking_id || 'unknown'}`
+                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com/'}/booking-failed?reason=missing-parameters&missing=${missingParams.join(',')}&booking_id=${booking_id || 'unknown'}`
             );
         }
 
@@ -363,7 +363,7 @@ exports.verifyPayment = async (req, res) => {
 
             await session.abortTransaction();
             return res.redirect(
-                `${process.env.FRONTEND_URL || 'http://localhost:3000'}/booking-failed?reason=signature-verification-failed&booking_id=${booking_id}`
+                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com/'}/booking-failed?reason=signature-verification-failed&booking_id=${booking_id}`
             );
         }
 
@@ -377,7 +377,7 @@ exports.verifyPayment = async (req, res) => {
 
             await session.abortTransaction();
             return res.redirect(
-                `${process.env.FRONTEND_URL || 'http://localhost:3000'}/booking-failed?reason=invalid-signature&booking_id=${booking_id}`
+                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com/'}/booking-failed?reason=invalid-signature&booking_id=${booking_id}`
             );
         }
 
@@ -394,7 +394,7 @@ exports.verifyPayment = async (req, res) => {
 
             await session.abortTransaction();
             return res.redirect(
-                `${process.env.FRONTEND_URL || 'http://localhost:3000'}/booking-failed?reason=booking-not-found&booking_id=${booking_id}`
+                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com/'}/booking-failed?reason=booking-not-found&booking_id=${booking_id}`
             );
         }
 
@@ -407,7 +407,7 @@ exports.verifyPayment = async (req, res) => {
 
             await session.abortTransaction();
             return res.redirect(
-                `${process.env.FRONTEND_URL || 'http://localhost:3000'}/booking-failed?reason=payment-not-found&booking_id=${booking_id}`
+                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com/'}/booking-failed?reason=payment-not-found&booking_id=${booking_id}`
             );
         }
 
@@ -434,7 +434,7 @@ exports.verifyPayment = async (req, res) => {
 
             // Redirect to success page since payment is already completed
             return res.redirect(
-                `${process.env.FRONTEND_URL || 'http://localhost:3000'}/booking-success?sessions=${booking.sessions}&price=${payment.amount}&service=${booking.service_id?.service_name || 'service'}&bookingId=${booking._id}&status=already-processed`
+                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com/'}/booking-success?sessions=${booking.sessions}&price=${payment.amount}&service=${booking.service_id?.service_name || 'service'}&bookingId=${booking._id}&status=already-processed`
             );
         }
 
@@ -450,7 +450,7 @@ exports.verifyPayment = async (req, res) => {
 
             await session.abortTransaction();
             return res.redirect(
-                `${process.env.FRONTEND_URL || 'http://localhost:3000'}/booking-failed?reason=order-id-mismatch&booking_id=${booking_id}`
+                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com/'}/booking-failed?reason=order-id-mismatch&booking_id=${booking_id}`
             );
         }
 
@@ -507,7 +507,7 @@ exports.verifyPayment = async (req, res) => {
         }
 
         // Prepare success redirect URL
-        const successUrl = new URL(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/booking-success?bookingId=${booking?._id}`);
+        const successUrl = new URL(`${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com/'}/booking-success?bookingId=${booking?._id}`);
 
         return res.redirect(successUrl.toString());
 
@@ -547,20 +547,20 @@ exports.verifyPayment = async (req, res) => {
         if (error.name === 'ValidationError') {
             console.error("📋 Validation error during payment verification", errorDetails);
             return res.redirect(
-                `${process.env.FRONTEND_URL || 'http://localhost:3000'}/booking-failed?reason=validation-error&booking_id=${bookingId || 'unknown'}`
+                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com/'}/booking-failed?reason=validation-error&booking_id=${bookingId || 'unknown'}`
             );
         }
 
         if (error.name === 'MongoError' || error.name === 'MongooseError') {
             console.error("🗄️ Database error during payment verification", errorDetails);
             return res.redirect(
-                `${process.env.FRONTEND_URL || 'http://localhost:3000'}/booking-failed?reason=database-error&booking_id=${bookingId || 'unknown'}`
+                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com/'}/booking-failed?reason=database-error&booking_id=${bookingId || 'unknown'}`
             );
         }
 
         // Generic error response
         return res.redirect(
-            `${process.env.FRONTEND_URL || 'http://localhost:3000'}/booking-failed?reason=verification-failed&booking_id=${bookingId || 'unknown'}&error=${encodeURIComponent(error.message)}`
+            `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com/'}/booking-failed?reason=verification-failed&booking_id=${bookingId || 'unknown'}&error=${encodeURIComponent(error.message)}`
         );
 
     } finally {
