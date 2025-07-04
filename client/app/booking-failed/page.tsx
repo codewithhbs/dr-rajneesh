@@ -6,14 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useSettings } from '@/hooks/use-settings';
 
-interface PageProps {
-    searchParams: {
-        reason?: string;
-        [key: string]: string | undefined;
-    };
-}
-
-const Page: React.FC<PageProps> = ({ searchParams }) => {
+type PageProps = {
+  searchParams?: {
+    reason?: string;
+    [key: string]: string | undefined;
+  };
+};
+const Page = ({ searchParams }: PageProps) => {
     const reason = searchParams?.reason || 'Unknown error occurred';
     const { settings } = useSettings()
     const handleRetry = () => {
