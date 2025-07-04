@@ -22,7 +22,7 @@ exports.getBookingsByDateAndTimePeriod = async (req, res) => {
 
         // Validate date format
         const bookingDate = new Date(date)
-       
+
         if (isNaN(bookingDate.getTime())) {
             return res.status(400).json({
                 success: false,
@@ -176,7 +176,7 @@ exports.getBookingsByDateAndTimePeriod = async (req, res) => {
         });
         console.log("Total Booked Slots: Have Bia req", totalBookedSlots);
 
-       
+
         // Calculate availability
         const currentBookings = bookings.length > 0 ? bookings[0].bookingCount : 0;
         const maxBookingsPerSlot = bookingConfig.booking_limit_per_slot;
@@ -226,13 +226,11 @@ exports.getBookingsByDateAndTimePeriod = async (req, res) => {
 };
 exports.getBookingsByDateAndTimePeriodOnB = async ({ date, time, service_id, clinic_id, req }) => {
     try {
-        const redis = getRedisClient(req);
-
         // Validation
-        if (!date || !time || !service_id) {
+        if (!date || !time) {
             return {
                 success: false,
-                message: "Date, time, and service_id are required",
+                message: "Date, and time are required",
                 data: null
             }
         }
@@ -256,8 +254,6 @@ exports.getBookingsByDateAndTimePeriodOnB = async ({ date, time, service_id, cli
                 data: null
             }
         }
-
-
 
         // Get settings for booking configuration
         const settings = await Settings.findOne().lean();
@@ -294,7 +290,6 @@ exports.getBookingsByDateAndTimePeriodOnB = async ({ date, time, service_id, cli
             }
         }
 
-
         const startOfDay = new Date(bookingDate);
         startOfDay.setHours(0, 0, 0, 0);
 
@@ -303,10 +298,12 @@ exports.getBookingsByDateAndTimePeriodOnB = async ({ date, time, service_id, cli
 
         // Build query filter
         const filter = {
-            treatment_id: new mongoose.Types.ObjectId(service_id),
+            treatment_id: service_id ? new mongoose.Types.ObjectId(service_id) : null,
             ...(clinic_id && {
                 session_booking_for_clinic: new mongoose.Types.ObjectId(clinic_id),
             }),
+          session_status: { $ne: "Payment Not Completed" },
+
             SessionDates: {
                 $elemMatch: {
                     date: { $gte: startOfDay, $lt: endOfDay },
@@ -319,7 +316,7 @@ exports.getBookingsByDateAndTimePeriodOnB = async ({ date, time, service_id, cli
         // Fetch bookings
         const bookings = await Bookings.find(filter);
 
-        // Extract matching sessions
+        // Extract matching sessions and calculate booked slots
         let totalBookedSlots = 0;
         const bookingDetails = [];
 
@@ -346,12 +343,12 @@ exports.getBookingsByDateAndTimePeriodOnB = async ({ date, time, service_id, cli
                 }
             });
         });
+
         console.log("Total Booked Slots:", totalBookedSlots);
 
-        // Calculate availability
-        const currentBookings = bookings.length > 0 ? bookings[0].bookingCount : 0;
-        const maxBookingsPerSlot = bookingConfig.booking_limit_per_slot;
-        const availableSlots = Math.max(0, maxBookingsPerSlot - currentBookings);
+        // Calculate availability using the correct variables
+        const maxBookingsPerSlot = bookingConfig.booking_limit_per_slot || 0;
+        const availableSlots = Math.max(0, maxBookingsPerSlot - totalBookedSlots);
 
         // Check if slot is available
         const isAvailable = availableSlots > 0;
@@ -360,20 +357,19 @@ exports.getBookingsByDateAndTimePeriodOnB = async ({ date, time, service_id, cli
         const availabilityData = {
             available: isAvailable,
             availableSlots: availableSlots,
-            bookedSlots: currentBookings,
+            bookedSlots: totalBookedSlots, // Use totalBookedSlots instead of currentBookings
             maxBookingsPerSlot: maxBookingsPerSlot,
             date: date,
             time: time,
-            service_id: service_id,
+            service_id: service_id ? service_id : null,
             clinic_id: clinic_id,
-            bookingDetails: bookings.length > 0 ? bookings[0].bookings : [],
+            bookingDetails: bookingDetails, // Use the actual bookingDetails array
             configuration: {
                 slotsPerHour: bookingConfig.slots_per_hour,
                 bookingLimitPerSlot: bookingConfig.booking_limit_per_slot
             },
             restrictions: hasSpecialRestriction
         };
-
 
         return {
             success: true,
@@ -385,15 +381,14 @@ exports.getBookingsByDateAndTimePeriodOnB = async ({ date, time, service_id, cli
 
     } catch (error) {
         console.error('Error in getBookingsByDateAndTimePeriod:', error);
-        return res.status(500).json({
+        return {
             success: false,
             message: "Internal server error while checking booking availability",
             error: process.env.NODE_ENV === 'development' ? error.message : undefined,
             data: null
-        });
+        }
     }
 };
-
 
 
 

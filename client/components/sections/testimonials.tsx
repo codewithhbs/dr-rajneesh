@@ -18,6 +18,7 @@ import {
   MessageCircle,
   TrendingUp,
 } from "lucide-react"
+import Link from "next/link"
 
 const Testimonials = () => {
   const [currentTestimonial, setCurrentTestimonial] = useState(0)
@@ -139,10 +140,10 @@ const Testimonials = () => {
             <span className="text-2xl sm:text-3xl md:text-4xl text-gray-600 font-light">Say About Us</span>
           </h1>
 
-         
+
         </div>
 
-    
+
 
         {/* All Testimonials Slider */}
         <div className="mb-12">
@@ -247,11 +248,14 @@ const Testimonials = () => {
                 </p>
 
                 <div className="flex gap-4 justify-center flex-wrap">
-                  <Button className="bg-white text-blue-600 border-0 hover:bg-gray-100 hover:shadow-xl transform hover:scale-105 transition-all duration-300 px-8 py-4 text-lg font-semibold">
-                    <Users className="w-5 h-5 mr-2" />
-                    Book Your Consultation
-                  </Button>
-                
+                  <Link href="/book-now-consultation">
+
+                    <Button className="bg-white text-blue-600 border-0 hover:bg-gray-100 hover:shadow-xl transform hover:scale-105 transition-all duration-300 px-8 py-4 text-lg font-semibold">
+                      <Users className="w-5 h-5 mr-2" />
+                      Book Your Consultation
+                    </Button>
+                  </Link>
+
                 </div>
 
                 <div className="flex justify-center gap-8 mt-8 text-white/80">

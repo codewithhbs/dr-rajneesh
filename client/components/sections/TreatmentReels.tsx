@@ -20,6 +20,7 @@ import {
   VolumeX,
   MoreVertical,
 } from "lucide-react"
+import Link from "next/link"
 
 const FeaturedTreatmentReels = () => {
   const [hoveredReel, setHoveredReel] = useState(null)
@@ -211,7 +212,7 @@ const FeaturedTreatmentReels = () => {
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 animate-pulse">
               Healing
             </span>
-           
+
           </h1>
 
           <p className="text-lg text-gray-600 max-w-4xl mx-auto leading-relaxed mb-8">
@@ -220,7 +221,7 @@ const FeaturedTreatmentReels = () => {
           </p>
 
           {/* Live Stats */}
-          
+
         </div>
 
         {/* Featured Reel */}
@@ -248,7 +249,7 @@ const FeaturedTreatmentReels = () => {
                 {/* Content */}
                 <div className="lg:col-span-3 p-8 lg:p-12 flex flex-col justify-center">
                   <div className="mb-6">
-                    <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-gray-800 border-0 mb-4 shadow-lg">
+                    <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 mb-4 shadow-lg">
                       🔥 Trending Now
                     </Badge>
                     <h2 className="text-2xl lg:text-4xl xl:text-5xl font-bold text-gray-800 mb-4">
@@ -467,17 +468,23 @@ const FeaturedTreatmentReels = () => {
               success story featured in our reels.
             </p>
             <div className="flex gap-4 justify-center flex-wrap">
-              <Button className="bg-gradient-to-r from-purple-500 to-pink-500 text-gray-800 border-0 hover:shadow-2xl transform hover:scale-105 transition-all duration-300 px-8 py-4 text-lg">
-                <Users className="w-5 h-5 mr-2" />
-                Book Your Session
-              </Button>
-              <Button
-                variant="outline"
-                className="border-gray-300 text-gray-700 hover:bg-gray-50 px-8 py-4 text-lg backdrop-blur-sm"
-              >
-                <Play className="w-5 h-5 mr-2" />
-                Watch More Reels
-              </Button>
+              <Link href="/book-now-consultation">
+
+                <Button className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 hover:shadow-2xl transform hover:scale-105 transition-all duration-300 px-8 py-4 text-lg">
+                  <Users className="w-5 h-5 mr-2" />
+                  Book Your Session
+                </Button>
+              </Link>
+              <Link href={'https://www.youtube.com/@drrajneeshkant'}>
+
+                <Button
+                  variant="outline"
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50 px-8 py-4 text-lg backdrop-blur-sm"
+                >
+                  <Play className="w-5 h-5 mr-2" />
+                  Watch More Reels
+                </Button>
+              </Link>
             </div>
           </Card>
         </div>

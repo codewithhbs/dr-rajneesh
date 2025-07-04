@@ -320,7 +320,7 @@ const Blogs = () => {
                             <input
                                 type="email"
                                 placeholder="Enter your email"
-                                className="flex-1 px-4 py-3 rounded-lg border-0 text-white placeholder-white bg-transparent focus:ring-2 focus:ring-white/50 focus:outline-none"
+                                className="flex-1 px-4 py-3 rounded-lg border-1 text-white placeholder-white bg-transparent focus:ring-2 focus:ring-white/50 focus:outline-none"
                             />
 
                             <button className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors whitespace-nowrap">

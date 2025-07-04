@@ -27,93 +27,97 @@ export const TreatmentProgressCard: React.FC<TreatmentProgressCardProps> = ({ bo
   }
 
   return (
-<Card className="border border-purple-100 py-0 shadow-sm hover:shadow-md transition-all duration-300 rounded-xl overflow-hidden">
-  {/* Header */}
-  <CardHeader className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-4">
-    <CardTitle className="flex items-center gap-3 text-lg md:text-xl">
-      <Activity className="h-5 w-5 md:h-6 md:w-6" />
-      Treatment Progress
-    </CardTitle>
-  </CardHeader>
+    <Card className="border border-purple-100 py-0 shadow-sm hover:shadow-md transition-all duration-300 rounded-xl overflow-hidden">
+      {/* Header */}
+      <CardHeader className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-4">
+        <CardTitle className="flex items-center gap-3 text-lg md:text-xl">
+          <Activity className="h-5 w-5 md:h-6 md:w-6" />
+          Treatment Progress
+        </CardTitle>
+      </CardHeader>
 
-  {/* Body */}
-  <CardContent className="p-4 md:p-6">
-    {bookings.length > 0 ? (
-      <div className="space-y-5">
-        {bookings.slice(0, 2).map((booking) => (
-          <div
-            key={booking._id}
-            className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-100 rounded-lg p-4 md:p-5"
-          >
-            {/* Title + Session Count */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
-              <div>
-                <h3 className="text-base md:text-lg font-semibold text-slate-800">
-                  {booking.treatment_id.service_name}
-                </h3>
-                <p className="text-sm text-slate-600">
-                  Dr. {booking.session_booking_for_doctor.doctor_name}
-                </p>
+      {/* Body */}
+      <CardContent className="p-4 md:p-6">
+        {bookings.length > 0 ? (
+          <div className="space-y-5">
+            {bookings.slice(0, 2).map((booking) => (
+              <div
+                key={booking._id}
+                className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-100 rounded-lg p-4 md:p-5"
+              >
+                {/* Title + Session Count */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
+                  <div>
+                    {booking.treatment_id && (
+
+                      <h3 className="text-base md:text-lg font-semibold text-slate-800">
+                        {booking.treatment_id.service_name}
+                      </h3>
+                    )}
+
+                    <p className="text-sm text-slate-600">
+                      Dr. {booking.session_booking_for_doctor.doctor_name}
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-200">
+                    {booking.completedSessionsCount || 0}/{booking.no_of_session_book} Sessions
+                  </Badge>
+                </div>
+
+                {/* Progress bar */}
+                <div className="flex items-center gap-3 mb-2">
+                  <Progress
+                    value={booking.completionPercent || 0}
+                    className="h-3 w-full bg-purple-100"
+                  />
+                  <span className="text-sm font-bold text-purple-700 min-w-[50px] text-right">
+                    {booking.completionPercent || 0}%
+                  </span>
+                </div>
+
+                {/* Remaining & Status */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-sm gap-2">
+                  <div className="flex items-center gap-2 text-slate-600">
+                    <TrendingUp className="h-4 w-4 text-green-600" />
+                    {booking.pendingSessions} sessions remaining
+                  </div>
+                  <Badge variant="outline" className={getStatusColor(booking.session_status)}>
+                    {booking.session_status}
+                  </Badge>
+                </div>
               </div>
-              <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-200">
-                {booking.completedSessionsCount || 0}/{booking.no_of_session_book} Sessions
-              </Badge>
-            </div>
+            ))}
 
-            {/* Progress bar */}
-            <div className="flex items-center gap-3 mb-2">
-              <Progress
-                value={booking.completionPercent || 0}
-                className="h-3 w-full bg-purple-100"
-              />
-              <span className="text-sm font-bold text-purple-700 min-w-[50px] text-right">
-                {booking.completionPercent || 0}%
-              </span>
-            </div>
-
-            {/* Remaining & Status */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-sm gap-2">
-              <div className="flex items-center gap-2 text-slate-600">
-                <TrendingUp className="h-4 w-4 text-green-600" />
-                {booking.pendingSessions} sessions remaining
-              </div>
-              <Badge variant="outline" className={getStatusColor(booking.session_status)}>
-                {booking.session_status}
-              </Badge>
-            </div>
+            {bookings.length > 2 && (
+              <p className="text-center text-sm text-slate-600">
+                +{bookings.length - 2} more active treatments
+              </p>
+            )}
           </div>
-        ))}
-
-        {bookings.length > 2 && (
-          <p className="text-center text-sm text-slate-600">
-            +{bookings.length - 2} more active treatments
-          </p>
+        ) : (
+          <div className="text-center py-6 md:py-8">
+            <div className="bg-purple-100 rounded-full p-5 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+              <Activity className="h-8 w-8 text-purple-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-800 mb-1">No Active Treatments</h3>
+            <p className="text-slate-600 text-sm">Start your health journey with us today.</p>
+          </div>
         )}
-      </div>
-    ) : (
-      <div className="text-center py-6 md:py-8">
-        <div className="bg-purple-100 rounded-full p-5 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-          <Activity className="h-8 w-8 text-purple-400" />
-        </div>
-        <h3 className="text-lg font-semibold text-slate-800 mb-1">No Active Treatments</h3>
-        <p className="text-slate-600 text-sm">Start your health journey with us today.</p>
-      </div>
-    )}
-  </CardContent>
+      </CardContent>
 
-  {/* Footer Button */}
-  {bookings.length > 0 && (
-    <CardFooter className="bg-purple-50 border-t border-purple-100 p-4">
-      <Button
-        variant="outline"
-        className="w-full border-purple-300 text-purple-700 hover:bg-purple-100"
-        onClick={onViewAll}
-      >
-        View All Treatment Plans
-      </Button>
-    </CardFooter>
-  )}
-</Card>
+      {/* Footer Button */}
+      {bookings.length > 0 && (
+        <CardFooter className="bg-purple-50 border-t border-purple-100 p-4">
+          <Button
+            variant="outline"
+            className="w-full border-purple-300 text-purple-700 hover:bg-purple-100"
+            onClick={onViewAll}
+          >
+            View All Treatment Plans
+          </Button>
+        </CardFooter>
+      )}
+    </Card>
 
   )
 }

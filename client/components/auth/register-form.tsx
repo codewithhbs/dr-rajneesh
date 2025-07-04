@@ -115,11 +115,11 @@ export function RegisterForm({
           <Checkbox id="terms" required />
           <Label htmlFor="terms" className="text-sm text-gray-600">
             I agree to the{" "}
-            <a href="#" className="text-blue-600 hover:text-blue-700">
+            <a href="/pages/policy/terms-conditions" className="text-blue-600 hover:text-blue-700">
               Terms of Service
             </a>{" "}
             and{" "}
-            <a href="#" className="text-blue-600 hover:text-blue-700">
+            <a href="/pages/policy/privacy-policy" className="text-blue-600 hover:text-blue-700">
               Privacy Policy
             </a>
           </Label>

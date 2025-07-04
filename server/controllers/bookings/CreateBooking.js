@@ -30,7 +30,6 @@ exports.createAorderForSession = async (req, res) => {
             patient_details,
             service_id,
             clinic_id,
-
             sessions,
             date,
             time,
@@ -49,7 +48,6 @@ exports.createAorderForSession = async (req, res) => {
         const requiredFields = {
             payment_method,
             patient_details,
-            service_id,
             clinic_id,
             sessions,
             date,
@@ -68,22 +66,25 @@ exports.createAorderForSession = async (req, res) => {
             });
         }
 
+        let findService
         // Find service
-        const findService = await Service.findById(service_id).session(session);
-        if (!findService) {
-            await session.abortTransaction();
-            return res.status(404).json({
-                success: false,
-                message: "Service not found",
-            });
-        }
+        if (service_id) {
+            findService = await Service.findById(service_id).session(session);
+            if (!findService) {
+                await session.abortTransaction();
+                return res.status(404).json({
+                    success: false,
+                    message: "Service not found",
+                });
+            }
 
-        if (findService?.service_status !== "Booking Open") {
-            await session.abortTransaction();
-            return res.status(400).json({
-                success: false,
-                message: "Booking is not open for this treatment",
-            });
+            if (findService?.service_status !== "Booking Open") {
+                await session.abortTransaction();
+                return res.status(400).json({
+                    success: false,
+                    message: "Booking is not open for this treatment",
+                });
+            }
         }
 
         // Get settings
@@ -100,10 +101,12 @@ exports.createAorderForSession = async (req, res) => {
         const checkBookings = await getBookingsByDateAndTimePeriodOnB({
             date,
             time,
-            service_id,
             clinic_id,
             req,
         });
+
+        console.log("checkBookings", checkBookings)
+
 
         if (!checkBookings.data?.available) {
             await session.abortTransaction();
@@ -116,17 +119,18 @@ exports.createAorderForSession = async (req, res) => {
         // Calculate pricing
         const calculatePricing = () => {
             const basePrice =
-                findService.service_per_session_discount_price ||
-                findService.service_per_session_price;
+                (findService?.service_per_session_discount_price ??
+                    findService?.service_per_session_price) ?? 10000;
+
             const subtotal = basePrice * sessions;
 
-            const taxAmount =
-                (subtotal * (findSettings.payment_config?.tax_percentage || 0)) / 100;
+            const taxPercentage = findSettings?.payment_config?.tax_percentage || 0;
+            const creditCardFee = findSettings?.payment_config?.credit_card_fee || 0;
+
+            const taxAmount = (subtotal * taxPercentage) / 100;
 
             const creditCardAmount =
-                payment_method === "card"
-                    ? (subtotal * (findSettings.payment_config?.credit_card_fee || 0)) / 100
-                    : 0;
+                payment_method === "card" ? (subtotal * creditCardFee) / 100 : 0;
 
             const total = subtotal + taxAmount + creditCardAmount;
 
@@ -138,6 +142,7 @@ exports.createAorderForSession = async (req, res) => {
                 amountPerSession: basePrice,
             };
         };
+
 
         const {
             subtotal,
@@ -170,18 +175,16 @@ exports.createAorderForSession = async (req, res) => {
         }
 
         // Double-check availability before creating booking
-        const finalAvailabilityCheck = await getBookingsByDateAndTimePeriodOnB({
+        const finalAvailabilityCheck =  await getBookingsByDateAndTimePeriodOnB({
             date,
             time,
-            service_id,
             clinic_id,
             req,
         });
 
 
-
         if (!finalAvailabilityCheck?.data?.available) {
-            await session.abortTransaction();
+            await session.abortTransaction(); 
             return res.status(400).json({
                 success: false,
                 message: `Booking for ${finalAvailabilityCheck?.data?.date} at ${finalAvailabilityCheck?.data?.time} is no longer available.`,

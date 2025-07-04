@@ -17,6 +17,7 @@ interface UserSummaryCardProps {
 
 export const UserSummaryCard: React.FC<UserSummaryCardProps> = ({ user }) => {
   // Calculate health score based on user activity (mock calculation)
+  console.log("user", user)
   const healthScore = Math.floor(Math.random() * 40) + 60 // 60-100%
 
   return (
@@ -25,21 +26,21 @@ export const UserSummaryCard: React.FC<UserSummaryCardProps> = ({ user }) => {
         <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8">
           {/* Avatar Section */}
           <div className="relative group">
-            <Avatar className="h-28 w-28 border-4 border-blue-200 shadow-lg group-hover:scale-105 transition-transform duration-300">
-              {user.profileImage?.url ? (
-                <Image
-                  src={user.profileImage.url || "/placeholder.svg"}
-                  alt={user.name}
-                  width={112}
-                  height={112}
-                  className="h-full w-full object-cover rounded-full"
-                />
-              ) : (
-                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white font-bold text-2xl">
-                  {user.name.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              )}
-            </Avatar>
+            {user && (
+              <Avatar className="...">
+                {user.profileImage?.url ? (
+                  <img
+                    src={user?.profileImage?.url}
+                    alt={user.name}
+                    onError={(e) => { e.currentTarget.src = "/placeholder.svg" }}
+                    className="h-full w-full object-cover rounded-full"
+                  />
+                ) : (
+                  <AvatarFallback>...</AvatarFallback>
+                )}
+              </Avatar>
+            )}
+
             <div className="absolute -bottom-2 -right-2 bg-green-500 rounded-full p-2 border-4 border-white shadow-lg">
               <User className="h-4 w-4 text-white" />
             </div>

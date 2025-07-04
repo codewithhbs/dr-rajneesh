@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { logo } from '@/constant/Images';
+import { useSearchParams } from 'next/navigation';
 
 interface PageProps {
     searchParams: {
@@ -30,8 +31,10 @@ interface PageProps {
     };
 }
 
-const Page: React.FC<PageProps> = ({ searchParams }) => {
-    const bookingId = searchParams.bookingId;
+const Page: React.FC<PageProps> = () => {
+ const searchParams = useSearchParams();
+  const bookingId = searchParams.get('bookingId');
+
     const { data, loading, error } = useGetBookingById({ id: bookingId });
 
     const handlePrint = () => {
@@ -248,7 +251,7 @@ const Page: React.FC<PageProps> = ({ searchParams }) => {
                         </p>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-6 page-break-avoid">
+                    <div className={`grid grid-cols-1 mt-4  gap-6 ${booking.treatment_id ? 'md:grid-cols-2' : 'md:grid-cols-1'}`}>
                         {/* Patient Information */}
                         <Card className="print-card">
                             <CardHeader className="pb-2">
@@ -274,6 +277,8 @@ const Page: React.FC<PageProps> = ({ searchParams }) => {
                         </Card>
 
                         {/* Treatment Information */}
+                        {booking.treatment_id && (
+
                         <Card className="print-card">
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-sm print-card-title">Treatment Details</CardTitle>
@@ -295,6 +300,7 @@ const Page: React.FC<PageProps> = ({ searchParams }) => {
                                 </div>
                             </CardContent>
                         </Card>
+                        )}
                     </div>
 
                     {/* Clinic Information - Removed from print to save space */}

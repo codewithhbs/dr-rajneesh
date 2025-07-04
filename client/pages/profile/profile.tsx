@@ -12,19 +12,23 @@ import { UserSummaryCard } from "./appointments/user-summary-card"
 import { NextAppointmentCard } from "./appointments/next-appointment-card"
 import { TreatmentProgressCard } from "./appointments/treatment-progress-card"
 import { QuickStatsCard } from "./appointments/quick-stats-card"
+import { useAuth } from "@/context/authContext/auth"
 
 
 const PatientDashboard = () => {
   const [activeTab, setActiveTab] = useState("dashboard")
 
   const { data: bookingData, loading: bookingLoading, error: bookingError, fetchBooking: refetchBookings } = useGetBooking()
-
+  const { setToken } = useAuth()
   const { data: user, loading: userLoading, error: userError, getProfile: refetch } = useGetProfile()
 
   const handleLogout = () => {
-    // Implement logout logic
+
     console.log("Logging out...")
-    // Clear tokens, redirect to login, etc.
+    sessionStorage.clear()
+    localStorage.clear()
+    setToken('')
+    
     window.location.href = "/login"
   }
 

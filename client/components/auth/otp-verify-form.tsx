@@ -36,9 +36,9 @@ export function OTPVerifyForm({
         </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Enter OTP</h1>
         <p className="text-gray-600">
-          We've sent a 6-digit code to
+         {` We've sent a 6-digit code to`}
           <br />
-          <span className="font-medium">+91 {formData.phone}</span>
+          <span className="font-medium">{formData.email}</span>
         </p>
       </div>
 
@@ -57,9 +57,7 @@ export function OTPVerifyForm({
             maxLength={6}
           />
           {errors.otp && <p className="mt-1 text-sm text-red-600 text-center">{errors.otp}</p>}
-          <p className="mt-2 text-sm text-gray-500 text-center">
-            Demo OTP: <span className="font-bold text-blue-600">123456</span>
-          </p>
+      
         </div>
 
         <Button type="submit" disabled={isLoading} className="w-full bg-blue-600 hover:bg-blue-700">
@@ -80,10 +78,6 @@ export function OTPVerifyForm({
         </Button>
       </div>
 
-      <Button onClick={onBackToPhone} variant="ghost" className="mt-6 w-full text-gray-600 hover:text-gray-800">
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Change phone number
-      </Button>
     </div>
   )
 }

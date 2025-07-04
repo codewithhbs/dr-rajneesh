@@ -4,7 +4,6 @@ const BookingSessionSchema = new mongoose.Schema({
 
     bookingNumber: {
         type: String,
-
     },
 
     // Treatment details

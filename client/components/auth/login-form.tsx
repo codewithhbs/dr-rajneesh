@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
+import Link from "next/link"
 
 interface LoginFormProps {
   formData: any
@@ -89,9 +90,12 @@ export function LoginForm({
               Remember me
             </Label>
           </div>
+          <Link href='/forget-password'>
+          
           <Button type="button" variant="link" className="text-sm text-blue-600 hover:text-blue-700 p-0">
             Forgot password?
           </Button>
+          </Link>
         </div>
 
         <Button type="submit" disabled={isLoading} className="w-full bg-blue-600 hover:bg-blue-700">
@@ -110,7 +114,7 @@ export function LoginForm({
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-3">
+        <div className="mt-6 grid grid-cols-1 gap-3">
           <Button onClick={onGoogleAuth} disabled={isLoading} variant="outline" className="w-full">
             <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
               <path
@@ -132,15 +136,12 @@ export function LoginForm({
             </svg>
             Google
           </Button>
-          <Button onClick={onSwitchToPhone} variant="outline" className="w-full">
-            <Phone className="h-5 w-5 mr-2" />
-            Phone
-          </Button>
+
         </div>
       </div>
 
       <p className="mt-8 text-center text-sm text-gray-600">
-        Don't have an account?{" "}
+        {"  Don't have an account?"}
         <Button
           onClick={onSwitchToRegister}
           variant="link"

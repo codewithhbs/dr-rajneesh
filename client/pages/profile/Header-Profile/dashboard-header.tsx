@@ -27,7 +27,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onLogout }) =>
           <Button
             variant="outline"
             size="sm"
-            className="text-white border-white/30 hover:bg-white/10 hover:border-white/50 transition-all duration-200"
+            className="text-black border-white/30 hover:bg-white/10 hover:border-white/50 transition-all duration-200"
             onClick={onLogout}
           >
             <LogOut className="mr-2 h-4 w-4" />

@@ -12,22 +12,15 @@ const createOtpExpiry = (minutes = 10) => {
 
 exports.registerNormalUser = async (req, res, next) => {
     try {
-        const { name, email, phone, password, confirmPassword, termsAccepted } =
-            req.body;
-
-        if (!name || !email || !phone || !password || !confirmPassword) {
+        const { name, email, phone, password, termsAccepted } = req.body;
+        console.log(req.body)
+        if (!name || !email || !phone || !password) {
             return res.status(400).json({
                 success: false,
                 message: "All fields are required",
             });
         }
 
-        if (password !== confirmPassword) {
-            return res.status(400).json({
-                success: false,
-                message: "Passwords do not match",
-            });
-        }
 
         if (!termsAccepted) {
             return res.status(400).json({
@@ -196,12 +189,17 @@ exports.registerNormal = async (req, res, next) => {
                 existingUser.status === "active" &&
                 existingUser.phoneNumber?.isVerified
             ) {
-                return res.status(409).json({
-                    success: false,
-                    message:
-                        existingUser.phone === phone
-                            ? "Phone already registered"
-                            : "Phone number already registered",
+                existingUser.phoneNumber = {
+                    isVerified: true,
+                    otp,
+                    otpExpiry,
+                };
+                await existingUser.save()
+                return res.status(200).json({
+                    success: true,
+                    otp: otp,
+                    message: "A new OTP has been sent to your phone number.",
+                    userId: existingUser._id,
                 });
             }
 
@@ -225,8 +223,8 @@ exports.registerNormal = async (req, res, next) => {
 
             return res.status(200).json({
                 success: true,
-                message:
-                    "Your account is not verified. A new OTP has been sent to your phone number.",
+                otp: otp,
+                message: "Your account is not verified. A new OTP has been sent to your phone number.",
                 userId: existingUser._id,
             });
         }
@@ -253,8 +251,7 @@ exports.registerNormal = async (req, res, next) => {
 
         res.status(201).json({
             success: true,
-            message:
-                "Registration successful! Please check your Phone for verification OTP.",
+            message: "Registration successful! Please check your Phone for verification OTP.",
             userId: newUser._id,
         });
     } catch (error) {
@@ -296,13 +293,11 @@ exports.googleAuthRegisterAndLogin = async (req, res) => {
         const existingUser = await userModel.findOne({ email: userInfo.email });
 
         if (existingUser) {
+            const message = `This email is already registered. Please login using email and password`.replace(/\s+/g, '-');
             if (!existingUser.isGoogleAuth) {
-                return res.status(403).json({
-                    success: false,
-                    message:
-                        "This email is already registered. Please login using email and password.",
-                });
+                res.redirect(`http://localhost:3000/login?message=${encodeURIComponent(message)}`);
             }
+
 
             console.log("Old user via Google login:", existingUser);
             const { token } = await sendToken(
@@ -382,6 +377,7 @@ exports.verifyEmailOtp = async (req, res, next) => {
                 message: "OTP and either Email or Phone Number are required",
             });
         }
+        console.log("Body", req.body)
 
         let user;
 
@@ -753,6 +749,8 @@ exports.verifyEmailOtp = async (req, res, next) => {
     }
 };
 
+
+
 // Login User
 exports.loginUser = async (req, res, next) => {
     try {
@@ -807,9 +805,49 @@ exports.loginUser = async (req, res, next) => {
 
         // Check if email is verified
         if (!user.emailVerification.isVerified && !user.isGoogleAuth) {
-            return res.status(403).json({
-                success: false,
-                message: "Please verify your email before logging in",
+
+            const otp = generateOtp();
+            const otpExpiry = createOtpExpiry(30);
+            // Send new verification email
+            const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333;">Welcome back to Our Platform!</h2>
+            <p>Hello ${user?.name},</p>
+            <p>Please verify your email using the OTP below:</p>
+            <div style="background: #f4f4f4; padding: 20px; text-align: center; margin: 20px 0;">
+                <h3 style="color: #007bff; font-size: 32px; margin: 0;">${otp}</h3>
+            </div>
+            <p>This OTP will expire in 30 minutes.</p>
+            <p>If you didn’t request this, please ignore this email.</p>
+            <hr>
+            <p style="color: #666; font-size: 12px;">This is an automated email, please do not reply.</p>
+        </div>
+      `;
+
+            emailQueue
+                .add({
+                    type: "register",
+                    to: email,
+                    subject: "Verify Your Email Address",
+                    html: emailHtml,
+                })
+                .then((job) => {
+                    console.log("✅ Job added to queue with ID:", job.id);
+                })
+                .catch((error) => {
+                    console.error("❌ Error adding job to queue:", error);
+                });
+
+            user.emailVerification = {
+                isVerified: false,
+                otp,
+                otpExpiry,
+            },
+                user.status = "un-verified"
+            return res.status(200).json({
+                success: true,
+                case: 'verify-otp',
+                message: "Please verify your email before logging in Email sent on Registerd emil",
             });
         }
 
@@ -869,7 +907,7 @@ exports.requestPasswordReset = async (req, res, next) => {
             return res.status(200).json({
                 success: true,
                 message:
-                    "If an account with this email exists, you will receive a password reset link.",
+                    "If an account with this email exists, you will receive a password reset otp.",
             });
         }
 
@@ -885,13 +923,13 @@ exports.requestPasswordReset = async (req, res, next) => {
             });
         }
 
-        const resetToken = generateSecureToken();
+
         const resetOtp = generateOtp();
 
         // Update user with reset token
         await userModel.findByIdAndUpdate(user._id, {
-            "passwordReset.token": resetOtp,
-            "passwordReset.tokenExpiry": createOtpExpiry(15), // 15 minutes
+            "passwordReset.otp": resetOtp,
+            "passwordReset.otpExpiry": createOtpExpiry(5),
             "passwordReset.lastResetAt": new Date(),
         });
 
@@ -904,7 +942,7 @@ exports.requestPasswordReset = async (req, res, next) => {
                 <div style="background: #f4f4f4; padding: 20px; text-align: center; margin: 20px 0;">
                     <h3 style="color: #dc3545; font-size: 32px; margin: 0;">${resetOtp}</h3>
                 </div>
-                <p>This OTP will expire in 15 minutes.</p>
+                <p>This OTP will expire in 5 minutes.</p>
                 <p>If you didn't request this password reset, please ignore this email.</p>
                 <hr>
                 <p style="color: #666; font-size: 12px;">This is an automated email, please do not reply.</p>
@@ -926,48 +964,49 @@ exports.requestPasswordReset = async (req, res, next) => {
     }
 };
 
-// Verify Password Reset OTP
 exports.verifyPasswordResetOtp = async (req, res, next) => {
     try {
-        const { email, otp } = req.body;
+        const { email, otp, newPassword } = req.body
 
-        if (!email || !otp) {
+        if (!email || !otp || !newPassword) {
             return res.status(400).json({
                 success: false,
-                message: "Email and OTP are required",
-            });
+                message: "Email, OTP, and new password are required",
+            })
         }
 
         const user = await userModel.findOne({
             email: email.toLowerCase().trim(),
-            "passwordReset.token": otp,
-            "passwordReset.tokenExpiry": { $gt: new Date() },
-        });
+            "passwordReset.otp": otp,
+            "passwordReset.otpExpiry": { $gt: new Date() },
+        })
 
         if (!user) {
             return res.status(400).json({
                 success: false,
                 message: "Invalid or expired OTP",
-            });
+            })
         }
 
-        // Generate temporary reset token for password change
-        const tempToken = generateSecureToken();
 
-        await userModel.findByIdAndUpdate(user._id, {
-            "passwordReset.token": tempToken,
-            "passwordReset.tokenExpiry": createOtpExpiry(5), // 5 minutes to change password
-        });
+        user.password = newPassword
 
-        res.status(200).json({
+        // Clear the OTP fields
+        user.passwordReset = {
+            otp: null,
+            otpExpiry: null,
+        }
+        await user.save()
+        return res.status(200).json({
             success: true,
-            message: "OTP verified successfully",
-            resetToken: tempToken,
-        });
+            message: "Password reset successful. Please login now."
+
+        })
     } catch (error) {
-        next(error);
+        next(error)
     }
-};
+}
+
 
 // Reset Password
 const resetPassword = async (req, res, next) => {
@@ -1256,8 +1295,8 @@ exports.resendVerificationEmail = async (req, res, next) => {
 
         // Update user with new OTP
         await userModel.findByIdAndUpdate(user._id, {
-            "emailVerification.token": otp,
-            "emailVerification.tokenExpiry": createOtpExpiry(30),
+            "emailVerification.otp": otp,
+            "emailVerification.otpExpiry": createOtpExpiry(30),
         });
 
         // Send verification email

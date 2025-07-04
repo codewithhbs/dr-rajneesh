@@ -12,7 +12,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Menu, X, Phone, Mail, Facebook, Twitter, Instagram, Youtube, LogOut, HelpCircle, LayoutDashboard, User } from "lucide-react"
+import { Menu, X, Phone, Mail, Facebook, Instagram, Youtube, LogOut, HelpCircle, LayoutDashboard, User, PhoneCall } from "lucide-react"
 
 import Image from "next/image"
 import { logo } from "@/constant/Images"
@@ -79,16 +79,16 @@ export function Header() {
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <Link href="#" className="hover:text-blue-200 transition-colors">
+                            <Link href="https://www.facebook.com/backtonaturespineclinicbydrrajneeshkant/" className="hover:text-blue-200 transition-colors">
                                 <Facebook className="h-4 w-4" />
                             </Link>
-                            <Link href="#" className="hover:text-blue-200 transition-colors">
-                                <Twitter className="h-4 w-4" />
+                            <Link href="https://api.whatsapp.com/send?phone=91-9031554875" className="hover:text-blue-200 transition-colors">
+                                <PhoneCall className="h-4 w-4" />
                             </Link>
-                            <Link href="#" className="hover:text-blue-200 transition-colors">
+                            <Link href="https://www.instagram.com/backtonaturespineclinic/" className="hover:text-blue-200 transition-colors">
                                 <Instagram className="h-4 w-4" />
                             </Link>
-                            <Link href="#" className="hover:text-blue-200 transition-colors">
+                            <Link href="https://www.youtube.com/@drrajneeshkant" className="hover:text-blue-200 transition-colors">
                                 <Youtube className="h-4 w-4" />
                             </Link>
                         </div>
@@ -185,7 +185,7 @@ export function Header() {
                                                 </Link>
                                             </DropdownMenuItem>
 
-                                           
+
                                             <DropdownMenuSeparator />
 
                                             <DropdownMenuItem
@@ -207,7 +207,7 @@ export function Header() {
                                     <Button
                                         className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base"
                                     >
-                                     Book Now Consultation
+                                        Book Now Consultation
                                     </Button>
                                 </Link>
                             </div>
