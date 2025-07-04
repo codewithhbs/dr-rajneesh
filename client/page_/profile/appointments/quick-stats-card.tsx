@@ -9,16 +9,17 @@ interface QuickStatsCardProps {
   currentBookings: Booking[]
 }
 
-export const QuickStatsCard: React.FC<QuickStatsCardProps> = ({ summary, currentBookings }) => {
-  const totalCompletedSessions = currentBookings.reduce(
+const QuickStatsCard: React.FC<QuickStatsCardProps> = ({ summary, currentBookings }) => {
+  const totalCompletedSessions = (currentBookings ?? []).reduce(
     (sum, booking) => sum + (booking.completedSessionsCount || 0),
     0,
-  )
+  );
+
 
   const stats = [
     {
       label: "Total Bookings",
-      value: summary.totalBookings,
+      value: summary?.totalBookings || 0,
       icon: Calendar,
       color: "text-blue-600",
       bgColor: "bg-blue-500",
@@ -26,7 +27,7 @@ export const QuickStatsCard: React.FC<QuickStatsCardProps> = ({ summary, current
     },
     {
       label: "Active Treatments",
-      value: summary.currentBookingsCount,
+      value: summary?.currentBookingsCount || 0,
       icon: Activity,
       color: "text-emerald-600",
       bgColor: "bg-emerald-500",
@@ -34,7 +35,7 @@ export const QuickStatsCard: React.FC<QuickStatsCardProps> = ({ summary, current
     },
     {
       label: "Sessions Completed",
-      value: totalCompletedSessions,
+      value: totalCompletedSessions || 0,
       icon: CheckCircle,
       color: "text-purple-600",
       bgColor: "bg-purple-500",
@@ -42,7 +43,7 @@ export const QuickStatsCard: React.FC<QuickStatsCardProps> = ({ summary, current
     },
     {
       label: "Today's Sessions",
-      value: summary.todaySessionsCount,
+      value: summary?.todaySessionsCount || 0,
       icon: Clock,
       color: "text-orange-600",
       bgColor: "bg-orange-500",
@@ -88,3 +89,5 @@ export const QuickStatsCard: React.FC<QuickStatsCardProps> = ({ summary, current
     </Card>
   )
 }
+
+export default QuickStatsCard;

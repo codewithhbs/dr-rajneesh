@@ -7,12 +7,12 @@ import { ErrorBoundary, ErrorFallback } from "@/components/ui/error-boundary"
 import { LoadingCard } from "@/components/ui/loading-spinner"
 import { useGetProfile } from "@/hooks/use-getprofile"
 import { useGetBooking } from "@/hooks/booking-info"
-import { DashboardHeader } from "./Header-Profile/dashboard-header"
-import { UserSummaryCard } from "./appointments/user-summary-card"
-import { NextAppointmentCard } from "./appointments/next-appointment-card"
-import { TreatmentProgressCard } from "./appointments/treatment-progress-card"
-import { QuickStatsCard } from "./appointments/quick-stats-card"
+import DashboardHeader from "./Header-Profile/dashboard-header"
+import NextAppointmentCard from "./appointments/next-appointment-card"
+import TreatmentProgressCard from "./appointments/treatment-progress-card"
+import QuickStatsCard from "./appointments/quick-stats-card"
 import { useAuth } from "@/context/authContext/auth"
+import UserSummaryCard from "./appointments/user-summary-card"
 
 
 const PatientDashboard = () => {
@@ -28,7 +28,7 @@ const PatientDashboard = () => {
     sessionStorage.clear()
     localStorage.clear()
     setToken('')
-    
+
     window.location.href = "/login"
   }
 
@@ -167,9 +167,10 @@ const PatientDashboard = () => {
             {/* Dashboard Tab */}
             <TabsContent value="dashboard" className="space-y-8">
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                <NextAppointmentCard bookings={bookingData.current} />
-                <TreatmentProgressCard bookings={bookingData.current} onViewAll={handleViewAllTreatments} />
+                <NextAppointmentCard bookings={bookingData.current ?? []} />
+                <TreatmentProgressCard bookings={bookingData.current ?? []} onViewAll={handleViewAllTreatments} />
               </div>
+
 
               <QuickStatsCard summary={bookingData.summary} currentBookings={bookingData.current} />
             </TabsContent>

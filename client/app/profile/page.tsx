@@ -1,6 +1,6 @@
 import React from 'react'
 import type { Metadata } from "next";
-import PatientDashboard from '@/pages/profile/profile';
+import PatientDashboard from '@/page_/profile/profile';
 
 export const metadata: Metadata = {
   title: "Profile:Dr. Rajneesh Kant",

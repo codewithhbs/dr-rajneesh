@@ -12,12 +12,27 @@ import type { User as UserType } from "@/types/bookings"
 import Image from "next/image"
 
 interface UserSummaryCardProps {
-  user: UserType
+  user?: UserType // Made optional
 }
 
-export const UserSummaryCard: React.FC<UserSummaryCardProps> = ({ user }) => {
-  // Calculate health score based on user activity (mock calculation)
-  console.log("user", user)
+const UserSummaryCard: React.FC<UserSummaryCardProps> = ({ user }) => {
+  // Early return if user is not provided
+  if (!user) {
+    return (
+      <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-200 shadow-lg">
+        <CardContent className="p-8">
+          <div className="text-center">
+            <div className="bg-blue-100 rounded-full p-5 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+              <User className="h-8 w-8 text-blue-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-800 mb-1">Loading User Profile</h3>
+            <p className="text-slate-600 text-sm">Please wait while we load your information.</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   const healthScore = Math.floor(Math.random() * 40) + 60 // 60-100%
 
   return (
@@ -26,20 +41,20 @@ export const UserSummaryCard: React.FC<UserSummaryCardProps> = ({ user }) => {
         <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8">
           {/* Avatar Section */}
           <div className="relative group">
-            {user && (
-              <Avatar className="...">
-                {user.profileImage?.url ? (
-                  <img
-                    src={user?.profileImage?.url}
-                    alt={user.name}
-                    onError={(e) => { e.currentTarget.src = "/placeholder.svg" }}
-                    className="h-full w-full object-cover rounded-full"
-                  />
-                ) : (
-                  <AvatarFallback>...</AvatarFallback>
-                )}
-              </Avatar>
-            )}
+            <Avatar className="h-24 w-24 lg:h-32 lg:w-32 border-4 border-white shadow-lg">
+              {user.profileImage?.url ? (
+                <img
+                  src={user.profileImage.url}
+                  alt={user.name || 'User'}
+                  onError={(e) => { e.currentTarget.src = "/placeholder.svg" }}
+                  className="h-full w-full object-cover rounded-full"
+                />
+              ) : (
+                <AvatarFallback className="bg-blue-100 text-blue-600 text-xl font-bold">
+                  {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                </AvatarFallback>
+              )}
+            </Avatar>
 
             <div className="absolute -bottom-2 -right-2 bg-green-500 rounded-full p-2 border-4 border-white shadow-lg">
               <User className="h-4 w-4 text-white" />
@@ -49,14 +64,14 @@ export const UserSummaryCard: React.FC<UserSummaryCardProps> = ({ user }) => {
           {/* User Info Section */}
           <div className="flex-1 text-center lg:text-left space-y-4">
             <div>
-              <h2 className="text-3xl font-bold text-gray-800 mb-2">{user.name}</h2>
-              <p className="text-gray-600 text-lg">{user.email}</p>
+              <h2 className="text-3xl font-bold text-gray-800 mb-2">{user.name || 'Unknown User'}</h2>
+              <p className="text-gray-600 text-lg">{user.email || 'No email provided'}</p>
               {user.phone && <p className="text-gray-600">{user.phone}</p>}
             </div>
 
             <div className="flex flex-wrap justify-center lg:justify-start gap-3">
               <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 px-4 py-2">
-                Member since {format(new Date(user.createdAt), "MMM yyyy")}
+                Member since {user.createdAt ? format(new Date(user.createdAt), "MMM yyyy") : 'Unknown'}
               </Badge>
               <Badge className="bg-green-100 text-green-800 hover:bg-green-200 px-4 py-2">Active Patient</Badge>
               <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200 px-4 py-2">Verified Account</Badge>
@@ -94,3 +109,5 @@ export const UserSummaryCard: React.FC<UserSummaryCardProps> = ({ user }) => {
     </Card>
   )
 }
+
+export default UserSummaryCard;

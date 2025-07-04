@@ -10,11 +10,14 @@ import { Progress } from "@/components/ui/progress"
 import type { Booking } from "@/types/bookings"
 
 interface TreatmentProgressCardProps {
-  bookings: Booking[]
+  bookings?: Booking[] // Made optional with default
   onViewAll: () => void
 }
 
-export const TreatmentProgressCard: React.FC<TreatmentProgressCardProps> = ({ bookings, onViewAll }) => {
+const TreatmentProgressCard: React.FC<TreatmentProgressCardProps> = ({ 
+  bookings = [], // Default to empty array
+  onViewAll 
+}) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Confirmed":
@@ -24,6 +27,11 @@ export const TreatmentProgressCard: React.FC<TreatmentProgressCardProps> = ({ bo
       default:
         return "bg-gray-100 text-gray-800 border-gray-200"
     }
+  }
+
+  // Safe check for bookings array
+  if (!bookings || bookings.length === 0) {
+    return <div>No Bookings </div>
   }
 
   return (
@@ -38,7 +46,7 @@ export const TreatmentProgressCard: React.FC<TreatmentProgressCardProps> = ({ bo
 
       {/* Body */}
       <CardContent className="p-4 md:p-6">
-        {bookings.length > 0 ? (
+        {Array.isArray(bookings) && bookings.length > 0 ? (
           <div className="space-y-5">
             {bookings.slice(0, 2).map((booking) => (
               <div
@@ -49,14 +57,12 @@ export const TreatmentProgressCard: React.FC<TreatmentProgressCardProps> = ({ bo
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
                   <div>
                     {booking.treatment_id && (
-
                       <h3 className="text-base md:text-lg font-semibold text-slate-800">
                         {booking.treatment_id.service_name}
                       </h3>
                     )}
-
                     <p className="text-sm text-slate-600">
-                      Dr. {booking.session_booking_for_doctor.doctor_name}
+                      Dr. {booking.session_booking_for_doctor?.doctor_name || 'Unknown'}
                     </p>
                   </div>
                   <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-200">
@@ -79,7 +85,7 @@ export const TreatmentProgressCard: React.FC<TreatmentProgressCardProps> = ({ bo
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-sm gap-2">
                   <div className="flex items-center gap-2 text-slate-600">
                     <TrendingUp className="h-4 w-4 text-green-600" />
-                    {booking.pendingSessions} sessions remaining
+                    {booking.pendingSessions || 0} sessions remaining
                   </div>
                   <Badge variant="outline" className={getStatusColor(booking.session_status)}>
                     {booking.session_status}
@@ -105,8 +111,9 @@ export const TreatmentProgressCard: React.FC<TreatmentProgressCardProps> = ({ bo
         )}
       </CardContent>
 
+
       {/* Footer Button */}
-      {bookings.length > 0 && (
+      {Array.isArray(bookings) && bookings.length > 0 ? (
         <CardFooter className="bg-purple-50 border-t border-purple-100 p-4">
           <Button
             variant="outline"
@@ -116,8 +123,11 @@ export const TreatmentProgressCard: React.FC<TreatmentProgressCardProps> = ({ bo
             View All Treatment Plans
           </Button>
         </CardFooter>
-      )}
+      ) : null}
+
     </Card>
 
   )
 }
+
+export default TreatmentProgressCard

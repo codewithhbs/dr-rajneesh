@@ -44,9 +44,9 @@ interface ScheduleStepProps {
   setIsOtpSent: (sent: boolean) => void
   isOtpVerified: boolean
   setIsOtpVerified: (verified: boolean) => void
-  availableDates: any[]
-  setAvailableDates: (dates: any[]) => void
-  selectedClinic: any
+  availableDates: []
+  setAvailableDates: (dates: []) => void
+  selectedClinic: unknown
   selectedLocation: string
   isLoadingSlots: boolean
   setIsLoadingSlots: (loading: boolean) => void
@@ -55,7 +55,7 @@ interface ScheduleStepProps {
   isVerifyingOtp: boolean
   setIsVerifyingOtp: (verifying: boolean) => void
   isAuthenticated: boolean
-  user: any
+  user: unknown
   setToken: (token: string) => void
 }
 

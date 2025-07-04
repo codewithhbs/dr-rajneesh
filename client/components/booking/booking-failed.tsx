@@ -18,6 +18,8 @@ interface BookingFailedProps {
   setBookingStatus: (status: "booking" | "success" | "failed") => void
 }
 
+
+
 const BookingFailed = ({
   patientName,
   patientPhone,
@@ -29,6 +31,8 @@ const BookingFailed = ({
   resetBooking,
   setBookingStatus,
 }: BookingFailedProps) => {
+
+  const Clinics = selectedClinic as { clinic_name: string } | null;
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-pink-50 py-6 px-4">
       <div className="max-w-4xl mx-auto">
@@ -90,10 +94,12 @@ const BookingFailed = ({
                       <span className="text-slate-600 text-sm font-medium">Phone:</span>
                       <span className="font-semibold text-slate-900 text-sm">+91-{patientPhone}</span>
                     </div>
-                    <div className="flex justify-between items-center p-2 bg-white rounded-lg shadow-sm">
-                      <span className="text-slate-600 text-sm font-medium">Location:</span>
-                      <span className="font-semibold text-slate-900 text-sm">{selectedClinic?.clinic_name}</span>
-                    </div>
+                    {Clinics?.clinic_name && (
+                      <div className="flex justify-between items-center p-2 bg-white rounded-lg shadow-sm">
+                        <span className="text-slate-600 text-sm font-medium">Location:</span>
+                        <span className="font-semibold text-slate-900 text-sm">{Clinics?.clinic_name}</span>
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center p-2 bg-white rounded-lg shadow-sm">

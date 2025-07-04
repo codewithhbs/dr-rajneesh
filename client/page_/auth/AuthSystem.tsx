@@ -3,7 +3,6 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { useAuth } from "@/context/authContext/auth"
 import { MessageAlert } from "@/components/auth/message-alert"
 import { BrandingSection } from "@/components/auth/branding-section"
 import { LoginForm } from "@/components/auth/login-form"
@@ -12,6 +11,7 @@ import { PhoneVerifyForm } from "@/components/auth/phone-verify-form"
 import { OTPVerifyForm } from "@/components/auth/otp-verify-form"
 import axios, { AxiosError } from "axios"
 import { API_ENDPOINT } from "@/constant/url"
+import { useAuth } from "@/context/authContext/auth"
 
 interface ApiError {
   message: string

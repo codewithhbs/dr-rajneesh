@@ -1,6 +1,7 @@
 "use client"
-import { useGetBookingById } from '@/hooks/booking-info';
-import React from 'react';
+import React, { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -20,23 +21,133 @@ import {
     Loader2,
     Star
 } from 'lucide-react';
-import Image from 'next/image';
+import { useGetBookingById } from '@/hooks/booking-info';
 import { logo } from '@/constant/Images';
-import { useSearchParams } from 'next/navigation';
 
+// Type definitions
+interface PatientDetails {
+    name: string;
+    email: string;
+    phone: string;
+}
 
+interface TreatmentDetails {
+    service_name: string;
+    service_small_desc: string;
+    _id?: string;
+    duration?: number;
+    price?: number;
+}
 
-const Page: React.FC = () => {
+interface ClinicContactDetails {
+    clinic_address: string;
+    phone_numbers: string[];
+    email: string;
+}
+
+interface ClinicTimings {
+    open_time: string;
+    close_time: string;
+    off_day: string;
+}
+
+interface ClinicDetails {
+    clinic_name: string;
+    clinic_ratings: number;
+    clinic_contact_details: ClinicContactDetails;
+    clinic_timings: ClinicTimings;
+    _id?: string;
+}
+
+interface PaymentDetails {
+    subtotal: string;
+    tax: string;
+    creditCardFee: string;
+}
+
+interface PaymentInfo {
+    razorpay_order_id: string;
+    paidAt: string;
+    payment_details: PaymentDetails;
+    _id?: string;
+    razorpay_payment_id?: string;
+    payment_method?: string;
+    status?: 'completed' | 'pending' | 'failed';
+}
+
+interface SessionDate {
+    _id: string;
+    date: string;
+    time: string;
+    sessionNumber: number;
+    status: 'Pending' | 'Completed' | 'Cancelled' | 'Scheduled';
+}
+
+interface Booking {
+    _id?: string;
+    bookingNumber: string;
+    no_of_session_book: number;
+    totalAmount: number;
+    priority: 'Normal' | 'High' | 'Urgent';
+    patient_details: PatientDetails;
+    treatment_id?: TreatmentDetails;
+    session_booking_for_clinic: ClinicDetails;
+    payment_id: PaymentInfo;
+    SessionDates: SessionDate[];
+    createdAt?: string;
+    updatedAt?: string;
+    status?: 'confirmed' | 'pending' | 'cancelled' | 'completed';
+    notes?: string;
+    assigned_doctor?: string;
+}
+
+interface UseBookingByIdReturn {
+    data: Booking | null;
+    loading: boolean;
+    error: string | null;
+    refetch?: () => void;
+}
+
+// Type guard to check if booking has required fields
+const isValidBooking = (booking: Booking | null): booking is Booking => {
+    return !!(
+        booking &&
+        booking.bookingNumber &&
+        booking.patient_details &&
+        booking.session_booking_for_clinic &&
+        booking.payment_id &&
+        booking.SessionDates &&
+        Array.isArray(booking.SessionDates)
+    );
+};
+
+// Loading component for booking details
+function BookingSuccessLoading() {
+    return (
+        <div className="flex items-center justify-center min-h-screen">
+            <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Loading booking details...</p>
+            </div>
+        </div>
+    );
+}
+
+// Main content component that uses useSearchParams
+const BookingSuccessContent: React.FC = () => {
     const searchParams = useSearchParams();
-    const bookingId = searchParams?.get('bookingId');
+    const bookingId: string | null = searchParams?.get('bookingId') ?? null;
 
-    const { data, loading, error } = useGetBookingById({ id: bookingId });
+    // Type the hook return value
+    const { data, loading, error }: UseBookingByIdReturn = useGetBookingById({
+        id: bookingId || ''
+    });
 
-    const handlePrint = () => {
+    const handlePrint = (): void => {
         window.print();
     };
 
-    const formatDate = (dateString: string) => {
+    const formatDate = (dateString: string): string => {
         return new Date(dateString).toLocaleDateString('en-US', {
             weekday: 'long',
             year: 'numeric',
@@ -45,20 +156,34 @@ const Page: React.FC = () => {
         });
     };
 
-    const formatTime = (time: string) => {
+    const formatTime = (time: string): string => {
         const [hours, minutes] = time.split(':');
-        const hour24 = parseInt(hours);
-        const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
-        const ampm = hour24 >= 12 ? 'PM' : 'AM';
+        const hour24: number = parseInt(hours);
+        const hour12: number = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+        const ampm: string = hour24 >= 12 ? 'PM' : 'AM';
         return `${hour12}:${minutes} ${ampm}`;
     };
 
-    const formatCurrency = (amount: number) => {
+    const formatCurrency = (amount: number): string => {
         return new Intl.NumberFormat('en-IN', {
             style: 'currency',
             currency: 'INR'
         }).format(amount);
     };
+
+    // Early return for invalid booking ID
+    if (!bookingId) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-6">
+                <Alert className="max-w-md">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                        No booking ID found in the URL. Please check your booking link.
+                    </AlertDescription>
+                </Alert>
+            </div>
+        );
+    }
 
     // Loading state
     if (loading) {
@@ -86,22 +211,8 @@ const Page: React.FC = () => {
         );
     }
 
-    // No booking ID
-    if (!bookingId) {
-        return (
-            <div className="min-h-screen flex items-center justify-center p-6">
-                <Alert className="max-w-md">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                        No booking ID found in the URL. Please check your booking link.
-                    </AlertDescription>
-                </Alert>
-            </div>
-        );
-    }
-
     // No data found
-    if (!data) {
+    if (!data || !isValidBooking(data)) {
         return (
             <div className="min-h-screen flex items-center justify-center p-6">
                 <Alert className="max-w-md">
@@ -114,10 +225,23 @@ const Page: React.FC = () => {
         );
     }
 
-    const booking = data;
-    const hasMultipleSessions = booking?.no_of_session_book > 1;
-    const hasOnlyOneSessionDate = booking?.SessionDates.length === 1;
-    const showNextSessionNote = hasMultipleSessions && hasOnlyOneSessionDate;
+    // Type-safe booking data
+    const booking: Booking = data;
+
+    // Calculate session display logic
+    const hasMultipleSessions: boolean = booking.no_of_session_book > 1;
+    const hasOnlyOneSessionDate: boolean = booking.SessionDates.length === 1;
+    const showNextSessionNote: boolean = hasMultipleSessions && hasOnlyOneSessionDate;
+
+    // Get badge variant based on priority
+    const getPriorityBadgeVariant = (priority: string): "default" | "secondary" | "destructive" => {
+        return priority === 'Normal' ? 'secondary' : 'destructive';
+    };
+
+    // Get session status badge variant
+    const getSessionStatusBadgeVariant = (status: string): "default" | "secondary" => {
+        return status === 'Pending' ? 'secondary' : 'default';
+    };
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -149,12 +273,12 @@ const Page: React.FC = () => {
                     /* Compact print layout */
                     .print-header { font-size: 14px !important; margin-bottom: 15px !important; }
                     .print-title { font-size: 16px !important; margin-bottom: 10px !important; }
-.print-card {
-  margin-bottom: 12px !important;
-  padding: 8px !important;
-  border: none !important;
-  box-shadow: none !important;
-}
+                    .print-card {
+                        margin-bottom: 12px !important;
+                        padding: 8px !important;
+                        border: none !important;
+                        box-shadow: none !important;
+                    }
                     .print-card-title { font-size: 13px !important; margin-bottom: -10px !important; }
                     .print-spacing { margin-bottom: -8px !important; }
                     .print-text-sm { font-size: 10px !important; }
@@ -198,8 +322,8 @@ const Page: React.FC = () => {
                     <div className="print-only mb-6 print-header">
                         <div className="flex items-center justify-center mb-4">
                             <div className="text-center">
-                                {/* Clinic Logo Placeholder */}
-                                <div className="w-12 h-12  rounded-full flex items-center justify-center mx-auto mb-2">
+                                {/* Clinic Logo */}
+                                <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
                                     <Image
                                         src={logo}
                                         width={120}
@@ -221,7 +345,7 @@ const Page: React.FC = () => {
                     {/* Receipt Header */}
                     <div className="text-center mb-8 no-print">
                         <h2 className="text-2xl font-bold text-gray-900 mb-2">Treatment Booking Receipt</h2>
-                        <p className="text-gray-600">Booking ID: <span className="font-mono font-semibold">{booking?.bookingNumber}</span></p>
+                        <p className="text-gray-600">Booking ID: <span className="font-mono font-semibold">{booking.bookingNumber}</span></p>
                         <p className="text-sm text-gray-500">
                             Booked on {new Date(booking.payment_id.paidAt).toLocaleDateString('en-US', {
                                 year: 'numeric',
@@ -236,7 +360,7 @@ const Page: React.FC = () => {
                     {/* Print Receipt Header */}
                     <div className="print-only text-center mb-4 print-title">
                         <h2 className="text-base font-bold text-gray-900 mb-1">APPOINTMENT RECEIPT</h2>
-                        <p className="text-xs text-gray-600">Booking ID: <span className="font-mono font-semibold">{booking?.bookingNumber}</span></p>
+                        <p className="text-xs text-gray-600">Booking ID: <span className="font-mono font-semibold">{booking.bookingNumber}</span></p>
                         <p className="text-xs text-gray-500">
                             Date: {new Date(booking.payment_id.paidAt).toLocaleDateString('en-US', {
                                 year: 'numeric',
@@ -246,7 +370,7 @@ const Page: React.FC = () => {
                         </p>
                     </div>
 
-                    <div className={`grid grid-cols-1 mt-4  gap-6 ${booking.treatment_id ? 'md:grid-cols-2' : 'md:grid-cols-1'}`}>
+                    <div className={`grid grid-cols-1 mt-4 gap-6 ${booking.treatment_id ? 'md:grid-cols-2' : 'md:grid-cols-1'}`}>
                         {/* Patient Information */}
                         <Card className="print-card">
                             <CardHeader className="pb-2">
@@ -273,7 +397,6 @@ const Page: React.FC = () => {
 
                         {/* Treatment Information */}
                         {booking.treatment_id && (
-
                             <Card className="print-card">
                                 <CardHeader className="pb-2">
                                     <CardTitle className="text-sm print-card-title">Treatment Details</CardTitle>
@@ -289,7 +412,7 @@ const Page: React.FC = () => {
                                     </div>
                                     <div className="flex items-center gap-2 text-xs">
                                         <span className="font-medium">Priority:</span>
-                                        <Badge variant={booking.priority === 'Normal' ? 'secondary' : 'destructive'} className="text-xs">
+                                        <Badge variant={getPriorityBadgeVariant(booking.priority)} className="text-xs">
                                             {booking.priority}
                                         </Badge>
                                     </div>
@@ -298,10 +421,10 @@ const Page: React.FC = () => {
                         )}
                     </div>
 
-                    {/* Clinic Information - Removed from print to save space */}
-                    <Card className="mt-6 print-card ">
+                    {/* Clinic Information */}
+                    <Card className="mt-6 print-card">
                         <CardHeader>
-                            <CardTitle className="flex  items-center gap-2">
+                            <CardTitle className="flex items-center gap-2">
                                 <MapPin className="h-5 w-5" />
                                 Clinic Information
                             </CardTitle>
@@ -336,7 +459,7 @@ const Page: React.FC = () => {
                                     <div className="flex items-center gap-2">
                                         <Clock className="h-4 w-4 text-gray-500" />
                                         <span>
-                                            {formatTime(booking.session_booking_for_clinic.clinic_timings.open_time)} -
+                                            {formatTime(booking.session_booking_for_clinic.clinic_timings.open_time)} -{' '}
                                             {formatTime(booking.session_booking_for_clinic.clinic_timings.close_time)}
                                         </span>
                                     </div>
@@ -357,14 +480,14 @@ const Page: React.FC = () => {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            {booking.SessionDates.map((session, index) => (
-                                <div key={session._id + index} className="flex justify-between items-center p-2 border rounded mb-2 last:mb-0 text-xs">
+                            {booking.SessionDates.map((session: SessionDate, index: number) => (
+                                <div key={`${session._id}-${index}`} className="flex justify-between items-center p-2 border rounded mb-2 last:mb-0 text-xs">
                                     <div>
                                         <h4 className="font-semibold text-xs">Session {session.sessionNumber}</h4>
                                         <p className="text-gray-600 text-xs">{formatDate(session.date)}</p>
                                         <p className="text-gray-500 text-xs">at {formatTime(session.time)}</p>
                                     </div>
-                                    <Badge variant={session.status === 'Pending' ? 'secondary' : 'default'} className="text-xs">
+                                    <Badge variant={getSessionStatusBadgeVariant(session.status)} className="text-xs">
                                         {session.status}
                                     </Badge>
                                 </div>
@@ -433,11 +556,19 @@ const Page: React.FC = () => {
                     {/* Print Footer */}
                     <div className="print-only mt-8 text-center text-gray-600 text-sm border-t pt-6">
                         <p className="font-medium">Thank you for choosing Dr. Rajneesh Kant Clinic!</p>
-
                     </div>
                 </div>
             </div>
         </div>
+    );
+};
+
+// Main page component with proper Suspense wrapping
+const Page: React.FC = () => {
+    return (
+        <Suspense fallback={<BookingSuccessLoading />}>
+            <BookingSuccessContent />
+        </Suspense>
     );
 };
 

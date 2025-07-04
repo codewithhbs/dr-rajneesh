@@ -9,7 +9,7 @@ interface DashboardHeaderProps {
   onLogout: () => void
 }
 
-export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onLogout }) => {
+const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onLogout }) => {
   return (
     <header className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 text-white shadow-lg">
       <div className="container mx-auto px-6 py-4">
@@ -38,3 +38,4 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onLogout }) =>
     </header>
   )
 }
+export default DashboardHeader;

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -19,9 +19,9 @@ import BookingFailed from "@/components/booking/booking-failed"
 import ProgressBar from "@/components/booking/progress-bar"
 import { useSettings } from "@/hooks/use-settings"
 
-const BookNowConsultations = () => {
+const BookNowConsultations = ({ searchParams }) => {
   const router = useRouter()
-  const searchParams = useSearchParams()
+  // const searchParams = useSearchParams()
 
   // Initialize step from URL or default to 1
   const initialStep = parseInt(searchParams.get('step') || '1', 10)

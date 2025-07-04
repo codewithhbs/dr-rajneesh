@@ -1,4 +1,4 @@
-import Treatments from '@/pages/treatments/Treatments';
+import Treatments from '@/page_/treatments/Treatments';
 import React from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';

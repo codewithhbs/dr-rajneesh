@@ -18,29 +18,35 @@ interface NextAppointmentData extends SessionDate {
   booking: Booking
 }
 
-export const NextAppointmentCard: React.FC<NextAppointmentCardProps> = ({ bookings }) => {
-  const getNextAppointment = (): NextAppointmentData | null => {
-    const today = new Date()
-    let nextAppointment: NextAppointmentData | null = null
-    let nearestDate: Date | null = null
+const NextAppointmentCard: React.FC<NextAppointmentCardProps> = ({ bookings }) => {
+const getNextAppointment = (): NextAppointmentData | null => {
+  const today = new Date();
+  let nextAppointment: NextAppointmentData | null = null;
+  let nearestDate: Date | null = null;
 
+  if (Array.isArray(bookings)) {
     bookings.forEach((booking) => {
-      booking.SessionDates?.forEach((session) => {
-        if (["Pending", "Confirmed", "Rescheduled"].includes(session.status)) {
-          const sessionDate = new Date(session.date)
-          if (sessionDate >= today && (!nearestDate || sessionDate < nearestDate)) {
-            nearestDate = sessionDate
-            nextAppointment = {
-              ...session,
-              booking,
+      if (Array.isArray(booking.SessionDates)) {
+        booking.SessionDates.forEach((session) => {
+          if (
+            ["Pending", "Confirmed", "Rescheduled"].includes(session.status)
+          ) {
+            const sessionDate = new Date(session.date);
+            if (!isNaN(sessionDate.getTime()) && sessionDate >= today && (!nearestDate || sessionDate < nearestDate)) {
+              nearestDate = sessionDate;
+              nextAppointment = {
+                ...session,
+                booking,
+              };
             }
           }
-        }
-      })
-    })
-
-    return nextAppointment
+        });
+      }
+    });
   }
+
+  return nextAppointment;
+};
 
   const nextAppointment = getNextAppointment()
 
@@ -162,3 +168,5 @@ export const NextAppointmentCard: React.FC<NextAppointmentCardProps> = ({ bookin
 
   )
 }
+
+export default NextAppointmentCard

@@ -2,8 +2,8 @@
 
 import { API_ENDPOINT } from '@/constant/url'
 import React, { useState } from 'react'
-import axios from 'axios'
-import { Card, CardContent,  CardHeader } from '@/components/ui/card'
+import axios, { isAxiosError } from 'axios'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -26,7 +26,7 @@ const ForgotPasswordPage = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
-  
+
   const [formData, setFormData] = useState<FormData>({
     email: '',
     otp: '',
@@ -52,12 +52,12 @@ const ForgotPasswordPage = () => {
 
   const handleRequestReset = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.email) {
       setError('Email is required')
       return
     }
-    
+
     if (!validateEmail(formData.email)) {
       setError('Please enter a valid email address')
       return
@@ -77,19 +77,23 @@ const ForgotPasswordPage = () => {
         setCurrentStep('verify')
       }
     } catch (err: unknown) {
-      if (err.response?.status === 429) {
-        setError('Please wait before requesting another password reset')
+      if (isAxiosError(err)) {
+        if (err.response?.status === 429) {
+          setError('Please wait before requesting another password reset');
+        } else {
+          setError(err.response?.data?.message || 'Something went wrong. Please try again.');
+        }
       } else {
-        setError(err.response?.data?.message || 'Something went wrong. Please try again.')
+        setError('Something went wrong. Please try again.');
       }
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   const handleVerifyReset = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.otp || !formData.newPassword || !formData.confirmPassword) {
       setError('All fields are required')
       return
@@ -126,7 +130,11 @@ const ForgotPasswordPage = () => {
         setCurrentStep('success')
       }
     } catch (err: unknown) {
-      setError(err.response?.data?.message || 'Invalid or expired OTP. Please try again.')
+      if (isAxiosError(err)) {
+        setError(err.response?.data?.message || 'Invalid or expired OTP. Please try again.')
+      } else {
+         setError('Invalid or expired OTP. Please try again.');
+      }
     } finally {
       setLoading(false)
     }
@@ -182,9 +190,9 @@ const ForgotPasswordPage = () => {
           </Alert>
         )}
 
-        <Button 
-          type="submit" 
-          className="w-full h-12" 
+        <Button
+          type="submit"
+          className="w-full h-12"
           disabled={loading}
         >
           {loading ? 'Sending OTP...' : 'Send Reset OTP'}
@@ -283,14 +291,14 @@ const ForgotPasswordPage = () => {
         )}
 
         <div className="space-y-3">
-          <Button 
-            type="submit" 
-            className="w-full h-12" 
+          <Button
+            type="submit"
+            className="w-full h-12"
             disabled={loading}
           >
             {loading ? 'Resetting Password...' : 'Reset Password'}
           </Button>
-          
+
           <Button
             type="button"
             variant="ghost"
@@ -327,7 +335,7 @@ const ForgotPasswordPage = () => {
       )}
 
       <div className="space-y-3">
-        <Button 
+        <Button
           className="w-full h-12"
           onClick={() => {
             // Navigate to login page
@@ -336,7 +344,7 @@ const ForgotPasswordPage = () => {
         >
           Go to Login
         </Button>
-        
+
         <Button
           variant="ghost"
           className="w-full h-12"
@@ -365,7 +373,7 @@ const ForgotPasswordPage = () => {
             {currentStep === 'success' && renderSuccessStep()}
           </CardContent>
         </Card>
-        
+
         <div className="text-center mt-6">
           <p className="text-sm text-gray-600">
             Remember your password?{' '}

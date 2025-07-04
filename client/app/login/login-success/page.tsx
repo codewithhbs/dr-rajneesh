@@ -1,24 +1,11 @@
-"use client";
-
-import React, { useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useAuth } from "@/context/authContext/auth";
+import React, { Suspense } from "react";
 import Loading from "@/components/ui/Loading";
+import GoogleCallbackPage from "./GoogleCallbackPage";
 
-const GoogleCallbackPage = () => {
-  const { setToken } = useAuth();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    const urlToken = searchParams.get("token");
-    if (urlToken) {
-      setToken(urlToken);
-      router.replace("/");
-    }
-  }, [searchParams, router, setToken]);
-
-  return <Loading message="Authenticating with Google, please wait..." />;
-};
-
-export default GoogleCallbackPage;
+export default function LoginSuccessPage() {
+  return (
+    <Suspense fallback={<Loading message="Authenticating with Google, please wait..." />}>
+      <GoogleCallbackPage />
+    </Suspense>
+  );
+}
