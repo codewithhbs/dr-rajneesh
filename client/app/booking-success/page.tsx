@@ -28,7 +28,7 @@ import { useSearchParams } from 'next/navigation';
 
 const Page: React.FC = () => {
     const searchParams = useSearchParams();
-    const bookingId = searchParams.get('bookingId');
+    const bookingId = searchParams?.get('bookingId');
 
     const { data, loading, error } = useGetBookingById({ id: bookingId });
 
@@ -115,8 +115,8 @@ const Page: React.FC = () => {
     }
 
     const booking = data;
-    const hasMultipleSessions = booking.no_of_session_book > 1;
-    const hasOnlyOneSessionDate = booking.SessionDates.length === 1;
+    const hasMultipleSessions = booking?.no_of_session_book > 1;
+    const hasOnlyOneSessionDate = booking?.SessionDates.length === 1;
     const showNextSessionNote = hasMultipleSessions && hasOnlyOneSessionDate;
 
     return (
