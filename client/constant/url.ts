@@ -1,1 +1,1 @@
-export const API_ENDPOINT = `http://localhost:8000/api/v1`;
+export const API_ENDPOINT = `https://drkm.api.adsdigitalmedia.com/api/v1`;
