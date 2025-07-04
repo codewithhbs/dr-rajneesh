@@ -16,7 +16,7 @@ const GoogleCallbackPage = () => {
       setToken(urlToken);
       router.replace("/");
     }
-  }, [searchParams, router]);
+  }, [searchParams, router, setToken]);
 
   return <Loading message="Authenticating with Google, please wait..." />;
 };

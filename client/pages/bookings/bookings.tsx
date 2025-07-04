@@ -31,7 +31,7 @@ import {
     Sparkles,
     Heart,
     Shield,
-    Zap,
+
     Phone,
     Mail,
     UserCheck,
@@ -53,7 +53,7 @@ import Image from "next/image";
 import { drImageurl } from "@/constant/Images";
 
 interface EnhancedBookingsProps {
-    searchParams: any;
+    searchParams: unknown;
 }
 export enum BookingStep {
     SELECTION = 1,
@@ -88,7 +88,7 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
     const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null);
     const [paymentMethod, setPaymentMethod] = useState("razorpay");
     const [isProcessing, setIsProcessing] = useState(false);
-    const [status, setStatus] = useState("Verifying payment...");
+
     const [bookingStep, setBookingStep] = useState<BookingStep>(
         BookingStep.SELECTION
     );
@@ -342,7 +342,7 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
 
                     console.log("🔗 Callback URL constructed", { callbackUrl });
 
-                    const options: any = {
+                    const options: unknown = {
                         key: payment?.key || "rzp_test_demo_key",
                         amount: payment?.amount * 100,
                         currency: "INR",
@@ -360,7 +360,7 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
                         theme: {
                             color: "#3B82F6",
                         },
-                        handler: function (response: any) {
+                        handler: function (response: unknown) {
                             console.log("💳 Razorpay payment success handler", {
                                 razorpay_payment_id: response.razorpay_payment_id,
                                 razorpay_order_id: response.razorpay_order_id,
@@ -411,7 +411,7 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
                                         status: "failed",
                                         error: "Payment was cancelled by the user.",
                                     });
-                                } catch (err: any) {
+                                } catch (err: unknown) {
                                     console.error("🚨 Error reporting payment cancellation:", {
                                         error: err.message,
                                         status: err.response?.status,
@@ -462,14 +462,14 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
                     // Add error handling for Razorpay initialization
                     try {
                         // Check if Razorpay is loaded
-                        if (!(window as any).Razorpay) {
+                        if (!(window as unknown).Razorpay) {
                             throw new Error("Razorpay SDK not loaded");
                         }
 
-                        const rzp = new (window as any).Razorpay(options);
+                        const rzp = new (window as unknown).Razorpay(options);
 
                         // Add error handler for Razorpay
-                        rzp.on('payment.failed', function (response: any) {
+                        rzp.on('payment.failed', function (response: unknown) {
                             console.error("💳 Razorpay payment failed", {
                                 error: response.error,
                                 timestamp: new Date().toISOString()
@@ -482,7 +482,7 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
                         console.log("🚀 Opening Razorpay checkout");
                         rzp.open();
 
-                    } catch (razorpayError: any) {
+                    } catch (razorpayError: unknown) {
                         console.error("🚨 Razorpay initialization failed:", {
                             error: razorpayError.message,
                             timestamp: new Date().toISOString()
@@ -502,7 +502,7 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
                     throw new Error(response.data?.message || "Booking request was not successful");
                 }
 
-            } catch (error: any) {
+            } catch (error: unknown) {
                 console.error("🚨 Booking submission error:", {
                     message: error.message,
                     status: error.response?.status,
@@ -583,7 +583,7 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
                 data: response.data
             });
 
-        } catch (reportError: any) {
+        } catch (reportError: unknown) {
             console.error("🚨 Failed to report payment failure:", {
                 error: reportError.message,
                 status: reportError.response?.status,
@@ -928,9 +928,9 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
                                                         </span>
                                                     </div>
                                                 </div>
-                                                {dbService.service_doctor.any_special_note && (
+                                                {dbService.service_doctor.unknown_special_note && (
                                                     <p className="text-gray-600 mt-2 italic">
-                                                        "💡 {dbService.service_doctor.any_special_note}"
+                                                        "💡 {dbService.service_doctor.unknown_special_note}"
                                                     </p>
                                                 )}
                                             </div>

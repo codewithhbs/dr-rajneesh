@@ -22,11 +22,11 @@ import { useSettings } from "@/hooks/use-settings"
 const BookNowConsultations = () => {
   const router = useRouter()
   const searchParams = useSearchParams()
-  
+
   // Initialize step from URL or default to 1
   const initialStep = parseInt(searchParams.get('step') || '1', 10)
   const [currentStep, setCurrentStep] = useState(initialStep)
-  
+
   // Initialize other states from URL params
   const [bookingStatus, setBookingStatus] = useState<"booking" | "success" | "failed">(
     searchParams.get('status') as "booking" | "success" | "failed" || "booking"
@@ -52,7 +52,7 @@ const BookNowConsultations = () => {
   const [isRegistering, setIsRegistering] = useState(false)
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false)
   const [razorpayLoaded, setRazorpayLoaded] = useState(false)
-  
+
   const { settings } = useSettings()
   const { data } = useGetAllClinic()
   const containerRef = useRef<HTMLDivElement>(null)
@@ -74,7 +74,7 @@ const BookNowConsultations = () => {
   // Function to update URL with current state
   const updateURLParams = (updates: Record<string, string | number | boolean>) => {
     const params = new URLSearchParams(searchParams.toString())
-    
+
     Object.entries(updates).forEach(([key, value]) => {
       if (value !== null && value !== undefined && value !== "") {
         params.set(key, String(value))
@@ -82,26 +82,26 @@ const BookNowConsultations = () => {
         params.delete(key)
       }
     })
-    
+
     router.push(`?${params.toString()}`, { scroll: false })
   }
 
   // Update URL when step changes
   useEffect(() => {
     updateURLParams({ step: currentStep })
-  }, [currentStep])
+  }, [currentStep, updateURLParams])
 
   // Update URL when booking status changes
   useEffect(() => {
     if (bookingStatus !== "booking") {
       updateURLParams({ status: bookingStatus })
     }
-  }, [bookingStatus])
+  }, [bookingStatus, updateURLParams])
 
   // Update URL when form data changes
   useEffect(() => {
     const updates: Record<string, string | number | boolean> = {}
-    
+
     if (selectedLocation) updates.location = selectedLocation
     if (selectedSessions > 1) updates.sessions = selectedSessions
     if (selectedDate) updates.date = selectedDate
@@ -111,7 +111,7 @@ const BookNowConsultations = () => {
     if (isOtpVerified) updates.verified = isOtpVerified
     if (paymentMethod !== "online") updates.payment = paymentMethod
     if (bookingId) updates.booking_id = bookingId
-    
+
     updateURLParams(updates)
   }, [selectedLocation, selectedSessions, selectedDate, selectedTimeSlot, patientName, patientPhone, isOtpVerified, paymentMethod, bookingId])
 
@@ -128,7 +128,8 @@ const BookNowConsultations = () => {
         setIsOtpVerified(true)
       }
     }
-  }, [isAuthenticated, user, userLoading])
+  }, [isAuthenticated, user, userLoading, patientName, patientPhone, isOtpVerified])
+
 
   // Load Razorpay script
   useEffect(() => {
@@ -196,7 +197,7 @@ const BookNowConsultations = () => {
     setIsOtpSent(false)
     setPaymentMethod("online")
     setBookingId("")
-    
+
     // Clear URL params
     router.push(window.location.pathname, { scroll: false })
   }

@@ -78,7 +78,7 @@ const Page: React.FC<PageProps> = ({ searchParams }) => {
                         </CardTitle>
 
                         <p className="text-gray-600 text-lg">
-                            We're sorry! Your booking could not be completed at this time.
+                            We&apos;re sorry! Your booking could not be completed at this time.
                         </p>
                     </CardHeader>
 
@@ -102,7 +102,7 @@ const Page: React.FC<PageProps> = ({ searchParams }) => {
                                         💰 Refund Information
                                     </h3>
                                     <p className="text-blue-800 mb-3">
-                                        If any payment has been deducted from your account, don't worry!
+                                        If any payment has been deducted from your account, don&apos;t worry!
                                         You will receive a full refund within <strong>2-3 working business days</strong>.
                                     </p>
                                     <div className="bg-blue-100 p-3 rounded-lg">
@@ -185,7 +185,7 @@ const Page: React.FC<PageProps> = ({ searchParams }) => {
                         <div className="text-center py-4">
                             <p className="text-gray-600 text-sm">
                                 We apologize for the inconvenience. Your satisfaction is our priority,
-                                and we're here to help resolve this issue quickly.
+                                and we&apos;re here to help resolve this issue quickly.
                             </p>
                             <div className="mt-2 text-2xl">
                                 🙏 Thank you for your patience
@@ -198,4 +198,4 @@ const Page: React.FC<PageProps> = ({ searchParams }) => {
     );
 };
 
-export default Page;
+export default Page

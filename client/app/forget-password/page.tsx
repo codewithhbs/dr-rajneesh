@@ -3,7 +3,7 @@
 import { API_ENDPOINT } from '@/constant/url'
 import React, { useState } from 'react'
 import axios from 'axios'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent,  CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -76,7 +76,7 @@ const ForgotPasswordPage = () => {
         setMessage(response.data.message)
         setCurrentStep('verify')
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (err.response?.status === 429) {
         setError('Please wait before requesting another password reset')
       } else {
@@ -125,7 +125,7 @@ const ForgotPasswordPage = () => {
         setMessage(response.data.message)
         setCurrentStep('success')
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.message || 'Invalid or expired OTP. Please try again.')
     } finally {
       setLoading(false)
@@ -152,7 +152,7 @@ const ForgotPasswordPage = () => {
         </div>
         <h1 className="text-2xl font-bold text-gray-900">Forgot Password?</h1>
         <p className="text-gray-600">
-          Enter your email address and we'll send you an OTP to reset your password.
+          Enter your email address and we&#39;ll send you an OTP to reset your password.
         </p>
       </div>
 

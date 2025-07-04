@@ -114,14 +114,14 @@ useEffect(() => {
   useEffect(() => {
     const stepFromURL = getStepFromURL()
     setCurrentView(stepFromURL)
-  }, [])
+  }, [getStepFromURL])
 
 
 
   // Update URL whenever currentView changes
   useEffect(() => {
     updateURLWithStep(currentView)
-  }, [currentView])
+  }, [currentView,updateURLWithStep])
 
   // Redirect authenticated users
   useEffect(() => {
@@ -152,7 +152,7 @@ useEffect(() => {
 
     window.addEventListener("popstate", handlePopState)
     return () => window.removeEventListener("popstate", handlePopState)
-  }, [])
+  }, [getStepFromURL])
 
   // Error handling utility
   const handleApiError = (error: unknown): string => {

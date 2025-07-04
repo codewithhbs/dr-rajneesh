@@ -32,8 +32,8 @@ interface PageProps {
 }
 
 const Page: React.FC<PageProps> = () => {
- const searchParams = useSearchParams();
-  const bookingId = searchParams.get('bookingId');
+    const searchParams = useSearchParams();
+    const bookingId = searchParams.get('bookingId');
 
     const { data, loading, error } = useGetBookingById({ id: bookingId });
 
@@ -279,27 +279,27 @@ const Page: React.FC<PageProps> = () => {
                         {/* Treatment Information */}
                         {booking.treatment_id && (
 
-                        <Card className="print-card">
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm print-card-title">Treatment Details</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-2 print-spacing">
-                                <div>
-                                    <h4 className="font-semibold text-sm">{booking.treatment_id.service_name}</h4>
-                                    <p className="text-gray-600 text-xs">{booking.treatment_id.service_small_desc}</p>
-                                </div>
-                                <div className="flex items-center gap-2 text-xs">
-                                    <span className="font-medium">Sessions:</span>
-                                    <Badge variant="secondary" className="text-xs">{booking.no_of_session_book} Sessions</Badge>
-                                </div>
-                                <div className="flex items-center gap-2 text-xs">
-                                    <span className="font-medium">Priority:</span>
-                                    <Badge variant={booking.priority === 'Normal' ? 'secondary' : 'destructive'} className="text-xs">
-                                        {booking.priority}
-                                    </Badge>
-                                </div>
-                            </CardContent>
-                        </Card>
+                            <Card className="print-card">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-sm print-card-title">Treatment Details</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-2 print-spacing">
+                                    <div>
+                                        <h4 className="font-semibold text-sm">{booking.treatment_id.service_name}</h4>
+                                        <p className="text-gray-600 text-xs">{booking.treatment_id.service_small_desc}</p>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-xs">
+                                        <span className="font-medium">Sessions:</span>
+                                        <Badge variant="secondary" className="text-xs">{booking.no_of_session_book} Sessions</Badge>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-xs">
+                                        <span className="font-medium">Priority:</span>
+                                        <Badge variant={booking.priority === 'Normal' ? 'secondary' : 'destructive'} className="text-xs">
+                                            {booking.priority}
+                                        </Badge>
+                                    </div>
+                                </CardContent>
+                            </Card>
                         )}
                     </div>
 
@@ -363,7 +363,7 @@ const Page: React.FC<PageProps> = () => {
                         </CardHeader>
                         <CardContent>
                             {booking.SessionDates.map((session, index) => (
-                                <div key={session._id} className="flex justify-between items-center p-2 border rounded mb-2 last:mb-0 text-xs">
+                                <div key={session._id + index} className="flex justify-between items-center p-2 border rounded mb-2 last:mb-0 text-xs">
                                     <div>
                                         <h4 className="font-semibold text-xs">Session {session.sessionNumber}</h4>
                                         <p className="text-gray-600 text-xs">{formatDate(session.date)}</p>
@@ -438,7 +438,7 @@ const Page: React.FC<PageProps> = () => {
                     {/* Print Footer */}
                     <div className="print-only mt-8 text-center text-gray-600 text-sm border-t pt-6">
                         <p className="font-medium">Thank you for choosing Dr. Rajneesh Kant Clinic!</p>
-                     
+
                     </div>
                 </div>
             </div>
