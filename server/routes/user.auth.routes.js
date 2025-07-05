@@ -39,7 +39,7 @@ user_auth_router.post('/bookings/sessions', isAuthenticated, createAorderForSess
 
 user_auth_router.post('/bookings/verify-payment', verifyPayment);
 user_auth_router.post('/bookings/payemnt-failed', isAuthenticated, handlePaymentFailure);
-user_auth_router.get('/found-booking/:id', isAuthenticated, foundBookingViaId);
+user_auth_router.get('/found-booking/:id', foundBookingViaId);
 
 user_auth_router.get('/found-bookings', isAuthenticated, getBookingHistory)
 

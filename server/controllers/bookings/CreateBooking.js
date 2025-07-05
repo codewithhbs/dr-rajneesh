@@ -633,14 +633,7 @@ exports.handlePaymentFailure = async (req, res) => {
 
 exports.foundBookingViaId = async (req, res) => {
     try {
-        // Validate user authentication
-        const user = req.user?._id;
-        if (!user) {
-            return res.status(401).json({
-                success: false,
-                message: "Please log in to view your bookings."
-            });
-        }
+     
 
         // Validate booking ID parameter
         const { id } = req.params;
@@ -659,12 +652,11 @@ exports.foundBookingViaId = async (req, res) => {
             });
         }
 
-        console.log(`Finding booking ${id} for user ${user}`);
-
+     
         // Find booking with proper query structure
         const foundBooking = await Bookings.findOne({
-            _id: id,
-            session_booking_user: user
+            _id: id
+     
         }).populate([
             'session_booking_for_clinic',
             'treatment_id',
