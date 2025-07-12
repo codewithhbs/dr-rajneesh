@@ -30,7 +30,7 @@ interface LocationStepProps {
 }
 
 const LocationStep = ({ selectedLocation, setSelectedLocation, data, setSelectedClinic }: LocationStepProps) => {
-  console.log("data of clinc", data)
+
 
   if (!data || Object.keys(data).length === 0) {
     return (
@@ -43,46 +43,46 @@ const LocationStep = ({ selectedLocation, setSelectedLocation, data, setSelected
   // Helper function to check if clinic is available for booking
   const isClinicAvailable = (clinic: Clinic): boolean => {
     if (!clinic.BookingAvailabeAt) return false;
-    
+
     const currentDate = new Date();
     const startDate = new Date(clinic.BookingAvailabeAt
-.start_date);
+      .start_date);
     const endDate = new Date(clinic.BookingAvailabeAt
-.end_date);
-    
+      .end_date);
+
     return currentDate >= startDate && currentDate <= endDate;
   }
 
   // Helper function to format date range
   const formatDateRange = (BookingAvailabeAt
-: BookingAvailableAt): string => {
+    : BookingAvailableAt): string => {
     const startDate = new Date(BookingAvailabeAt
-.start_date);
+      .start_date);
     const endDate = new Date(BookingAvailabeAt
-.end_date);
-    
+      .end_date);
+
     const formatOptions: Intl.DateTimeFormatOptions = {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
     };
-    
+
     return `${startDate.toLocaleDateString('en-US', formatOptions)} - ${endDate.toLocaleDateString('en-US', formatOptions)}`;
   }
 
   // Helper function to get availability status
   const getAvailabilityStatus = (clinic: Clinic): { status: 'available' | 'upcoming' | 'expired' | 'not_set', message: string } => {
     if (!clinic.BookingAvailabeAt
-) {
+    ) {
       return { status: 'not_set', message: 'Booking dates not configured' };
     }
-    
+
     const currentDate = new Date();
     const startDate = new Date(clinic.BookingAvailabeAt
-.start_date);
+      .start_date);
     const endDate = new Date(clinic.BookingAvailabeAt
-.end_date);
-    
+      .end_date);
+
     if (currentDate < startDate) {
       return { status: 'upcoming', message: 'Booking opens soon' };
     } else if (currentDate > endDate) {
@@ -94,7 +94,7 @@ const LocationStep = ({ selectedLocation, setSelectedLocation, data, setSelected
 
   const handleSelected = (clinicId: string) => {
     const selectedClinicData = Object.values(data).find(clinic => clinic._id === clinicId);
-    
+
     if (selectedClinicData && isClinicAvailable(selectedClinicData)) {
       setSelectedLocation(clinicId);
       setSelectedClinic(selectedClinicData);
@@ -157,21 +157,19 @@ const LocationStep = ({ selectedLocation, setSelectedLocation, data, setSelected
               />
               <Label
                 htmlFor={clinicId}
-                className={`block h-full p-5 rounded-xl border shadow-sm transition-all duration-200 ${
-                  isAvailable
+                className={`block h-full p-5 rounded-xl border shadow-sm transition-all duration-200 ${isAvailable
                     ? 'bg-white border-slate-200 cursor-pointer hover:border-blue-300 hover:shadow-md hover:scale-[1.02] peer-data-[state=checked]:border-blue-500 peer-data-[state=checked]:bg-gradient-to-br peer-data-[state=checked]:from-blue-50 peer-data-[state=checked]:to-indigo-50 peer-data-[state=checked]:shadow-lg peer-data-[state=checked]:scale-[1.02]'
                     : 'bg-slate-50 border-slate-200 cursor-not-allowed opacity-60'
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className={`text-lg font-semibold ${isAvailable ? 'text-slate-900' : 'text-slate-500'}`}>
                     {clinic?.clinic_name || 'Unnamed Clinic'}
                   </h3>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    isAvailable 
-                      ? 'bg-gradient-to-br from-blue-500 to-indigo-600' 
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isAvailable
+                      ? 'bg-gradient-to-br from-blue-500 to-indigo-600'
                       : 'bg-slate-400'
-                  }`}>
+                    }`}>
                     <MapPin className="h-4 w-4 text-white" />
                   </div>
                 </div>
@@ -186,33 +184,32 @@ const LocationStep = ({ selectedLocation, setSelectedLocation, data, setSelected
                     <Calendar className="h-4 w-4 text-blue-500" />
                     <span className="text-sm font-medium text-slate-900">Booking Status</span>
                   </div>
-                  
+
                   <div className="space-y-2">
-                    <Badge 
+                    <Badge
                       variant={availabilityStatus.status === 'available' ? 'default' : 'secondary'}
-                      className={`text-xs px-2 py-1 rounded-full ${
-                        availabilityStatus.status === 'available' 
+                      className={`text-xs px-2 py-1 rounded-full ${availabilityStatus.status === 'available'
                           ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-200'
                           : availabilityStatus.status === 'upcoming'
-                          ? 'bg-gradient-to-r from-yellow-100 to-orange-100 text-yellow-700 border border-yellow-200'
-                          : availabilityStatus.status === 'expired'
-                          ? 'bg-gradient-to-r from-red-100 to-pink-100 text-red-700 border border-red-200'
-                          : 'bg-gradient-to-r from-slate-100 to-gray-100 text-slate-700 border border-slate-200'
-                      }`}
+                            ? 'bg-gradient-to-r from-yellow-100 to-orange-100 text-yellow-700 border border-yellow-200'
+                            : availabilityStatus.status === 'expired'
+                              ? 'bg-gradient-to-r from-red-100 to-pink-100 text-red-700 border border-red-200'
+                              : 'bg-gradient-to-r from-slate-100 to-gray-100 text-slate-700 border border-slate-200'
+                        }`}
                     >
                       {availabilityStatus.status === 'available' && <Check className="h-3 w-3 mr-1" />}
                       {availabilityStatus.status !== 'available' && <AlertCircle className="h-3 w-3 mr-1" />}
                       {availabilityStatus.message}
                     </Badge>
-                    
+
                     {clinic.BookingAvailabeAt
- && (
-                      <div className="text-xs text-slate-600">
-                        <span className="font-medium">Available: </span>
-                        {formatDateRange(clinic.BookingAvailabeAt
-)}
-                      </div>
-                    )}
+                      && (
+                        <div className="text-xs text-slate-600">
+                          <span className="font-medium">Available: </span>
+                          {formatDateRange(clinic.BookingAvailabeAt
+                          )}
+                        </div>
+                      )}
                   </div>
                 </div>
 
@@ -229,11 +226,10 @@ const LocationStep = ({ selectedLocation, setSelectedLocation, data, setSelected
                           <Badge
                             key={`${clinicId}-phone-${phoneIndex}`}
                             variant="secondary"
-                            className={`text-xs px-2 py-1 rounded-full transition-all duration-150 ${
-                              isAvailable 
+                            className={`text-xs px-2 py-1 rounded-full transition-all duration-150 ${isAvailable
                                 ? 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 border border-blue-200 hover:from-blue-200 hover:to-indigo-200'
                                 : 'bg-slate-100 text-slate-500 border border-slate-200'
-                            }`}
+                              }`}
                           >
                             {phone}
                           </Badge>

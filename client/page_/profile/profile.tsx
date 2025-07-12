@@ -21,7 +21,7 @@ const PatientDashboard = () => {
   const { data: bookingData, loading: bookingLoading, error: bookingError, fetchBooking: refetchBookings } = useGetBooking()
   const { setToken } = useAuth()
   const { data: user, loading: userLoading, error: userError, getProfile: refetch } = useGetProfile()
-
+  console.log("bookingData",bookingData)
   const handleLogout = () => {
 
     console.log("Logging out...")

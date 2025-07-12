@@ -1,6 +1,6 @@
 "use clinet"
 import { useState, useCallback, useEffect } from 'react';
-import axios from 'axios';
+import axios, { isAxiosError } from 'axios';
 import { API_ENDPOINT } from '@/constant/url';
 import Cookies from "js-cookie";
 
@@ -44,9 +44,9 @@ export const useGetProfile = () => {
             setData(response.data.data);
             return response.data.data
 
-        } catch (err: unknown) {
+        } catch (err) {
             console.error("Error fetching profile:", err);
-            if (err instanceof Error) {
+            if (isAxiosError(err)) {
                 setError(err?.response?.data?.message || "Failed to fetch profile");
             } else {
                 setError("An unexpected error occurred");

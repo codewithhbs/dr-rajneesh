@@ -1,18 +1,24 @@
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
+const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 
 // Generate a JWT token
 const createToken = (payload) => {
   return jwt.sign(payload, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_TIME || '1h'
+    expiresIn: process.env.JWT_EXPIRES_TIME || "1h",
   });
 };
 
 // Send token as cookie + response
-const sendToken = async (user, statusCode, res, message, isSendResponse = true) => {
-  console.log("isSendResponse",isSendResponse)
+const sendToken = async (
+  user,
+  statusCode,
+  res,
+  message,
+  isSendResponse = true
+) => {
+  console.log("isSendResponse", isSendResponse);
   try {
-    console.log('🔐 Generating token...');
+    console.log("🔐 Generating token...");
 
     // Payload for JWT
     const payload = {
@@ -23,29 +29,30 @@ const sendToken = async (user, statusCode, res, message, isSendResponse = true) 
       name: user.name,
       isGoogleAuth: user.isGoogleAuth,
       profileImage: user.profileImage?.url || null,
-      status: user.status
+      status: user.status,
     };
 
     const token = createToken(payload);
 
     const cookieOptions = {
-      expires: new Date(Date.now() + (process.env.COOKIE_EXPIRES_TIME || 1) * 24 * 60 * 60 * 1000),
+      expires: new Date(
+        Date.now() +
+          (process.env.COOKIE_EXPIRES_TIME || 1) * 24 * 60 * 60 * 1000
+      ),
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
     };
-
+    console.log("payload", payload);
     // Set cookie
-    console.log('🍪 Setting cookies...');
-    res.cookie('_usertoken', token, cookieOptions);
+    console.log("🍪 Setting cookies...");
+    res.cookie("_usertoken", token, cookieOptions);
 
     // Avoid leaking password
     user.password = undefined;
 
-    // Send response
-    console.log('📤 Sending response...');
-    if (isSendResponse) {
 
+    if (isSendResponse) {
       res.status(statusCode).json({
         success: true,
         message,
@@ -53,23 +60,22 @@ const sendToken = async (user, statusCode, res, message, isSendResponse = true) 
 
         user: {
           id: user._id,
-          name: user.name,
-          email: user.email,
-          phone: user.isGoogleAuth ? '' :user.phone,
-          isGoogleAuth: user.isGoogleAuth,
-          profileImage: user.profileImage?.url || null,
-          status: user.status,
+          name: payload?.name,
+          email: payload?.email,
+          phone: payload?.isGoogleAuth ? "" : user.phone,
+          isGoogleAuth: payload?.isGoogleAuth,
+          profileImage: user.profileImage?.url ||payload?.profileImage,
+          status: user.status || payload?.status,
           termsAccepted: user.termsAccepted,
-          emailVerified: user.emailVerification?.isVerified || false
-        }
+          emailVerified: user.emailVerification?.isVerified || false,
+        },
       });
     } else {
-      return { token, user }
+      return { token, user };
     }
-
   } catch (error) {
-    console.error('❌ Error in sendToken:', error);
-    res.status(500).json({ success: false, message: 'Token handling failed' });
+    console.error("❌ Error in sendToken:", error);
+    res.status(500).json({ success: false, message: "Token handling failed" });
   }
 };
 
@@ -81,5 +87,5 @@ const verifyToken = (token) => {
 module.exports = {
   sendToken,
   createToken,
-  verifyToken
+  verifyToken,
 };

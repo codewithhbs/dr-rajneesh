@@ -154,11 +154,11 @@ const BookingSessionSchema = new mongoose.Schema({
     // Booking source and metadata
     bookingSource: {
         type: String,
-        enum: ['web', 'mobile', 'phone', 'walk-in', 'referral'],
+        enum: ['web', 'mobile', 'phone', 'walk-in', 'referral','app'],
         default: 'web'
     },
 
-    // Cancellation and refund
+    // Cancellation and refund 
     cancellation: {
         cancelledAt: Date,
         cancelledBy: {

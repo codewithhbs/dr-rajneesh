@@ -175,7 +175,7 @@ exports.createAorderForSession = async (req, res) => {
         }
 
         // Double-check availability before creating booking
-        const finalAvailabilityCheck =  await getBookingsByDateAndTimePeriodOnB({
+        const finalAvailabilityCheck = await getBookingsByDateAndTimePeriodOnB({
             date,
             time,
             clinic_id,
@@ -184,7 +184,7 @@ exports.createAorderForSession = async (req, res) => {
 
 
         if (!finalAvailabilityCheck?.data?.available) {
-            await session.abortTransaction(); 
+            await session.abortTransaction();
             return res.status(400).json({
                 success: false,
                 message: `Booking for ${finalAvailabilityCheck?.data?.date} at ${finalAvailabilityCheck?.data?.time} is no longer available.`,
@@ -293,6 +293,7 @@ exports.verifyPayment = async (req, res) => {
     const session = await mongoose.startSession();
     session.startTransaction();
 
+    let via = 'web';
     let committed = false;
     let bookingId = null;
     let paymentId = null;
@@ -305,13 +306,14 @@ exports.verifyPayment = async (req, res) => {
         sessionId: session.id
     };
 
-    console.log("🔍 Payment verification started", logContext);
+    console.log("Payment verification started", { ...logContext });
 
     try {
         const redisClient = getRedisClient(req, res);
 
-        // Extract parameters from both query and body
+        // Extract and validate parameters
         const {
+            platform,
             booking_id,
             payment_id,
             razorpay_payment_id,
@@ -323,25 +325,30 @@ exports.verifyPayment = async (req, res) => {
         bookingId = booking_id;
         paymentId = payment_id;
 
-
-
-        // Validate required parameters
-        const missingParams = [];
-        if (!razorpay_order_id) missingParams.push('razorpay_order_id');
-        if (!razorpay_payment_id) missingParams.push('razorpay_payment_id');
-        if (!razorpay_signature) missingParams.push('razorpay_signature');
-        if (!booking_id) missingParams.push('booking_id');
-
-        if (missingParams.length > 0) {
-
-
-            await session.abortTransaction();
-            return res.redirect(
-                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com/'}/booking-failed?reason=missing-parameters&missing=${missingParams.join(',')}&booking_id=${booking_id || 'unknown'}`
-            );
+        // Validate platform
+        const allowedPlatforms = ['web', 'app', 'admin'];
+        if (platform && allowedPlatforms.includes(platform)) {
+            via = platform;
         }
 
-        console.log("🔐 Verifying Razorpay signature");
+        // Validate required parameters
+        const requiredParams = {
+            razorpay_order_id,
+            razorpay_payment_id,
+            razorpay_signature,
+            booking_id
+        };
+
+        const missingParams = Object.keys(requiredParams).filter(key => !requiredParams[key]);
+
+        if (missingParams.length > 0) {
+            console.error("Missing required parameters", { missingParams, bookingId, ...logContext });
+            await session.abortTransaction();
+
+            return res.redirect(
+                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com'}/booking-failed?reason=missing-parameters&missing=${missingParams.join(',')}&booking_id=${booking_id || 'unknown'}`
+            );
+        }
 
         // Verify Razorpay signature
         let isValidSignature = false;
@@ -352,78 +359,83 @@ exports.verifyPayment = async (req, res) => {
                 razorpay_signature
             });
 
-            console.log("✅ Razorpay signature verification result", {
+            console.log("Razorpay signature verification completed", {
                 isValid: isValidSignature,
                 razorpay_order_id,
-                razorpay_payment_id: razorpay_payment_id.substring(0, 10) + "...",
+                bookingId,
                 ...logContext
             });
 
         } catch (signatureError) {
-
-            await session.abortTransaction();
-            return res.redirect(
-                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com/'}/booking-failed?reason=signature-verification-failed&booking_id=${booking_id}`
-            );
-        }
-
-        if (!isValidSignature) {
-            console.error("❌ Invalid Razorpay signature", {
-                razorpay_order_id,
-                razorpay_payment_id: razorpay_payment_id.substring(0, 10) + "...",
-                booking_id,
+            console.error("Razorpay signature verification failed", {
+                error: signatureError.message,
+                bookingId,
                 ...logContext
             });
 
             await session.abortTransaction();
             return res.redirect(
-                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com/'}/booking-failed?reason=invalid-signature&booking_id=${booking_id}`
+                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com'}/booking-failed?reason=signature-verification-failed&booking_id=${booking_id}`
             );
         }
 
-        console.log("🔍 Fetching booking and payment records from database");
+        if (!isValidSignature) {
+            console.error("Invalid Razorpay signature", {
+                razorpay_order_id,
+                bookingId,
+                ...logContext
+            });
 
-        // Fetch booking and payment records
+            await session.abortTransaction();
+            return res.redirect(
+                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com'}/booking-failed?reason=invalid-signature&booking_id=${booking_id}`
+            );
+        }
+
+        // Fetch booking record
         const booking = await Bookings.findById(booking_id)
             .populate('treatment_id')
             .populate('session_booking_user')
             .session(session);
 
         if (!booking) {
-
-
+            console.error("Booking not found", { bookingId, ...logContext });
             await session.abortTransaction();
+
             return res.redirect(
-                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com/'}/booking-failed?reason=booking-not-found&booking_id=${booking_id}`
+                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com'}/booking-failed?reason=booking-not-found&booking_id=${booking_id}`
             );
         }
 
-
-
+        // Fetch payment record
         const payment = await Payment.findById(booking.payment_id).session(session);
 
         if (!payment) {
-
+            console.error("Payment record not found", {
+                bookingId,
+                paymentId: booking.payment_id,
+                ...logContext
+            });
 
             await session.abortTransaction();
             return res.redirect(
-                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com/'}/booking-failed?reason=payment-not-found&booking_id=${booking_id}`
+                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com'}/booking-failed?reason=payment-not-found&booking_id=${booking_id}`
             );
         }
 
-        console.log("💳 Payment record found", {
+        console.log("Payment record found", {
             payment_id: payment._id,
             current_status: payment.payment_status,
             amount: payment.amount,
             razorpay_order_id: payment.razorpay_order_id,
-            already_processed: payment.razorpay_payment_id ? true : false,
+            already_processed: !!payment.razorpay_payment_id,
             ...logContext
         });
 
         // Check if payment is already processed
         if (payment.payment_status === 'completed' && payment.razorpay_payment_id) {
-            console.warn("⚠️ Payment already processed", {
-                booking_id,
+            console.warn("Payment already processed", {
+                bookingId,
                 payment_id: payment._id,
                 existing_razorpay_payment_id: payment.razorpay_payment_id,
                 new_razorpay_payment_id: razorpay_payment_id,
@@ -432,16 +444,15 @@ exports.verifyPayment = async (req, res) => {
 
             await session.abortTransaction();
 
-            // Redirect to success page since payment is already completed
             return res.redirect(
-                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com/'}/booking-success?sessions=${booking.sessions}&price=${payment.amount}&service=${booking.service_id?.service_name || 'service'}&bookingId=${booking._id}&status=already-processed`
+                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com'}/booking-success?sessions=${booking.sessions}&price=${payment.amount}&service=${booking.service_id?.service_name || 'service'}&bookingId=${booking._id}&status=already-processed`
             );
         }
 
-        // Verify the order ID matches
+        // Verify order ID match
         if (payment.razorpay_order_id !== razorpay_order_id) {
-            console.error("❌ Order ID mismatch", {
-                booking_id,
+            console.error("Order ID mismatch", {
+                bookingId,
                 payment_id: payment._id,
                 expected_order_id: payment.razorpay_order_id,
                 received_order_id: razorpay_order_id,
@@ -450,69 +461,86 @@ exports.verifyPayment = async (req, res) => {
 
             await session.abortTransaction();
             return res.redirect(
-                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com/'}/booking-failed?reason=order-id-mismatch&booking_id=${booking_id}`
+                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com'}/booking-failed?reason=order-id-mismatch&booking_id=${booking_id}`
             );
         }
 
-        console.log("💾 Updating payment and booking records");
+        console.log("Updating payment and booking records", { bookingId, paymentId: payment._id });
 
         // Update payment record
-        const paymentUpdateData = {
-            razorpay_payment_id,
-            razorpay_signature,
-            status: 'completed',
-            completed_at: new Date(),
-            verification_timestamp: new Date(),
-            verification_ip: req.ip || req.connection.remoteAddress,
-            verification_user_agent: req.get('User-Agent')
-        };
+        payment.razorpay_payment_id = razorpay_payment_id;
+        payment.razorpay_signature = razorpay_signature;
+        payment.payment_status = 'completed';
+        payment.completed_at = new Date();
+        payment.verification_timestamp = new Date();
+        payment.verification_ip = req.ip || req.connection.remoteAddress;
+        payment.verification_user_agent = req.get('User-Agent');
 
-        Object.assign(payment, paymentUpdateData);
         await payment.save({ session });
 
-        console.log("✅ Payment record updated", {
+        console.log("Payment record updated successfully", {
             payment_id: payment._id,
-            razorpay_payment_id: razorpay_payment_id.substring(0, 10) + "...",
             new_status: payment.payment_status,
             ...logContext
         });
 
         // Update booking record
-        const bookingUpdateData = {
-            session_status: 'Confirmed',
-            payment_verified_at: new Date(),
-            last_updated: new Date()
-        };
+        booking.session_status = 'Confirmed';
+        booking.payment_verified_at = new Date();
+        booking.last_updated = new Date();
+        booking.bookingSource = via
 
-        Object.assign(booking, bookingUpdateData);
-        await booking.save({ session });
+        const savedBooking = await booking.save({ session });
 
-
+        console.log("Booking record updated successfully", {
+            booking_id: savedBooking._id,
+            session_status: savedBooking.session_status,
+            payment_verified_at: savedBooking.payment_verified_at,
+            ...logContext
+        });
 
         // Commit transaction
         await session.commitTransaction();
         committed = true;
 
-
+        console.log("Transaction committed successfully", {
+            bookingId,
+            paymentId: payment._id,
+            ...logContext
+        });
 
         // Clear Redis cache
         try {
             await flushAllData(redisClient);
-            console.log("🗑️ Redis cache cleared");
+            console.log("Redis cache cleared successfully");
         } catch (cacheError) {
-            console.error("⚠️ Failed to clear Redis cache (non-critical)", {
+            console.warn("Failed to clear Redis cache (non-critical)", {
                 error: cacheError.message,
                 ...logContext
             });
         }
 
-        // Prepare success redirect URL
-        const successUrl = new URL(`${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com/'}/booking-success?bookingId=${booking?._id}`);
-
-        return res.redirect(successUrl.toString());
+        // Return response based on platform
+        if (via === 'web') {
+            const successUrl = `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com'}/booking-success?bookingId=${booking._id}`;
+            console.log("Redirecting to success page", { successUrl, ...logContext });
+            return res.redirect(successUrl);
+        } else {
+            console.log("Returning JSON response for API/app", { bookingId, ...logContext });
+            return res.status(200).json({
+                success: true,
+                message: 'Payment verified successfully',
+                data: {
+                    booking_id: booking._id,
+                    payment_id: payment._id,
+                    session_status: booking.session_status,
+                    payment_status: payment.payment_status
+                }
+            });
+        }
 
     } catch (error) {
-        console.error("🚨 Payment verification error", {
+        console.error("Payment verification error", {
             error: error.message,
             stack: error.stack,
             booking_id: bookingId,
@@ -521,59 +549,53 @@ exports.verifyPayment = async (req, res) => {
             ...logContext
         });
 
-        // Abort transaction if not committed
+        // Rollback transaction if not committed
         if (!committed) {
             try {
                 await session.abortTransaction();
-                console.log("🔄 Transaction aborted due to error");
+                console.log("Transaction aborted due to error");
             } catch (abortError) {
-                console.error("🚨 Failed to abort transaction", {
+                console.error("Failed to abort transaction", {
                     error: abortError.message,
                     ...logContext
                 });
             }
         }
 
-        // Log error details for debugging
-        const errorDetails = {
-            message: error.message,
-            type: error.constructor.name,
-            booking_id: bookingId,
-            payment_id: paymentId,
-            timestamp: new Date().toISOString()
-        };
+        // Determine error type and reason
+        const errorType = error.name;
+        const reason = errorType === 'ValidationError'
+            ? 'validation-error'
+            : (errorType === 'MongoError' || errorType === 'MongooseError')
+                ? 'database-error'
+                : 'verification-failed';
 
-        // Determine appropriate error response
-        if (error.name === 'ValidationError') {
-            console.error("📋 Validation error during payment verification", errorDetails);
-            return res.redirect(
-                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com/'}/booking-failed?reason=validation-error&booking_id=${bookingId || 'unknown'}`
-            );
+        // Return appropriate response
+        if (via === 'web') {
+            const redirectUrl = `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com'}/booking-failed?reason=${reason}&booking_id=${bookingId || 'unknown'}&error=${encodeURIComponent(error.message)}`;
+            return res.redirect(redirectUrl);
+        } else {
+            return res.status(500).json({
+                success: false,
+                message: 'Payment verification failed',
+                reason,
+                error: error.message,
+                booking_id: bookingId,
+                payment_id: paymentId
+            });
         }
-
-        if (error.name === 'MongoError' || error.name === 'MongooseError') {
-            console.error("🗄️ Database error during payment verification", errorDetails);
-            return res.redirect(
-                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com/'}/booking-failed?reason=database-error&booking_id=${bookingId || 'unknown'}`
-            );
-        }
-
-        // Generic error response
-        return res.redirect(
-            `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com/'}/booking-failed?reason=verification-failed&booking_id=${bookingId || 'unknown'}&error=${encodeURIComponent(error.message)}`
-        );
 
     } finally {
-        // Ensure session is always ended
+        // Always end the session
         try {
             await session.endSession();
-            console.log("🔚 Database session ended", {
+            console.log("Database session ended", {
                 sessionId: session.id,
                 committed,
                 ...logContext
             });
         } catch (sessionError) {
-            console.error("🚨 Failed to end database session", {
+            console.error("Failed to end database session", {
                 error: sessionError.message,
                 sessionId: session.id,
                 ...logContext
@@ -581,7 +603,6 @@ exports.verifyPayment = async (req, res) => {
         }
     }
 };
-
 
 // Handle payment failure
 exports.handlePaymentFailure = async (req, res) => {
@@ -633,7 +654,7 @@ exports.handlePaymentFailure = async (req, res) => {
 
 exports.foundBookingViaId = async (req, res) => {
     try {
-     
+
 
         // Validate booking ID parameter
         const { id } = req.params;
@@ -652,11 +673,11 @@ exports.foundBookingViaId = async (req, res) => {
             });
         }
 
-     
+
         // Find booking with proper query structure
         const foundBooking = await Bookings.findOne({
             _id: id
-     
+
         }).populate([
             'session_booking_for_clinic',
             'treatment_id',

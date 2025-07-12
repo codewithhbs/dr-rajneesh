@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>क्या तुम मेरे साथ डेट पर चलोगी? ❤️</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;600;700&family=Poppins:wght@300;400;500;600&family=Great+Vibes&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans Devanagari', 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 30%, #fad0c4 70%, #ff9a9e 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 8s ease infinite;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            line-height: 1.6;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        /* Mobile-First Floating Hearts */
+        .floating-hearts {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .heart {
+            position: absolute;
+            font-size: 16px;
+            animation: float 8s ease-in-out infinite;
+            filter: drop-shadow(0 0 8px rgba(255, 182, 193, 0.8));
+        }
+
+        .heart:nth-child(odd) { color: rgba(255, 107, 157, 0.8); }
+        .heart:nth-child(even) { color: rgba(255, 182, 193, 0.6); }
+
+        .heart:nth-child(1) { left: 5%; animation-delay: 0s; font-size: 14px; }
+        .heart:nth-child(2) { left: 15%; animation-delay: 1.2s; font-size: 18px; }
+        .heart:nth-child(3) { left: 25%; animation-delay: 2.4s; font-size: 16px; }
+        .heart:nth-child(4) { left: 35%; animation-delay: 3.6s; font-size: 20px; }
+        .heart:nth-child(5) { left: 45%; animation-delay: 4.8s; font-size: 18px; }
+        .heart:nth-child(6) { left: 55%; animation-delay: 6s; font-size: 14px; }
+        .heart:nth-child(7) { left: 65%; animation-delay: 0.8s; font-size: 18px; }
+        .heart:nth-child(8) { left: 75%; animation-delay: 2s; font-size: 16px; }
+        .heart:nth-child(9) { left: 85%; animation-delay: 3.2s; font-size: 18px; }
+        .heart:nth-child(10) { left: 95%; animation-delay: 4.4s; font-size: 14px; }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg) scale(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+                transform: translateY(90vh) rotate(45deg) scale(1);
+            }
+            50% {
+                transform: translateY(50vh) rotate(180deg) scale(1.2);
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+                transform: translateY(10vh) rotate(315deg) scale(1);
+            }
+            100% {
+                transform: translateY(-10vh) rotate(360deg) scale(0);
+                opacity: 0;
+            }
+        }
+
+        /* Mobile-First Container */
+        .container {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            padding: 15px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Mobile-First Card Design */
+        .date-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            padding: 25px 20px;
+            box-shadow: 
+                0 20px 40px rgba(255, 105, 135, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .date-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg, transparent, rgba(255, 182, 193, 0.1), transparent);
+            animation: rotate 4s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Mobile-First Step Indicator */
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            gap: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transition: all 0.5s ease;
+            position: relative;
+        }
+
+        .step-dot.active {
+            background: linear-gradient(45deg, #ff6b9d, #ff8fab);
+            transform: scale(1.2);
+            box-shadow: 0 0 15px rgba(255, 107, 157, 0.6);
+        }
+
+        .step-dot.active::after {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 107, 157, 0.4);
+            animation: pulse-ring 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-ring {
+            0%, 100% { transform: scale(1); opacity: 0.7; }
+            50% { transform: scale(1.3); opacity: 0.3; }
+        }
+
+        /* Mobile-First Couple Image */
+        .couple-image {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            background: linear-gradient(45deg, #ff6b9d, #ff8fab);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+            transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 
+                0 15px 30px rgba(255, 107, 157, 0.4),
+                inset 0 2px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .couple-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            transition: all 0.8s ease;
+        }
+
+        .couple-image::after {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: -8px;
+            right: -8px;
+            bottom: -8px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff6b9d, #ff8fab, #ffc3d8, #ff6b9d);
+            z-index: -1;
+            animation: pulse-ring 3s ease-in-out infinite;
+        }
+
+        .couple-image::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: -15px;
+            right: -15px;
+            bottom: -15px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, transparent, rgba(255, 107, 157, 0.2), transparent);
+            z-index: -2;
+            animation: rotate 6s linear infinite;
+        }
+
+        /* Mobile-First Typography */
+        .main-title {
+            font-family: 'Great Vibes', cursive;
+            font-size: 2.2rem;
+            font-weight: 400;
+            background: linear-gradient(45deg, #d63384, #e84393, #fd79a8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 4px rgba(214, 51, 132, 0.3);
+            position: relative;
+            z-index: 1;
+            transition: all 0.6s ease;
+        }
+
+        .step-title {
+            font-family: 'Noto Sans Devanagari', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #d63384;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
+            transition: all 0.6s ease;
+        }
+
+        .love-message {
+            font-family: 'Noto Sans Devanagari', sans-serif;
+            font-size: 1rem;
+            color: #6c5ce7;
+            margin-bottom: 20px;
+            line-height: 1.8;
+            font-weight: 400;
+            position: relative;
+            z-index: 1;
+            transition: all 0.6s ease;
+            text-shadow: 0 1px 2px rgba(108, 92, 231, 0.2);
+        }
+
+        .shayari {
+            font-family: 'Noto Sans Devanagari', sans-serif;
+            font-size: 1.1rem;
+            color: #e84393;
+            margin-bottom: 20px;
+            line-height: 1.9;
+            font-weight: 500;
+            position: relative;
+            z-index: 1;
+            font-style: italic;
+            text-align: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            border-left: 4px solid #ff6b9d;
+        }
+
+        .date-question {
+            font-family: 'Noto Sans Devanagari', sans-serif;
+            font-size: 1.4rem;
+            background: linear-gradient(45deg, #e84393, #fd79a8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 25px;
+            font-weight: 600;
+            position: relative;
+            z-index: 1;
+            transition: all 0.6s ease;
+        }
+
+        /* Mobile-First Buttons */
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+            margin-bottom: 15px;
+            width: 100%;
+        }
+
+        .date-button {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            font-family: 'Noto Sans Devanagari', sans-serif;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            width: 100%;
+            max-width: 250px;
+        }
+
+        .yes-button {
+            background: linear-gradient(45deg, #ff6b9d, #ff8fab);
+            color: white;
+            box-shadow: 0 8px 25px rgba(255, 107, 157, 0.4);
+            border: 2px solid transparent;
+        }
+
+        .yes-button:hover, .yes-button:active {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 12px 30px rgba(255, 107, 157, 0.6);
+            background: linear-gradient(45deg, #ff5582, #ff7a9a);
+        }
+
+        .yes-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.6s ease;
+        }
+
+        .yes-button:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .no-button {
+            background: linear-gradient(45deg, #a8a8a8, #c0c0c0);
+            color: white;
+            box-shadow: 0 8px 25px rgba(168, 168, 168, 0.4);
+            transition: all 0.4s ease;
+        }
+
+        .no-button:hover, .no-button:active {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(168, 168, 168, 0.6);
+        }
+
+        /* Step Content */
+        .step-content {
+            opacity: 1;
+            transform: translateY(0);
+            transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-content.fade-out {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+
+        .step-content.fade-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Mobile-First Response Messages */
+        .response-message {
+            margin-top: 20px;
+            padding: 20px 15px;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-weight: 500;
+            display: none;
+            position: relative;
+            z-index: 1;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.6s ease;
+            font-family: 'Noto Sans Devanagari', sans-serif;
+        }
+
+        .success-message {
+            background: linear-gradient(45deg, rgba(0, 184, 148, 0.9), rgba(0, 206, 201, 0.9));
+            color: white;
+            box-shadow: 0 10px 25px rgba(0, 184, 148, 0.4);
+        }
+
+        .no-message {
+            background: linear-gradient(45deg, rgba(255, 118, 117, 0.9), rgba(253, 121, 168, 0.9));
+            color: white;
+            box-shadow: 0 10px 25px rgba(255, 118, 117, 0.4);
+        }
+
+        /* Heart Burst Enhanced */
+        .heart-burst {
+            position: fixed;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .burst-heart {
+            position: absolute;
+            font-size: 20px;
+            animation: burst 1.5s ease-out forwards;
+            filter: drop-shadow(0 0 8px rgba(255, 107, 157, 0.8));
+        }
+
+        @keyframes burst {
+            0% {
+                transform: scale(0) rotate(0deg);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.1) rotate(180deg) translateY(-40px);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.6) rotate(360deg) translateY(-100px);
+                opacity: 0;
+            }
+        }
+
+        /* Sparkle Trail */
+        .sparkle {
+            position: fixed;
+            pointer-events: none;
+            z-index: 999;
+            font-size: 12px;
+            animation: sparkle 2s ease-out forwards;
+        }
+
+        @keyframes sparkle {
+            0% {
+                transform: scale(0) rotate(0deg);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1) rotate(180deg);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(0) rotate(360deg) translateY(-40px);
+                opacity: 0;
+            }
+        }
+
+        /* Tablet Responsive */
+        @media (min-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .date-card {
+                padding: 35px 30px;
+                border-radius: 30px;
+                max-width: 500px;
+            }
+
+            .main-title {
+                font-size: 2.8rem;
+            }
+
+            .step-title {
+                font-size: 2.2rem;
+            }
+
+            .date-question {
+                font-size: 1.8rem;
+            }
+
+            .love-message {
+                font-size: 1.1rem;
+            }
+
+            .shayari {
+                font-size: 1.2rem;
+            }
+
+            .couple-image {
+                width: 180px;
+                height: 180px;
+            }
+
+            .button-container {
+                flex-direction: row;
+                gap: 20px;
+            }
+
+            .date-button {
+                width: auto;
+                min-width: 180px;
+                padding: 16px 30px;
+                font-size: 1.1rem;
+            }
+
+            .step-dot {
+                width: 12px;
+                height: 12px;
+            }
+
+            .heart {
+                font-size: 18px;
+            }
+        }
+
+        /* Desktop Responsive */
+        @media (min-width: 1024px) {
+            .date-card {
+                padding: 45px 40px;
+                border-radius: 35px;
+                max-width: 600px;
+            }
+
+            .main-title {
+                font-size: 3.2rem;
+            }
+
+            .step-title {
+                font-size: 2.5rem;
+            }
+
+            .date-question {
+                font-size: 2rem;
+            }
+
+            .love-message {
+                font-size: 1.2rem;
+            }
+
+            .shayari {
+                font-size: 1.3rem;
+            }
+
+            .couple-image {
+                width: 200px;
+                height: 200px;
+            }
+
+            .date-button {
+                padding: 18px 35px;
+                font-size: 1.2rem;
+            }
+
+            .heart {
+                font-size: 20px;
+            }
+        }
+
+        /* Large Desktop */
+        @media (min-width: 1200px) {
+            .date-card {
+                max-width: 700px;
+                padding: 50px 45px;
+            }
+
+            .couple-image {
+                width: 220px;
+                height: 220px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Enhanced Floating Hearts -->
+    <div class="floating-hearts">
+        <div class="heart">💖</div>
+        <div class="heart">💕</div>
+        <div class="heart">💗</div>
+        <div class="heart">💝</div>
+        <div class="heart">💖</div>
+        <div class="heart">💕</div>
+        <div class="heart">💗</div>
+        <div class="heart">💝</div>
+        <div class="heart">💖</div>
+        <div class="heart">💕</div>
+    </div>
+
+    <div class="container">
+        <div class="date-card animate__animated animate__fadeInUp">
+            <!-- Step Indicator -->
+            <div class="step-indicator">
+                <div class="step-dot active" id="step1"></div>
+                <div class="step-dot" id="step2"></div>
+                <div class="step-dot" id="step3"></div>
+                <div class="step-dot" id="step4"></div>
+                <div class="step-dot" id="step5"></div>
+            </div>
+
+            <!-- Step Content Container -->
+            <div id="stepContent" class="step-content">
+                <!-- Step 1: Initial Invitation -->
+                <div id="content1" class="step-content-item">
+                    <div class="couple-image animate__animated animate__heartBeat animate__infinite animate__slower">
+                        <img src="/placeholder.svg?height=220&width=220&text=💑+हम+दोनों" alt="हम दोनों साथ में" id="coupleImg">
+                    </div>
+                    <h1 class="main-title animate__animated animate__fadeInDown">
+                        मेरी जान! 💕
+                    </h1>
+                    <p class="love-message animate__animated animate__fadeInLeft animate__delay-1s">
+                        तुम मेरी दुनिया को रोशन करती हो, और मैं तुम्हारे बिना एक पल भी नहीं रह सकता। तुम्हारी मुस्कान से सब कुछ बेहतर हो जाता है, और तुम्हारी हंसी मेरी सबसे पसंदीदा आवाज़ है।
+                    </p>
+                    <div class="shayari animate__animated animate__fadeInRight animate__delay-1s">
+                        "तेरे बिना अधूरा लगता है ये दिल,<br>
+                        तू ही तो है मेरी मंजिल।<br>
+                        आज तेरे साथ बिताना चाहता हूं वक्त,<br>
+                        क्या तू देगी मुझे ये खुशी का एक पल? 💖"
+                    </div>
+                    <h2 class="date-question animate__animated animate__fadeInUp animate__delay-2s">
+                        क्या तुम आज मेरे साथ डेट पर चलोगी? 💖
+                    </h2>
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="button-container animate__animated animate__fadeInUp animate__delay-3s">
+                <button class="date-button yes-button" onclick="handleYes()">
+                    हां, चलते हैं! ❤️
+                </button>
+                <button class="date-button no-button" onclick="handleNo()">
+                    शायद बाद में 😊
+                </button>
+            </div>
+
+            <!-- Response Message -->
+            <div id="responseMessage" class="response-message"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        let noClickCount = 0;
+        
+        const steps = {
+            1: {
+                image: "/placeholder.svg?height=220&width=220&text=💑+हम+दोनों",
+                title: "मेरी जान! 💕",
+                message: "तुम मेरी दुनिया को रोशन करती हो, और मैं तुम्हारे बिना एक पल भी नहीं रह सकता। तुम्हारी मुस्कान से सब कुछ बेहतर हो जाता है, और तुम्हारी हंसी मेरी सबसे पसंदीदा आवाज़ है।",
+                shayari: "तेरे बिना अधूरा लगता है ये दिल,<br>तू ही तो है मेरी मंजिल।<br>आज तेरे साथ बिताना चाहता हूं वक्त,<br>क्या तू देगी मुझे ये खुशी का एक पल? 💖",
+                question: "क्या तुम आज मेरे साथ डेट पर चलोगी? 💖"
+            },
+            2: {
+                image: "/placeholder.svg?height=220&width=220&text=🌹+रोमांटिक+डेट",
+                title: "आओ न, मेरी रानी! 🌹",
+                message: "मैंने हमारे लिए एक परफेक्ट दिन प्लान किया है! हम पार्क में टहलेंगे, सूर्यास्त देखेंगे, और मैं तुम्हारे लिए तुम्हारे पसंदीदा फूल लाऊंगा। तुम्हारे साथ हर पल एक परी कथा जैसा लगता है।",
+                shayari: "गुलाब के फूल लेकर आऊंगा,<br>तेरे लिए खुशियों का जहान लाऊंगा।<br>चांद-सितारों के नीचे बैठकर,<br>तुझसे अपने दिल की बात कहूंगा। 🌙",
+                question: "बस एक छोटी सी डेट? प्लीज़? 🥺"
+            },
+            3: {
+                image: "/placeholder.svg?height=220&width=220&text=🍽️+डिनर+डेट",
+                title: "मैं इसे स्पेशल बनाऊंगा! ✨",
+                message: "तुम्हारा पसंदीदा खाना बनाऊंगा कैसा रहेगा? कैंडल लाइट डिनर, तुम्हारी फेवरेट मूवी, और मैं वादा करता हूं कि तुम्हें इतना हंसाऊंगा कि तुम्हारे गाल दुखने लगेंगे। तुम एक रानी की तरह ट्रीट होने की हकदार हो!",
+                shayari: "मोमबत्ती की रोशनी में,<br>तेरे साथ बैठकर खाना खाऊंगा।<br>तेरी हर मुस्कान को देखकर,<br>अपने आप को धन्य समझूंगा। 🕯️",
+                question: "आज मुझे तुम्हें स्पॉइल करने दो? 👑"
+            },
+            4: {
+                image: "/placeholder.svg?height=220&width=220&text=🎭+एडवेंचर+डेट",
+                title: "जो भी एडवेंचर तुम चाहो! 🎭",
+                message: "हम कहीं भी जा सकते हैं जहां तुम्हारा दिल चाहे! आर्ट म्यूजियम, एम्यूजमेंट पार्क, बीच, पहाड़, या घर में रहकर ब्लैंकेट फोर्ट बना सकते हैं। मंजिल मायने नहीं रखती जब तक मैं तुम्हारे साथ हूं।",
+                shayari: "जहां भी ले चलेगी तू मुझको,<br>वहीं मेरा स्वर्ग होगा।<br>तेरे साथ हर रास्ता सुंदर है,<br>तेरे बिना कोई भी सफर अधूरा होगा। 🗺️",
+                question: "हमारा एडवेंचर चुनोगी? 🗺️"
+            },
+            5: {
+                image: "/placeholder.svg?height=220&width=220&text=💍+हमेशा+का+प्यार",
+                title: "तुम मेरी सब कुछ हो! 💍",
+                message: "मुझे पसंद है कि तुम हंसते समय अपनी नाक सिकोड़ती हो, कि तुम नहाते समय गाना गाती हो, और कि तुम साधारण पलों को भी जादुई बना देती हो। तुम सिर्फ मेरी गर्लफ्रेंड नहीं हो, तुम मेरी बेस्ट फ्रेंड और मेरा भविष्य हो।",
+                shayari: "तू मेरी जिंदगी का सबसे हसीन ख्वाब है,<br>तेरे बिना ये दिल बेकरार है।<br>आज और हमेशा के लिए,<br>तू ही मेरा प्यार है, तू ही मेरा इंतजार है। 💫",
+                question: "आज और हमेशा के लिए मेरी बनोगी? 💫"
+            }
+        };
+
+        const noMessages = [
+            "आओ न, बस एक छोटी सी डेट? 🥺",
+            "मैं वादा करता हूं, ये सबसे बेस्ट दिन होगा! 💕",
+            "प्लीज़, चेरी के साथ? 🍒",
+            "मैं तुम्हारे पसंदीदा फूल लाऊंगा! 🌹",
+            "हम कहीं भी जा सकते हैं जहां तुम चाहो! ✨",
+            "तुम मूवी भी चुन सकती हो! 🎬",
+            "हां कह दो, मेरा दिल इंतजार कर रहा है! 💖",
+            "तुम जानती हो कि तुम चाहती हो... 😉",
+            "मैं तुम्हारा फेवरेट खाना बनाऊंगा! 👨‍🍳",
+            "ठीक है, मैं तब तक पूछता रहूंगा जब तक तुम हां नहीं कहतीं! 😤💕"
+        ];
+
+        function updateStepIndicator(step) {
+            document.querySelectorAll('.step-dot').forEach((dot, index) => {
+                dot.classList.remove('active');
+                if (index + 1 <= step) {
+                    dot.classList.add('active');
+                }
+            });
+        }
+
+        function transitionToStep(stepNumber) {
+            const content = document.getElementById('stepContent');
+            const stepData = steps[stepNumber];
+            
+            // Fade out current content
+            content.classList.add('fade-out');
+            
+            setTimeout(() => {
+                // Update content
+                content.innerHTML = `
+                    <div class="couple-image animate__animated animate__heartBeat animate__infinite animate__slower">
+                        <img src="${stepData.image}" alt="Couple Image" id="coupleImg">
+                    </div>
+                    <h1 class="step-title animate__animated animate__fadeInDown">
+                        ${stepData.title}
+                    </h1>
+                    <p class="love-message animate__animated animate__fadeInLeft animate__delay-1s">
+                        ${stepData.message}
+                    </p>
+                    <div class="shayari animate__animated animate__fadeInRight animate__delay-1s">
+                        "${stepData.shayari}"
+                    </div>
+                    <h2 class="date-question animate__animated animate__fadeInUp animate__delay-2s">
+                        ${stepData.question}
+                    </h2>
+                `;
+                
+                // Fade in new content
+                content.classList.remove('fade-out');
+                content.classList.add('fade-in');
+                
+                // Update step indicator
+                updateStepIndicator(stepNumber);
+                
+                // Add sparkle effect
+                createSparkleEffect();
+                
+            }, 400);
+        }
+
+        function handleYes() {
+            const responseDiv = document.getElementById('responseMessage');
+            responseDiv.className = 'response-message success-message animate__animated animate__bounceIn';
+            responseDiv.style.display = 'block';
+            
+            const successMessages = [
+                "🎉 हां! तुमने मुझे सबसे खुश इंसान बना दिया! 🎉",
+                "🌟 OMG हां! ये सबसे बेस्ट दिन है! 🌟",
+                "💫 यस्स! मैं खुशी से उछल रहा हूं! 💫",
+                "🎊 तुमने हां कहा! मैं अपनी खुशी छुपा नहीं सकता! 🎊",
+                "✨ हां! मेरा दिल खुशी से फटने वाला है! ✨"
+            ];
+            
+            const randomMessage = successMessages[Math.floor(Math.random() * successMessages.length)];
+            
+            responseDiv.innerHTML = `
+                <h3>${randomMessage}</h3>
+                <p>सबसे अमेजिंग डेट के लिए तैयार हो जाओ! मैं जल्दी तुम्हें पिक करने आऊंगा! 💕</p>
+                <p><strong>मैं तुमसे शब्दों से कहीं ज्यादा प्यार करता हूं! ❤️✨</strong></p>
+                <p><em>ये परफेक्ट होने वाला है! 🥰</em></p>
+            `;
+            
+            // Create massive heart burst effect
+            createMassiveHeartBurst(event);
+            
+            // Hide the no button with animation
+            const noButton = document.querySelector('.no-button');
+            noButton.style.animation = 'fadeOut 0.5s ease-out forwards';
+            setTimeout(() => noButton.style.display = 'none', 500);
+            
+            // Transform yes button
+            const yesButton = document.querySelector('.yes-button');
+            yesButton.innerHTML = "मैं इंतजार नहीं कर सकती! 💖";
+            yesButton.style.background = 'linear-gradient(45deg, #00b894, #00cec9)';
+            yesButton.style.transform = 'scale(1.05)';
+            
+            // Add celebration animation to the card
+            document.querySelector('.date-card').style.animation = 'pulse 0.5s ease-in-out 3';
+            
+            // Change background to celebration colors
+            document.body.style.background = 'linear-gradient(135deg, #00b894 0%, #00cec9 50%, #74b9ff 100%)';
+            document.body.style.backgroundSize = '400% 400%';
+            
+            // Create continuous heart rain
+            setInterval(createRandomHearts, 200);
+        }
+
+        function handleNo() {
+            const responseDiv = document.getElementById('responseMessage');
+            const noButton = document.querySelector('.no-button');
+            
+            if (currentStep < 5) {
+                // Move to next step
+                currentStep++;
+                transitionToStep(currentStep);
+                
+                // Show encouraging message
+                responseDiv.className = 'response-message no-message animate__animated animate__shakeX';
+                responseDiv.style.display = 'block';
+                responseDiv.innerHTML = `<p>${noMessages[Math.min(noClickCount, noMessages.length - 1)]}</p>`;
+                
+                // Make no button smaller and change text
+                const scale = Math.max(0.7, 1 - (noClickCount * 0.05));
+                noButton.style.transform = `scale(${scale})`;
+                
+                const noTexts = ["अभी भी नहीं? 🥺", "प्लीज़? 🙏", "तुम मुझे मार रही हो! 💔", "एक मौका? 😢", "मैं मिन्नत कर रहा हूं! 🙏"];
+                noButton.innerHTML = noTexts[Math.min(noClickCount, noTexts.length - 1)];
+                
+                noClickCount++;
+                
+            } else {
+                // Final step - make no button disappear
+                responseDiv.className = 'response-message no-message animate__animated animate__heartBeat';
+                responseDiv.style.display = 'block';
+                responseDiv.innerHTML = `
+                    <p><strong>ठीक है, मैं समझ गया... तुम सिर्फ हार्ड टू गेट खेल रही हो! 😏</strong></p>
+                    <p>लेकिन मैं जानता हूं कि दिल से तुम हां कहना चाहती हो! 💕</p>
+                    <p><em>"नहीं" बटन ने हार मान ली है... बिल्कुल जैसे मैं कभी नहीं मानूंगा! 😘</em></p>
+                    <p><strong>तो... अब क्या कहती हो? 😉</strong></p>
+                `;
+                
+                // Animate no button out
+                noButton.style.animation = 'fadeOut 1s ease-out forwards';
+                setTimeout(() => noButton.style.display = 'none', 1000);
+                
+                // Make yes button more prominent
+                const yesButton = document.querySelector('.yes-button');
+                yesButton.style.transform = 'scale(1.1)';
+                yesButton.innerHTML = "तुम जानती हो कि तुम चाहती हो! 💖";
+                yesButton.style.animation = 'pulse 1s ease-in-out infinite';
+            }
+        }
+
+        function createMassiveHeartBurst(event) {
+            const colors = ['💖', '💕', '💗', '💝', '❤️', '💜', '🧡', '💛'];
+            
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const burst = document.createElement('div');
+                    burst.className = 'heart-burst';
+                    burst.style.left = (event ? event.clientX : window.innerWidth / 2) + 'px';
+                    burst.style.top = (event ? event.clientY : window.innerHeight / 2) + 'px';
+                    
+                    for (let j = 0; j < 6; j++) {
+                        const heart = document.createElement('div');
+                        heart.className = 'burst-heart';
+                        heart.innerHTML = colors[Math.floor(Math.random() * colors.length)];
+                        heart.style.left = (Math.random() - 0.5) * 150 + 'px';
+                        heart.style.top = (Math.random() - 0.5) * 150 + 'px';
+                        heart.style.animationDelay = Math.random() * 0.5 + 's';
+                        burst.appendChild(heart);
+                    }
+                    
+                    document.body.appendChild(burst);
+                    
+                    setTimeout(() => {
+                        if (document.body.contains(burst)) {
+                            document.body.removeChild(burst);
+                        }
+                    }, 1500);
+                }, i * 100);
+            }
+        }
+
+        function createSparkleEffect() {
+            const sparkles = ['✨', '⭐', '🌟', '💫', '⚡'];
+            
+            for (let i = 0; i < 8; i++) {
+                setTimeout(() => {
+                    const sparkle = document.createElement('div');
+                    sparkle.className = 'sparkle';
+                    sparkle.innerHTML = sparkles[Math.floor(Math.random() * sparkles.length)];
+                    sparkle.style.left = Math.random() * window.innerWidth + 'px';
+                    sparkle.style.top = Math.random() * window.innerHeight + 'px';
+                    sparkle.style.color = `hsl(${Math.random() * 360}, 70%, 60%)`;
+                    document.body.appendChild(sparkle);
+                    
+                    setTimeout(() => {
+                        if (document.body.contains(sparkle)) {
+                            document.body.removeChild(sparkle);
+                        }
+                    }, 2000);
+                }, i * 200);
+            }
+        }
+
+        function createRandomHearts() {
+            const heart = document.createElement('div');
+            heart.innerHTML = '💖';
+            heart.style.position = 'fixed';
+            heart.style.left = Math.random() * window.innerWidth + 'px';
+            heart.style.top = '-20px';
+            heart.style.fontSize = (Math.random() * 15 + 12) + 'px';
+            heart.style.pointerEvents = 'none';
+            heart.style.zIndex = '1000';
+            heart.style.animation = 'float 4s ease-in-out forwards';
+            document.body.appendChild(heart);
+            
+            setTimeout(() => {
+                if (document.body.contains(heart)) {
+                    document.body.removeChild(heart);
+                }
+            }, 4000);
+        }
+
+        // Enhanced mobile-friendly mouse/touch trail effect
+        function addSparkleTrail(e) {
+            if (Math.random() > 0.92) {
+                const sparkle = document.createElement('div');
+                sparkle.innerHTML = '✨';
+                sparkle.style.position = 'fixed';
+                sparkle.style.left = (e.clientX || e.touches[0].clientX) + 'px';
+                sparkle.style.top = (e.clientY || e.touches[0].clientY) + 'px';
+                sparkle.style.pointerEvents = 'none';
+                sparkle.style.color = '#ff6b9d';
+                sparkle.style.fontSize = '10px';
+                sparkle.style.zIndex = '1000';
+                sparkle.style.animation = 'sparkle 1.5s ease-out forwards';
+                document.body.appendChild(sparkle);
+                
+                setTimeout(() => {
+                    if (document.body.contains(sparkle)) {
+                        document.body.removeChild(sparkle);
+                    }
+                }, 1500);
+            }
+        }
+
+        document.addEventListener('mousemove', addSparkleTrail);
+        document.addEventListener('touchmove', addSparkleTrail);
+
+        // Add CSS for fadeOut animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeOut {
+                0% { opacity: 1; transform: scale(1); }
+                100% { opacity: 0; transform: scale(0.8); }
+            }
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.05); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

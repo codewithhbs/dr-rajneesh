@@ -1,5 +1,5 @@
 const express = require('express');
-const { registerNormalUser, verifyEmailOtp, googleAuthRegisterAndLogin, getUserProfile, getBookingHistory, registerNormal, resendVerificationEmail, loginUser, requestPasswordReset, verifyPasswordResetOtp } = require('../controllers/auth/user.controller');
+const { registerNormalUser, verifyEmailOtp, googleAuthRegisterAndLogin, getUserProfile, getBookingHistory, registerNormal, resendVerificationEmail, loginUser, requestPasswordReset, verifyPasswordResetOtp, googleVerifyRegisterAndLogin } = require('../controllers/auth/user.controller');
 const { createReview } = require('../controllers/service/review.controller');
 const { isAuthenticated } = require('../middleware/protect');
 const { getBookingsByDateAndTimePeriod } = require('../controllers/bookings/BookingService');
@@ -27,6 +27,9 @@ user_auth_router.get('/auth/google', (req, res) => {
         redirect: url
     })
 });
+
+
+user_auth_router.post('/verify-token-google-auth',googleVerifyRegisterAndLogin)
 
 
 user_auth_router.post('/review', isAuthenticated, createReview);

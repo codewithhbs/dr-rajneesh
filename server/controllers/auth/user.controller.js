@@ -5,7 +5,7 @@ const { sendEmail } = require("../../utils/sendEmail");
 const { sendToken } = require("../../utils/sendToken");
 const axios = require("axios");
 const Bookings = require("../../models/booking/bookings.sessions.model");
-
+const { OAuth2Client } = require('google-auth-library');
 const createOtpExpiry = (minutes = 10) => {
     return new Date(Date.now() + minutes * 60 * 1000);
 };
@@ -365,6 +365,85 @@ exports.googleAuthRegisterAndLogin = async (req, res) => {
     }
 };
 
+const client = new OAuth2Client(process.env.CLIENT_ID);
+
+exports.googleVerifyRegisterAndLogin = async (req, res) => {
+    const isGoogleAuth = true;
+    const { token } = req.body;
+    console.log(req.body);
+
+    if (!token) return res.status(400).json({ error: 'Missing token' });
+
+    try {
+        // Verify the token using Google's library
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: process.env.CLIENT_ID,
+        });
+
+        const payload = ticket.getPayload();
+
+        if (!payload.email) return res.status(400).json({ error: 'Email not found in token' });
+
+        const existingUser = await userModel.findOne({ email: payload.email });
+        console.log("Existing user found:", existingUser);
+
+        if (existingUser) {
+            console.log('Existing user attempting Google login:', existingUser);
+
+            // If user exists but wasn't created via Google auth, update their record
+            if (!existingUser.isGoogleAuth) {
+                existingUser.isGoogleAuth = true;
+                existingUser.profileImage = {
+                    url: payload.picture || existingUser.profileImage?.url || '',
+                    publicId: existingUser.profileImage?.publicId || '',
+                };
+                existingUser.emailVerification.isVerified = payload.email_verified || existingUser.emailVerification.isVerified;
+                await existingUser.save();
+                console.log('Updated existing user with Google auth');
+            }
+            console.log('sending token to existing user with Google auth');
+
+            // Log in the existing user
+            return await sendToken(existingUser, 200, res, 'Login successful', true);
+        }
+
+        // Create new user if no existing user found
+        const newUser = new userModel({
+            name: payload.name?.trim() || '',
+            email: payload.email.toLowerCase().trim(),
+            termsAccepted: true,
+            profileImage: {
+                url: payload.picture || '',
+                publicId: '',
+            },
+            emailVerification: {
+                isVerified: payload.email_verified || false,
+            },
+            isGoogleAuth,
+            status: 'active',
+        });
+
+        await newUser.save();
+        console.log('New user saved via Google login:', newUser);
+
+        const emailHtml = welcome(newUser);
+        emailQueue
+            .add({
+                type: 'welcome',
+                to: newUser.email,
+                subject: 'Thank you for registering with us',
+                html: emailHtml,
+            })
+            .then((job) => console.log('✅ Email job queued:', job.id))
+            .catch((error) => console.error('❌ Email queue error:', error));
+
+        await sendToken(newUser, 200, res, 'Thank you for registering', false);
+    } catch (error) {
+        console.error('Google token verification error:', error.message);
+        return res.status(500).json({ error: 'Google authentication failed' });
+    }
+};
 
 // Verify Email OTP
 exports.verifyEmailOtp = async (req, res, next) => {

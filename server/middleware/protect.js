@@ -11,7 +11,7 @@ exports.isAuthenticated = async (req, res, next) => {
     } else if (req.cookies && req.cookies._usertoken) {
       token = req.cookies._usertoken;
     }
-
+    console.log(token)
 
     if (!token) {
       return res.status(401).json({

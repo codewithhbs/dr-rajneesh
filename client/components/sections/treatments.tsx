@@ -28,7 +28,6 @@ import Link from 'next/link';
 
 const ChiropracticClinic = () => {
     const { services: dbServices } = useService();
-    const [hoveredService, setHoveredService] = useState(null);
 
     const icons = [<Bone className="w-5 h-5" />, <Brain className="w-5 h-5" />, <Activity className="w-5 h-5" />, <Target className="w-5 h-5" />, <Zap className="w-5 h-5" />];
     const colors = [
