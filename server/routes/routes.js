@@ -58,6 +58,6 @@ router.post('/admin-add-next-sessions', addNextSessionDate);
 
 
 // New Bookings
-router.get('/get-available-date',getAvailableDates)
+router.get('/get-available-date', getAvailableDates)
 
 module.exports = router;   

@@ -1045,6 +1045,9 @@ exports.requestPasswordReset = async (req, res, next) => {
 
 exports.verifyPasswordResetOtp = async (req, res, next) => {
     try {
+        console.log(req.body
+
+        )
         const { email, otp, newPassword } = req.body
 
         if (!email || !otp || !newPassword) {
@@ -1214,7 +1217,7 @@ exports.getUserProfile = async (req, res, next) => {
 // Update User Profile
 exports.updateUserProfile = async (req, res, next) => {
     try {
-        const { name, phone } = req.body;
+        const { name, phone, email } = req.body;
         const updates = {};
 
         if (name) updates.name = name.trim();

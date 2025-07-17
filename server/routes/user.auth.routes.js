@@ -1,5 +1,5 @@
 const express = require('express');
-const { registerNormalUser, verifyEmailOtp, googleAuthRegisterAndLogin, getUserProfile, getBookingHistory, registerNormal, resendVerificationEmail, loginUser, requestPasswordReset, verifyPasswordResetOtp, googleVerifyRegisterAndLogin } = require('../controllers/auth/user.controller');
+const { registerNormalUser, verifyEmailOtp, googleAuthRegisterAndLogin, getUserProfile, getBookingHistory, registerNormal, resendVerificationEmail, loginUser, requestPasswordReset, verifyPasswordResetOtp, googleVerifyRegisterAndLogin, updateUserProfile } = require('../controllers/auth/user.controller');
 const { createReview } = require('../controllers/service/review.controller');
 const { isAuthenticated } = require('../middleware/protect');
 const { getBookingsByDateAndTimePeriod } = require('../controllers/bookings/BookingService');
@@ -12,6 +12,7 @@ user_auth_router.post('/verify-email-otp', verifyEmailOtp)
 user_auth_router.post('/resend-email-otp', resendVerificationEmail)
 user_auth_router.post('/login-user', loginUser)
 user_auth_router.post('/request-password-reset', requestPasswordReset)
+user_auth_router.post('/update-profile',isAuthenticated, updateUserProfile)
 user_auth_router.post('/verify-password-reset', verifyPasswordResetOtp)
 
 
@@ -30,8 +31,6 @@ user_auth_router.get('/auth/google', (req, res) => {
 
 
 user_auth_router.post('/verify-token-google-auth',googleVerifyRegisterAndLogin)
-
-
 user_auth_router.post('/review', isAuthenticated, createReview);
 user_auth_router.get('/profile', isAuthenticated, getUserProfile);
 user_auth_router.get('/google/callback', googleAuthRegisterAndLogin);

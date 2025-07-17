@@ -41,146 +41,152 @@ import { useSessionBookings } from '@/hooks/sessions';
 import { statusOptions } from '@/constant/Urls';
 import Loading from '@/components/ui/loading';
 const AllSessions = () => {
-    const { sessionDetails, loading, error, fetchSessionDetails } = useSessionBookings({ id: null });
+  const { sessionDetails, loading, error, fetchSessionDetails } = useSessionBookings({ id: null });
 
-    const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all');
-    const [clinicFilter, setClinicFilter] = useState('all');
-    const [dateFilter, setDateFilter] = useState(null);
-    const [dateRange, setDateRange] = useState('all');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(10);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [clinicFilter, setClinicFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState(null);
+  const [dateRange, setDateRange] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
-    const [statusModalOpen, setStatusModalOpen] = useState(false);
-    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
-    const [selectedSession, setSelectedSession] = useState(null);
-    const [newStatus, setNewStatus] = useState('')
-    const uniqueClinics = useMemo(() => {
-        const clinics = sessionDetails.map(session => session.session_booking_for_clinic.clinic_name);
-        return [...new Set(clinics)];
-    }, []);
+  const [selectedSession, setSelectedSession] = useState(null);
+  const [newStatus, setNewStatus] = useState('')
+  const uniqueClinics = useMemo(() => {
+    const clinics = sessionDetails.map(session => session.session_booking_for_clinic.clinic_name);
+    return [...new Set(clinics)];
+  }, []);
 
-    console.log('Unique statusFilter:', statusFilter);
-    // Helper function to check if session is today
-    const isToday = (date) => {
-        const today = new Date();
-        const sessionDate = new Date(date);
-        return sessionDate.toDateString() === today.toDateString();
-    };
+  console.log('Unique statusFilter:', statusFilter);
+  // Helper function to check if session is today
+  const isToday = (date) => {
+    const today = new Date();
+    const sessionDate = new Date(date);
+    return sessionDate.toDateString() === today.toDateString();
+  };
 
-    // Helper function to check if session is upcoming
-    const isUpcoming = (date) => {
-        const today = new Date();
-        const sessionDate = new Date(date);
-        return sessionDate > today;
-    };
+  // Helper function to check if session is upcoming
+  const isUpcoming = (date) => {
+    const today = new Date();
+    const sessionDate = new Date(date);
+    return sessionDate > today;
+  };
 
-const filteredSessions = useMemo(() => {
+  const filteredSessions = useMemo(() => {
     let filtered = sessionDetails;
     console.log('Initial sessionDetails:', sessionDetails);
 
     if (searchTerm) {
-        filtered = filtered.filter(session =>
-            session.patient_details?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            session.treatment_id?.service_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            session.bookingNumber?.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        console.log('After searchTerm filter:', filtered);
+      const lowerSearch = searchTerm.toLowerCase();
+
+      filtered = filtered.filter(session => {
+        const nameMatch = session.patient_details?.name?.toLowerCase().includes(lowerSearch);
+        const bookingMatch = session.bookingNumber?.toLowerCase().includes(lowerSearch);
+        const serviceMatch = session.treatment_id?.service_name?.toLowerCase().includes(lowerSearch);
+
+        return nameMatch || bookingMatch || (!!session.treatment_id && serviceMatch);
+      });
+
+      console.log('After searchTerm filter:', filtered);
     }
 
+
     if (statusFilter !== 'all') {
-        filtered = filtered.filter(session => session.status === statusFilter);
-        console.log('After statusFilter:', filtered);
+      filtered = filtered.filter(session => session.status === statusFilter);
+      console.log('After statusFilter:', filtered);
     }
 
     if (clinicFilter !== 'all') {
-        filtered = filtered.filter(session => session.clinic_id === clinicFilter);
-        console.log('After clinicFilter:', filtered);
+      filtered = filtered.filter(session => session.clinic_id === clinicFilter);
+      console.log('After clinicFilter:', filtered);
     }
 
     if (dateRange === 'today') {
-        filtered = filtered.filter(session =>
-            session.SessionDates?.some(sessionDate => isToday(sessionDate.date))
-        );
-        console.log('After dateRange "today":', filtered);
+      filtered = filtered.filter(session =>
+        session.SessionDates?.some(sessionDate => isToday(sessionDate.date))
+      );
+      console.log('After dateRange "today":', filtered);
     } else if (dateRange === 'upcoming') {
-        filtered = filtered.filter(session =>
-            session.SessionDates?.some(sessionDate => isUpcoming(sessionDate.date))
-        );
-        console.log('After dateRange "upcoming":', filtered);
+      filtered = filtered.filter(session =>
+        session.SessionDates?.some(sessionDate => isUpcoming(sessionDate.date))
+      );
+      console.log('After dateRange "upcoming":', filtered);
     }
 
     if (dateFilter) {
-        filtered = filtered.filter(session =>
-            session.SessionDates?.some(sessionDate => {
-                const sessionDateObj = new Date(sessionDate.date);
-                return sessionDateObj.toDateString() === dateFilter.toDateString();
-            })
-        );
-        console.log('After specific dateFilter:', filtered);
+      filtered = filtered.filter(session =>
+        session.SessionDates?.some(sessionDate => {
+          const sessionDateObj = new Date(sessionDate.date);
+          return sessionDateObj.toDateString() === dateFilter.toDateString();
+        })
+      );
+      console.log('After specific dateFilter:', filtered);
     }
 
     return filtered;
-}, [sessionDetails, searchTerm, statusFilter, clinicFilter, dateRange, dateFilter]);
+  }, [sessionDetails, searchTerm, statusFilter, clinicFilter, dateRange, dateFilter]);
 
 
-    // Pagination logic
-    const totalPages = Math.ceil(filteredSessions.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedSessions = filteredSessions.slice(startIndex, startIndex + itemsPerPage);
+  // Pagination logic
+  const totalPages = Math.ceil(filteredSessions.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedSessions = filteredSessions.slice(startIndex, startIndex + itemsPerPage);
 
-    // Status badge color
-    const getStatusColor = (status) => {
-        const colors = {
-            'Pending': 'bg-yellow-100 text-yellow-800',
-            'Confirmed': 'bg-green-100 text-green-800',
-            'Payment Not Completed': 'bg-red-100 text-red-800',
-            'Cancelled': 'bg-gray-100 text-gray-800',
-            'Completed': 'bg-blue-100 text-blue-800',
-            'Rescheduled': 'bg-purple-100 text-purple-800',
-            'Partially Completed': 'bg-orange-100 text-orange-800'
-        };
-        return colors[status] || 'bg-gray-100 text-gray-800';
+  // Status badge color
+  const getStatusColor = (status) => {
+    const colors = {
+      'Pending': 'bg-yellow-100 text-yellow-800',
+      'Confirmed': 'bg-green-100 text-green-800',
+      'Payment Not Completed': 'bg-red-100 text-red-800',
+      'Cancelled': 'bg-gray-100 text-gray-800',
+      'Completed': 'bg-blue-100 text-blue-800',
+      'Rescheduled': 'bg-purple-100 text-purple-800',
+      'Partially Completed': 'bg-orange-100 text-orange-800'
     };
+    return colors[status] || 'bg-gray-100 text-gray-800';
+  };
 
-    // Action handlers
-    const handleStatusChange = (session) => {
-        setSelectedSession(session);
-        setNewStatus(session.session_status);
-        setStatusModalOpen(true);
-    };
+  // Action handlers
+  const handleStatusChange = (session) => {
+    setSelectedSession(session);
+    setNewStatus(session.session_status);
+    setStatusModalOpen(true);
+  };
 
-    const handleDelete = (session) => {
-        setSelectedSession(session);
-        setDeleteModalOpen(true);
-    };
+  const handleDelete = (session) => {
+    setSelectedSession(session);
+    setDeleteModalOpen(true);
+  };
 
-    const handleView = (session) => {
-        window.location.href = `/dashboard/admin/sessions/${session._id}`;
-    };
+  const handleView = (session) => {
+    window.location.href = `/dashboard/admin/sessions/${session._id}`;
+  };
 
-    const confirmStatusChange = () => {
-        // Here you would make API call to update status
-        console.log('Updating status for session:', selectedSession._id, 'to:', newStatus);
-        setStatusModalOpen(false);
-        setSelectedSession(null);
-    };
+  const confirmStatusChange = () => {
+    // Here you would make API call to update status
+    console.log('Updating status for session:', selectedSession._id, 'to:', newStatus);
+    setStatusModalOpen(false);
+    setSelectedSession(null);
+  };
 
-    const confirmDelete = () => {
-        // Here you would make API call to delete session
-        console.log('Deleting session:', selectedSession._id);
-        setDeleteModalOpen(false);
-        setSelectedSession(null);
-    };
+  const confirmDelete = () => {
+    // Here you would make API call to delete session
+    console.log('Deleting session:', selectedSession._id);
+    setDeleteModalOpen(false);
+    setSelectedSession(null);
+  };
 
 
 
-    if (loading) return <Loading message='Loading sessions Bookings' />
-    if (error) return <div className="text-red-500">Error loading sessions: {error.message}</div>;
+  if (loading) return <Loading message='Loading sessions Bookings' />
+  if (error) return <div className="text-red-500">Error loading sessions: {error.message}</div>;
 
-    return (
-       <div className="container bg-white mx-auto p-6">
+  return (
+    <div className="container bg-white mx-auto p-6">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
@@ -190,7 +196,7 @@ const filteredSessions = useMemo(() => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={()=>fetchSessionDetails()} variant="outline">
+          <Button onClick={() => fetchSessionDetails()} variant="outline">
             Refresh
           </Button>
           <Button variant="destructive">
@@ -324,7 +330,7 @@ const filteredSessions = useMemo(() => {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="font-medium">{session.treatment_id.service_name}</div>
+                  <div className="font-medium">{session?.treatment_id?.service_name || 'N/A'}</div>
                   <div className="text-sm text-muted-foreground">
                     {session.no_of_session_book} sessions
                   </div>
@@ -410,14 +416,14 @@ const filteredSessions = useMemo(() => {
           <Pagination>
             <PaginationContent>
               <PaginationItem>
-                <PaginationPrevious 
+                <PaginationPrevious
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                 />
               </PaginationItem>
               {[...Array(totalPages)].map((_, i) => (
                 <PaginationItem key={i + 1}>
-                  <PaginationLink 
+                  <PaginationLink
                     onClick={() => setCurrentPage(i + 1)}
                     isActive={currentPage === i + 1}
                     className="cursor-pointer"
@@ -427,7 +433,7 @@ const filteredSessions = useMemo(() => {
                 </PaginationItem>
               ))}
               <PaginationItem>
-                <PaginationNext 
+                <PaginationNext
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                 />
@@ -489,10 +495,10 @@ const filteredSessions = useMemo(() => {
         </DialogContent>
       </Dialog>
 
-    
+
     </div>
 
-    )
+  )
 }
 
 export default AllSessions
