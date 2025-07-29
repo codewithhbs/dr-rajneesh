@@ -167,13 +167,7 @@ export function Footer() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-start space-x-2">
-                  <MapPin className="h-5 w-5 text-[#1e7fd0] mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-medium">Delhi Clinic</h4>
-                    <p className="text-sm text-gray-600">789 Health Boulevard, Delhi, 110001</p>
-                  </div>
-                </div>
+               
               </div>
             </div>
 

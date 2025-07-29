@@ -4,6 +4,7 @@ const { createReview } = require('../controllers/service/review.controller');
 const { isAuthenticated } = require('../middleware/protect');
 const { getBookingsByDateAndTimePeriod } = require('../controllers/bookings/BookingService');
 const { createAorderForSession, verifyPayment, handlePaymentFailure, foundBookingViaId } = require('../controllers/bookings/CreateBooking');
+const { getAllUser, getSingleUser, updateUser, deleteUser } = require('../controllers/admin/userRealated');
 const user_auth_router = express.Router()
 const { CLIENT_ID, REDIRECT_URI } = process.env;
 
@@ -46,6 +47,13 @@ user_auth_router.get('/found-booking/:id', foundBookingViaId);
 user_auth_router.get('/found-bookings', isAuthenticated, getBookingHistory)
 
 
+
+
+// Admin
+user_auth_router.get('/users', getAllUser);
+user_auth_router.get('/users/:id', getSingleUser);
+user_auth_router.put('/users/:id', updateUser);
+user_auth_router.delete('/users/:id', deleteUser);
 
 
 module.exports = user_auth_router;

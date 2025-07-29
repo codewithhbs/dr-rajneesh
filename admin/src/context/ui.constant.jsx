@@ -2,14 +2,14 @@
 import {
 
     Home,
-   
+
     Calendar,
     Tag,
-  
+
     Building,
-  
+
     FileText,
-  
+
     User2,
     StethoscopeIcon,
     TrafficCone,
@@ -42,7 +42,7 @@ export const menuSections = [
             { to: "/dashboard/product-coupons", label: "Product Coupons" }
         ],
     },
-     {
+    {
         title: "Treatments",
         icon: <TrafficCone className="h-5 w-5" />,
         singleItem: true,
@@ -63,14 +63,14 @@ export const menuSections = [
         to: "/dashboard/doctor",
         label: "Doctors",
     },
-    
+
     {
         title: "Clinic",
         icon: <Building className="h-5 w-5" />,
-        items: [
-            { to: "/dashboard/all-clinic", label: "All Clinic" },
-            { to: "/dashboard/add-new-clinic", label: "Add New Clinic" },
-        ],
+        singleItem: true,
+        to: "/dashboard/all-clinic",
+        label: "Clinic"
+
     },
     {
         title: "Blogs",

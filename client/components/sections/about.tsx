@@ -135,9 +135,9 @@ const AboutUs = () => {
                   </Badge>
                   <h2 className="text-3xl sm:text-xl font-bold text-gray-800 mb-6">Back To Nature Spine Clinic</h2>
                   <p className="text-gray-600 text-lg leading-relaxed mb-6">
-                    Dr. Rajneesh Kant in Delhi is a top player in the category of Orthopedic Doctors in Delhi. This
+                    Dr. Rajneesh Kant in Mumbai & Patna is a top player in the category of Orthopedic Doctors in Mumbai & Patna. This
                     well-known establishment acts as a one-stop destination servicing customers both locally and from
-                    other parts of Delhi.
+                    other parts of Mumbai & Patna.
                   </p>
                   <p className="text-gray-600 text-lg leading-relaxed mb-8">
                     Our team is made up of passionate individuals who are committed to their roles and work
@@ -206,7 +206,7 @@ const AboutUs = () => {
 
                   <div className="flex items-center gap-2 text-gray-600 mb-2">
                     <MapPin className="w-4 h-4 text-blue-500" />
-                    <span>Delhi & Mumbai Locations</span>
+                    <span>Mumbai & Patna & Mumbai Locations</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-600">
                     <Award className="w-4 h-4 text-purple-500" />
@@ -321,7 +321,7 @@ const AboutUs = () => {
       <div className="flex flex-wrap justify-center gap-4 text-sm sm:text-base text-gray-600">
         <div className="flex items-center gap-2">
           <MapPin className="w-4 h-4 text-blue-500" />
-          <span>Delhi & Mumbai</span>
+          <span>Mumbai & Patna & Mumbai</span>
         </div>
         <div className="flex items-center gap-2">
           <Clock className="w-4 h-4 text-green-500" />

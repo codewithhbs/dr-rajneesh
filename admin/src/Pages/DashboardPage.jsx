@@ -6,21 +6,7 @@ import {
   MessageSquare,
   Menu,
   LogOut,
-  Home,
-  ShoppingBag,
-  Calendar,
-  Tag,
-  Cake,
-  Stethoscope,
-  Scissors,
-  Activity,
-  Syringe,
-  ImageIcon,
-  Building,
-  UserPlus,
-  FileText,
-  Dog,
-  Cat,
+
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -45,6 +31,8 @@ import AllServices from "./services/AllServices"
 import AddNewTreatMents from "./services/AddNewTreatMents"
 import AllSessions from "./sessions/AllSessions"
 import SessionDetails from "./sessions/SessionDetails"
+import AllUsers from "./users/AllUsers"
+import AllClinic from "./clinic/AllClinic"
 
 
 const DashboardPage = () => {
@@ -224,6 +212,11 @@ const DashboardPage = () => {
             <Route path="/Sessions" element={<AllSessions />} />
             <Route path="/admin/sessions/:id" element={<SessionDetails />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
+
+            {/* All Users */}
+            <Route path="/users" element={<AllUsers />} />
+            <Route path="/all-clinic" element={<AllClinic />} />
+
           </Routes>
         </main>
       </div>
