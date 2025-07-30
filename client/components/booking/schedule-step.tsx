@@ -64,12 +64,17 @@ const ScheduleStep = (props: ScheduleStepProps) => {
     selectedDate,
     setSelectedDate,
     selectedTimeSlot,
+
     setSelectedTimeSlot,
     selectedLocation,
     patientName,
     setPatientName,
     patientPhone,
     setPatientPhone,
+    patientEmail,
+    setPatientEmail,
+    patientAadhhar,
+    setPatientAadhhar,
     otp,
     setOtp,
     isOtpSent,
@@ -172,8 +177,11 @@ const ScheduleStep = (props: ScheduleStepProps) => {
     if (isAuthenticated && user) {
       if (user.name) setPatientName(user.name)
       if (user.phone) setPatientPhone(user.phone)
+      if (user.email) setPatientEmail(user.email)
+      if (user.aadhhar) setPatientAadhhar(user.aadhhar)
     }
   }, [isAuthenticated, user, setPatientName, setPatientPhone])
+
   const handleSendOtp = async () => {
     if (patientPhone.length !== 10) return
     setIsRegistering(true)
@@ -182,6 +190,8 @@ const ScheduleStep = (props: ScheduleStepProps) => {
       const { data } = await axios.post("https://drkm.api.adsdigitalmedia.com/api/v1/user/register-via-number", {
         phone: patientPhone,
         name: patientName,
+        email: patientEmail,
+        aadhhar: patientAadhhar,
       })
       console.log(data)
       setServerOtp(data?.otp)
@@ -611,6 +621,49 @@ const ScheduleStep = (props: ScheduleStepProps) => {
                     </p>
                   )}
                 </div>
+                {/* Email Address */}
+                <div>
+                  <Label htmlFor="email" className="text-sm font-semibold text-slate-700 mb-3 block flex items-center">
+                    <FileText className="h-4 w-4 mr-2 text-green-600" />
+                    Email Address
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email address"
+                    value={patientEmail}
+                    onChange={(e) => setPatientEmail(e.target.value)}
+                    className="w-full h-12 text-sm border-2 border-slate-200 rounded-xl focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white shadow-sm"
+                  />
+                  {isAuthenticated && user?.email && (
+                    <p className="text-xs text-green-600 mt-1 flex items-center">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Verified from your account
+                    </p>
+                  )}
+                </div>
+                {/* Aadhhar Number */}
+                <div>
+                  <Label htmlFor="aadhhar" className="text-sm font-semibold text-slate-700 mb-3 block flex items-center">
+                    <Shield className="h-4 w-4 mr-2 text-green-600" />
+                    Aadhhar Number
+                  </Label>
+                  <Input
+                    id="aadhhar"
+                    type="text"
+                    placeholder="Enter your 12-digit Aadhhar number"
+                    value={patientAadhhar}
+                    onChange={(e) => setPatientAadhhar(e.target.value.replace(/\D/g, "").slice(0, 12))}
+                    className="w-full h-12 text-sm border-2 border-slate-200 rounded-xl focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white shadow-sm"
+                  />
+                  {isAuthenticated && user?.aadhhar && (
+                    <p className="text-xs text-green-600 mt-1 flex items-center">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Verified from your account
+                    </p>
+                  )}
+                </div>
+
 
                 {/* OTP Verification */}
                 {!isAuthenticated && (

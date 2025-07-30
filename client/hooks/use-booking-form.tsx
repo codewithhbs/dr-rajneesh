@@ -12,10 +12,11 @@ export function useBookingForm({ onSubmit, calculatePricing }: UseBookingFormPro
     patient_details: {
       name: '',
       email: '',
-      phone: ''
+      phone: '',
+      aadhar: '' // Added Aadhar field
     }
   });
-  
+
   const [errors, setErrors] = useState<BookingError[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -33,7 +34,7 @@ export function useBookingForm({ onSubmit, calculatePricing }: UseBookingFormPro
       }
       return { ...prev, [field]: value };
     });
-    
+
     // Clear field-specific errors
     setErrors(prev => prev.filter(error => error.field !== field));
   }, []);
@@ -66,6 +67,9 @@ export function useBookingForm({ onSubmit, calculatePricing }: UseBookingFormPro
     } else if (!/\S+@\S+\.\S+/.test(formData.patient_details.email)) {
       newErrors.push({ field: 'patient_details.email', message: 'Please enter a valid email' });
     }
+    else if (!formData.patient_details.aadhar?.trim()) {
+      newErrors.push({ field: 'patient_details.aadhar', message: 'Please enter a valid aadhar number' });
+    }
 
     if (!formData.patient_details?.phone?.trim()) {
       newErrors.push({ field: 'patient_details.phone', message: 'Phone number is required' });
@@ -78,7 +82,7 @@ export function useBookingForm({ onSubmit, calculatePricing }: UseBookingFormPro
 
   const handleSubmit = useCallback(async () => {
     const validationErrors = validateForm();
-    
+
     if (validationErrors.length > 0) {
       setErrors(validationErrors);
       return;

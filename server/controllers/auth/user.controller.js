@@ -5,7 +5,7 @@ const { sendEmail } = require("../../utils/sendEmail");
 const { sendToken } = require("../../utils/sendToken");
 const axios = require("axios");
 const Bookings = require("../../models/booking/bookings.sessions.model");
-const { OAuth2Client } = require('google-auth-library');
+const { OAuth2Client } = require("google-auth-library");
 const createOtpExpiry = (minutes = 10) => {
     return new Date(Date.now() + minutes * 60 * 1000);
 };
@@ -13,14 +13,13 @@ const createOtpExpiry = (minutes = 10) => {
 exports.registerNormalUser = async (req, res, next) => {
     try {
         const { name, email, phone, password, termsAccepted } = req.body;
-        console.log(req.body)
+        console.log(req.body);
         if (!name || !email || !phone || !password) {
             return res.status(400).json({
                 success: false,
                 message: "All fields are required",
             });
         }
-
 
         if (!termsAccepted) {
             return res.status(400).json({
@@ -168,7 +167,7 @@ exports.registerNormalUser = async (req, res, next) => {
 
 exports.registerNormal = async (req, res, next) => {
     try {
-        const { name, phone, termsAccepted = true } = req.body;
+        const { name, phone, termsAccepted = true, email, aadhhar } = req.body;
 
         if (!name || !phone) {
             return res.status(400).json({
@@ -194,7 +193,7 @@ exports.registerNormal = async (req, res, next) => {
                     otp,
                     otpExpiry,
                 };
-                await existingUser.save()
+                await existingUser.save();
                 return res.status(200).json({
                     success: true,
                     otp: otp,
@@ -220,11 +219,11 @@ exports.registerNormal = async (req, res, next) => {
 
             await existingUser.save();
 
-
             return res.status(200).json({
                 success: true,
                 otp: otp,
-                message: "Your account is not verified. A new OTP has been sent to your phone number.",
+                message:
+                    "Your account is not verified. A new OTP has been sent to your phone number.",
                 userId: existingUser._id,
             });
         }
@@ -233,6 +232,8 @@ exports.registerNormal = async (req, res, next) => {
         const newUser = new userModel({
             name: name.trim(),
             phone: phone.trim(),
+            email: email ? email.toLowerCase().trim() : "",
+            aadhhar: aadhhar ? aadhhar.trim() : "",
             termsAccepted,
             profileImage: {
                 url: `https://api.dicebear.com/9.x/initials/svg?seed=${name}`,
@@ -248,10 +249,10 @@ exports.registerNormal = async (req, res, next) => {
 
         await newUser.save();
 
-
         res.status(201).json({
             success: true,
-            message: "Registration successful! Please check your Phone for verification OTP.",
+            message:
+                "Registration successful! Please check your Phone for verification OTP.",
             userId: newUser._id,
         });
     } catch (error) {
@@ -293,11 +294,18 @@ exports.googleAuthRegisterAndLogin = async (req, res) => {
         const existingUser = await userModel.findOne({ email: userInfo.email });
 
         if (existingUser) {
-            const message = `This email is already registered. Please login using email and password`.replace(/\s+/g, '-');
+            const message =
+                `This email is already registered. Please login using email and password`.replace(
+                    /\s+/g,
+                    "-"
+                );
             if (!existingUser.isGoogleAuth) {
-                res.redirect(`https://drkm.adsdigitalmedia.com/login?message=${encodeURIComponent(message)}`);
+                res.redirect(
+                    `https://drkm.adsdigitalmedia.com/login?message=${encodeURIComponent(
+                        message
+                    )}`
+                );
             }
-
 
             console.log("Old user via Google login:", existingUser);
             const { token } = await sendToken(
@@ -372,7 +380,7 @@ exports.googleVerifyRegisterAndLogin = async (req, res) => {
     const { token } = req.body;
     console.log(req.body);
 
-    if (!token) return res.status(400).json({ error: 'Missing token' });
+    if (!token) return res.status(400).json({ error: "Missing token" });
 
     try {
         // Verify the token using Google's library
@@ -383,65 +391,67 @@ exports.googleVerifyRegisterAndLogin = async (req, res) => {
 
         const payload = ticket.getPayload();
 
-        if (!payload.email) return res.status(400).json({ error: 'Email not found in token' });
+        if (!payload.email)
+            return res.status(400).json({ error: "Email not found in token" });
 
         const existingUser = await userModel.findOne({ email: payload.email });
         console.log("Existing user found:", existingUser);
 
         if (existingUser) {
-            console.log('Existing user attempting Google login:', existingUser);
+            console.log("Existing user attempting Google login:", existingUser);
 
             // If user exists but wasn't created via Google auth, update their record
             if (!existingUser.isGoogleAuth) {
                 existingUser.isGoogleAuth = true;
                 existingUser.profileImage = {
-                    url: payload.picture || existingUser.profileImage?.url || '',
-                    publicId: existingUser.profileImage?.publicId || '',
+                    url: payload.picture || existingUser.profileImage?.url || "",
+                    publicId: existingUser.profileImage?.publicId || "",
                 };
-                existingUser.emailVerification.isVerified = payload.email_verified || existingUser.emailVerification.isVerified;
+                existingUser.emailVerification.isVerified =
+                    payload.email_verified || existingUser.emailVerification.isVerified;
                 await existingUser.save();
-                console.log('Updated existing user with Google auth');
+                console.log("Updated existing user with Google auth");
             }
-            console.log('sending token to existing user with Google auth');
+            console.log("sending token to existing user with Google auth");
 
             // Log in the existing user
-            return await sendToken(existingUser, 200, res, 'Login successful', true);
+            return await sendToken(existingUser, 200, res, "Login successful", true);
         }
 
         // Create new user if no existing user found
         const newUser = new userModel({
-            name: payload.name?.trim() || '',
+            name: payload.name?.trim() || "",
             email: payload.email.toLowerCase().trim(),
             termsAccepted: true,
             profileImage: {
-                url: payload.picture || '',
-                publicId: '',
+                url: payload.picture || "",
+                publicId: "",
             },
             emailVerification: {
                 isVerified: payload.email_verified || false,
             },
             isGoogleAuth,
-            status: 'active',
+            status: "active",
         });
 
         await newUser.save();
-        console.log('New user saved via Google login:', newUser);
+        console.log("New user saved via Google login:", newUser);
 
         const emailHtml = welcome(newUser);
         emailQueue
             .add({
-                type: 'welcome',
+                type: "welcome",
                 to: newUser.email,
-                subject: 'Thank you for registering with us',
+                subject: "Thank you for registering with us",
                 html: emailHtml,
             })
-            .then((job) => console.log('✅ Email job queued:', job.id))
-            .catch((error) => console.error('❌ Email queue error:', error));
+            .then((job) => console.log("✅ Email job queued:", job.id))
+            .catch((error) => console.error("❌ Email queue error:", error));
 
-        await sendToken(newUser, 200, res, 'Thank you for registering', false);
+        await sendToken(newUser, 200, res, "Thank you for registering", false);
     } catch (error) {
-        console.error('Google token verification error:', error.message);
-        return res.status(500).json({ error: 'Google authentication failed' });
+        console.error("Google token verification error:", error.message);
+        return res.status(500).json({ error: "Google authentication failed" });
     }
 };
 
@@ -456,7 +466,7 @@ exports.verifyEmailOtp = async (req, res, next) => {
                 message: "OTP and either Email or Phone Number are required",
             });
         }
-        console.log("Body", req.body)
+        console.log("Body", req.body);
 
         let user;
 
@@ -785,7 +795,6 @@ exports.verifyEmailOtp = async (req, res, next) => {
 </body>
         </html>`;
 
-
             emailQueue
                 .add({
                     type: "welcome",
@@ -827,8 +836,6 @@ exports.verifyEmailOtp = async (req, res, next) => {
         next(error);
     }
 };
-
-
 
 // Login User
 exports.loginUser = async (req, res, next) => {
@@ -884,7 +891,6 @@ exports.loginUser = async (req, res, next) => {
 
         // Check if email is verified
         if (!user.emailVerification.isVerified && !user.isGoogleAuth) {
-
             const otp = 123456;
             const otpExpiry = createOtpExpiry(30);
             // Send new verification email
@@ -917,16 +923,17 @@ exports.loginUser = async (req, res, next) => {
                     console.error("❌ Error adding job to queue:", error);
                 });
 
-            user.emailVerification = {
+            (user.emailVerification = {
                 isVerified: false,
                 otp,
                 otpExpiry,
-            },
-                user.status = "un-verified"
+            }),
+                (user.status = "un-verified");
             return res.status(200).json({
                 success: true,
-                case: 'verify-otp',
-                message: "Please verify your email before logging in Email sent on Registerd emil",
+                case: "verify-otp",
+                message:
+                    "Please verify your email before logging in Email sent on Registerd emil",
             });
         }
 
@@ -1002,7 +1009,6 @@ exports.requestPasswordReset = async (req, res, next) => {
             });
         }
 
-
         const resetOtp = generateOtp();
 
         // Update user with reset token
@@ -1045,104 +1051,46 @@ exports.requestPasswordReset = async (req, res, next) => {
 
 exports.verifyPasswordResetOtp = async (req, res, next) => {
     try {
-        console.log(req.body
-
-        )
-        const { email, otp, newPassword } = req.body
+        console.log(req.body);
+        const { email, otp, newPassword } = req.body;
 
         if (!email || !otp || !newPassword) {
             return res.status(400).json({
                 success: false,
                 message: "Email, OTP, and new password are required",
-            })
+            });
         }
 
         const user = await userModel.findOne({
             email: email.toLowerCase().trim(),
             "passwordReset.otp": otp,
             "passwordReset.otpExpiry": { $gt: new Date() },
-        })
+        });
 
         if (!user) {
             return res.status(400).json({
                 success: false,
                 message: "Invalid or expired OTP",
-            })
+            });
         }
 
-
-        user.password = newPassword
+        user.password = newPassword;
 
         // Clear the OTP fields
         user.passwordReset = {
             otp: null,
             otpExpiry: null,
-        }
-        await user.save()
+        };
+        await user.save();
         return res.status(200).json({
             success: true,
-            message: "Password reset successful. Please login now."
-
-        })
-    } catch (error) {
-        next(error)
-    }
-}
-
-
-// Reset Password
-const resetPassword = async (req, res, next) => {
-    try {
-        const { resetToken, newPassword, confirmPassword } = req.body;
-
-        if (!resetToken || !newPassword || !confirmPassword) {
-            return res.status(400).json({
-                success: false,
-                message: "All fields are required",
-            });
-        }
-
-        if (newPassword !== confirmPassword) {
-            return res.status(400).json({
-                success: false,
-                message: "Passwords do not match",
-            });
-        }
-
-        const user = await userModel.findOne({
-            "passwordReset.token": resetToken,
-            "passwordReset.tokenExpiry": { $gt: new Date() },
-        });
-
-        if (!user) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid or expired reset token",
-            });
-        }
-
-        // Update password
-        user.password = newPassword;
-        await user.save();
-
-        // Clear reset token
-        await userModel.findByIdAndUpdate(user._id, {
-            $unset: {
-                "passwordReset.token": 1,
-                "passwordReset.tokenExpiry": 1,
-            },
-        });
-
-        res.status(200).json({
-            success: true,
-            message: "Password reset successfully",
+            message: "Password reset successful. Please login now.",
         });
     } catch (error) {
         next(error);
     }
 };
 
-// Change Password (for logged-in users)
 exports.changePassword = async (req, res, next) => {
     try {
         const { currentPassword, newPassword, confirmPassword } = req.body;
@@ -1193,7 +1141,6 @@ exports.changePassword = async (req, res, next) => {
     }
 };
 
-// Get User Profile
 exports.getUserProfile = async (req, res, next) => {
     try {
         const user = await userModel.findById(req.user.id).select("-password");
@@ -1214,44 +1161,168 @@ exports.getUserProfile = async (req, res, next) => {
     }
 };
 
-// Update User Profile
 exports.updateUserProfile = async (req, res, next) => {
     try {
-        const { name, phone, email } = req.body;
+        const { name, phone, email, aadhhar } = req.body;
         const updates = {};
+        const userId = req.user.id;
 
-        if (name) updates.name = name.trim();
-        if (phone) {
-            // Check if phone number is already taken by another user
+        // Find current user
+        const currentUser = await userModel.findById(userId);
+        if (!currentUser) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+            });
+        }
+
+        // Update name and profile image
+        if (name && name.trim() !== currentUser.name) {
             const existingUser = await userModel.findOne({
-                phone: phone.trim(),
-                _id: { $ne: req.user.id },
+                name: name.trim(),
+                _id: { $ne: userId },
             });
 
             if (existingUser) {
+                return res.status(409).json({
+                    success: false,
+                    message: "Name already registered",
+                });
+            }
+
+            updates.name = name.trim();
+            updates.profileImage = {
+                url: `https://api.dicebear.com/9.x/initials/svg?seed=${name.trim()}`,
+                publicId: "",
+            };
+        }
+
+        // Update Aadhar
+        if (aadhhar && aadhhar.trim() !== currentUser.aadhhar) {
+            const existingAadharUser = await userModel.findOne({
+                aadhhar: aadhhar.trim(),
+                _id: { $ne: userId },
+            });
+
+            if (existingAadharUser) {
+                return res.status(409).json({
+                    success: false,
+                    message: "Aadhar number already registered",
+                });
+            }
+
+            updates.aadhhar = aadhhar.trim();
+        }
+
+        // Update phone number with OTP verification
+        if (phone && phone.trim() !== currentUser.phone) {
+            const existingPhoneUser = await userModel.findOne({
+                phone: phone.trim(),
+                _id: { $ne: userId },
+            });
+
+            if (existingPhoneUser) {
                 return res.status(409).json({
                     success: false,
                     message: "Phone number already registered",
                 });
             }
 
-            updates.phone = phone.trim();
+            const phoneOtp = generateOtp();
+
+            updates.new_number = phone.trim();
+            updates.phoneNumber = {
+                isVerified: false,
+                otp: phoneOtp,
+                otpExpiry: createOtpExpiry(1),
+            };
+
+            // Send OTP to existing verified email
+            const phoneOtpHtml = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #333;">Verify Your New Phone Number</h2>
+                    <p>Hello ${name || currentUser.name},</p>
+                    <p>Please use the OTP below to verify your new phone number:</p>
+                    <div style="background: #f4f4f4; padding: 20px; text-align: center; margin: 20px 0;">
+                        <h3 style="color: #28a745; font-size: 32px; margin: 0;">${phoneOtp}</h3>
+                    </div>
+                    <p>This OTP will expire in 1 minutes.</p>
+                    <p>If you didn’t request this change, please ignore this email.</p>
+                    <hr>
+                    <p style="color: #666; font-size: 12px;">This is an automated email, please do not reply.</p>
+                </div>
+            `;
+
+            await emailQueue.add({
+                type: "register",
+                to: currentUser.email,
+                subject: "Verify Your New Phone Number",
+                html: phoneOtpHtml,
+            });
         }
 
-        const user = await userModel
-            .findByIdAndUpdate(req.user.id, updates, {
+        // Update email with verification OTP
+        if (email && email.trim() !== currentUser.email) {
+            const existingEmailUser = await userModel.findOne({
+                email: email.trim(),
+                _id: { $ne: userId },
+            });
+
+            if (existingEmailUser) {
+                return res.status(409).json({
+                    success: false,
+                    message: "Email already registered",
+                });
+            }
+
+            const emailOtp = generateOtp();
+
+            updates.new_email = email.trim();
+            updates.emailVerification = {
+                isVerified: false,
+                otp: emailOtp,
+                otpExpiry: createOtpExpiry(1),
+            };
+
+            const emailOtpHtml = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #333;">Verify Your New Email Address</h2>
+                    <p>Hello ${name || currentUser.name},</p>
+                    <p>Use the OTP below to verify your new email:</p>
+                    <div style="background: #f4f4f4; padding: 20px; text-align: center; margin: 20px 0;">
+                        <h3 style="color: #007bff; font-size: 32px; margin: 0;">${emailOtp}</h3>
+                    </div>
+                    <p>This OTP will expire in 1 minutes.</p>
+                    <p>If you did not request this change, please ignore this email.</p>
+                    <hr>
+                    <p style="color: #666; font-size: 12px;">This is an automated email, please do not reply.</p>
+                </div>
+            `;
+
+            await emailQueue.add({
+                type: "email-verification",
+                to: email.trim(),
+                subject: "Verify Your New Email Address",
+                html: emailOtpHtml,
+            });
+        }
+
+        // Apply updates
+        const updatedUser = await userModel
+            .findByIdAndUpdate(userId, updates, {
                 new: true,
                 runValidators: true,
             })
             .select("-password");
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             message: "Profile updated successfully",
-            user,
+            user: updatedUser,
         });
     } catch (error) {
-        next(error);
+        console.error("Error updating profile:", error);
+        return next(error);
     }
 };
 
@@ -1285,6 +1356,136 @@ exports.updateProfileImage = async (req, res, next) => {
         });
     } catch (error) {
         next(error);
+    }
+};
+
+exports.verifyOtpWhileUpdating = async (req, res) => {
+    try {
+        const { otp, email, number } = req.body;
+
+        if (!otp || (!email && !number)) {
+            return res.status(400).json({
+                success: false,
+                message: "OTP and either email or phone number are required",
+            });
+        }
+
+        let user;
+
+        // 🔹 Email OTP verification
+        if (email) {
+            const trimmedEmail = email.toLowerCase().trim();
+
+            user = await userModel.findOne({
+                new_email: trimmedEmail,
+                "emailVerification.otp": otp,
+                "emailVerification.otpExpiry": { $gt: new Date() },
+            });
+
+            if (!user) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid or expired email OTP",
+                });
+            }
+
+            // Update email and clear OTP
+            await userModel.findByIdAndUpdate(user._id, {
+                email: user.new_email,
+                new_email: null,
+                "emailVerification.isVerified": true,
+                status: "active",
+                $unset: {
+                    "emailVerification.otp": "",
+                    "emailVerification.otpExpiry": "",
+                },
+            });
+
+            // Send confirmation email
+            const confirmationEmailHtml = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+                    <h2 style="color: #333;">Email Updated Successfully</h2>
+                    <p>Hello ${user.name},</p>
+                    <p>Your email has been successfully updated to <strong>${trimmedEmail}</strong>.</p>
+                    <p>If this wasn’t you, please contact support immediately.</p>
+                    <hr>
+                    <p style="color: #666; font-size: 12px;">This is an automated email. Please do not reply.</p>
+                </div>
+            `;
+
+            await emailQueue.add({
+                type: "register",
+                to: trimmedEmail,
+                subject: "Your Email Has Been Updated",
+                html: confirmationEmailHtml,
+            });
+
+            return res.status(200).json({
+                success: true,
+                message: "Email verified and updated successfully",
+            });
+        }
+
+        // 🔹 Phone OTP verification
+        if (number) {
+            const trimmedNumber = number.trim();
+
+            user = await userModel.findOne({
+                new_number: trimmedNumber,
+                "phoneNumber.otp": otp,
+                "phoneNumber.otpExpiry": { $gt: new Date() },
+            });
+
+            if (!user) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid or expired phone OTP",
+                });
+            }
+
+            // Update phone and clear OTP
+            await userModel.findByIdAndUpdate(user._id, {
+                phone: user.new_number,
+                new_number: null,
+                "phoneNumber.isVerified": true,
+                status: "active",
+                $unset: {
+                    "phoneNumber.otp": "",
+                    "phoneNumber.otpExpiry": "",
+                },
+            });
+
+            // Send confirmation email to current (already verified) email
+            const confirmationPhoneHtml = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+                    <h2 style="color: #333;">Phone Number Updated Successfully</h2>
+                    <p>Hello ${user.name},</p>
+                    <p>Your phone number has been successfully updated to <strong>${trimmedNumber}</strong>.</p>
+                    <p>If this wasn’t you, please contact support immediately.</p>
+                    <hr>
+                    <p style="color: #666; font-size: 12px;">This is an automated email. Please do not reply.</p>
+                </div>
+            `;
+
+            await emailQueue.add({
+                type: "register",
+                to: user.email, // use verified email
+                subject: "Your Phone Number Has Been Updated",
+                html: confirmationPhoneHtml,
+            });
+
+            return res.status(200).json({
+                success: true,
+                message: "Phone number verified and updated successfully",
+            });
+        }
+
+    } catch (error) {
+        console.error("Error verifying OTP:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong while verifying OTP",
+        });
     }
 };
 
@@ -1375,7 +1576,6 @@ exports.resendVerificationEmail = async (req, res, next) => {
 
         const otp = 123456;
 
-        // Update user with new OTP
         await userModel.findByIdAndUpdate(user._id, {
             "emailVerification.otp": otp,
             "emailVerification.otpExpiry": createOtpExpiry(30),
@@ -1880,3 +2080,197 @@ function welcome(user) {
 
 
 
+exports.getAllUsers = async (req, res, next) => {
+    try {
+        const users = await userModel.find({ status: { $ne: "deleted" } })
+            .select("-password")
+            .sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            success: true,
+            users,
+        });
+    } catch (error) {
+        console.error("Error fetching all users:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong while fetching users",
+        });
+    }
+}
+
+
+
+exports.adminLogin = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({ message: "Email and password are required." });
+        }
+        console.log("Admin login attempt with email:", email);
+
+        const admin = await userModel.findOne({ email, role: "admin" });
+
+        if (!admin) {
+            return res.status(404).json({ message: "Admin not found." });
+        }
+
+        const isPasswordValid = await admin.comparePassword(password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ message: "Invalid credentials." });
+        }
+
+        // Save session
+        req.session.userId = admin._id;
+        req.session.role = admin.role;
+
+        res.status(200).json({ message: "Login successful." });
+
+    } catch (error) {
+        console.error("Error during admin login:", error);
+        res.status(500).json({ message: "Internal server error." });
+    }
+};
+
+exports.adminProfile = async (req, res) => {
+    try {
+        const id = req.session.userId;
+
+        if (!id) {
+            return res.status(401).json({ message: "Unauthorized: Session expired or invalid." });
+        }
+
+        const findUser = await userModel.findById(id).select("-password"); // exclude password
+
+        if (!findUser || findUser.role !== "admin") {
+            return res.status(403).json({ message: "Access denied: Admins only." });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Admin profile fetched successfully.",
+            data: findUser,
+        });
+
+    } catch (error) {
+        console.error("Error fetching admin profile:", error);
+        return res.status(500).json({ message: "Internal server error." });
+    }
+};
+
+exports.adminLogout = (req, res) => {
+    try {
+        req.session.destroy((err) => {
+            if (err) {
+                console.error("Logout Error:", err);
+                return res.status(500).json({ message: "Logout failed. Try again." });
+            }
+
+            res.clearCookie("connect.sid"); 
+            return res.status(200).json({ message: "Admin logged out successfully." });
+        });
+    } catch (error) {
+        console.error("Logout Exception:", error);
+        return res.status(500).json({ message: "Internal server error." });
+    }
+};
+
+exports.updateAdminProfile = async (req, res) => {
+  try {
+    const adminId = req.session.userId;
+    if (!adminId) {
+      return res.status(401).json({ message: "Unauthorized: Session expired or invalid." });
+    }
+
+    const { name, email, phone } = req.body;
+
+    const updatedFields = {};
+    const currentAdmin = await userModel.findById(adminId);
+    if (!currentAdmin) {
+      return res.status(404).json({ message: "Admin not found." });
+    }
+
+    // Check if email is changing and already taken
+    if (email && email.trim() !== currentAdmin.email) {
+      const existingEmailUser = await userModel.findOne({ email: email.trim(), _id: { $ne: adminId } });
+      if (existingEmailUser) {
+        return res.status(409).json({ message: "Email already in use by another user." });
+      }
+      updatedFields.email = email.trim();
+    }
+
+    // Check if phone is changing and already taken
+    if (phone && phone.trim() !== currentAdmin.phone) {
+      const existingPhoneUser = await userModel.findOne({ phone: phone.trim(), _id: { $ne: adminId } });
+      if (existingPhoneUser) {
+        return res.status(409).json({ message: "Phone number already in use by another user." });
+      }
+      updatedFields.phone = phone.trim();
+    }
+
+    // Check and update name and profile image
+    if (name && name.trim() !== currentAdmin.name) {
+      updatedFields.name = name.trim();
+      updatedFields.profileImage = {
+        url: `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(name.trim())}`,
+        publicId: "",
+      };
+    }
+
+    const updatedAdmin = await userModel.findByIdAndUpdate(
+      adminId,
+      { $set: updatedFields },
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    return res.status(200).json({
+      success: true,
+      message: "Admin profile updated successfully.",
+      data: updatedAdmin,
+    });
+
+  } catch (error) {
+    console.error("Error updating admin profile:", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+
+
+
+exports.changeAdminPassword = async (req, res) => {
+  try {
+    const adminId = req.session.userId;
+    const { currentPassword, newPassword, confirmNewPassword } = req.body;
+
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      return res.status(400).json({ message: "New password and confirmation do not match." });
+    }
+
+    const admin = await userModel.findById(adminId);
+
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found." });
+    }
+
+    const isMatch = await admin.comparePassword(currentPassword, admin.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Current password is incorrect." });
+    }
+
+   
+    admin.password = newPassword
+    await admin.save();
+
+    return res.status(200).json({ message: "Password changed successfully." });
+
+  } catch (error) {
+    console.error("Error changing password:", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};

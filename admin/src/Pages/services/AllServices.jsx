@@ -356,7 +356,7 @@ const AllServices = () => {
                                             <TableCell>
                                                 <div className="space-y-1">
                                                     <div className="font-medium">{service.service_name}</div>
-                                                    <div className="text-sm text-muted-foreground line-clamp-2">{service.service_small_desc}</div>
+                                                    <div className="text-sm w-sm truncate  text-muted-foreground line-clamp-1">{service.service_small_desc}</div>
                                                 </div>
                                             </TableCell>
                                             <TableCell>

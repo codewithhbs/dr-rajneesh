@@ -39,6 +39,12 @@ exports.createService = async (req, res) => {
             uploadedFiles = await uploadMultipleFiles(req.files);
         }
 
+        if (service_small_desc.length > 200) {
+            return res.status(400).json({
+                success: false,
+                message: 'Service small description should not exceed 200 characters'
+            });
+        }
         // Create service object
         const serviceData = {
             service_name,
@@ -80,6 +86,7 @@ exports.createService = async (req, res) => {
             deleteMultipleFiles(req.files);
         }
 
+        console.error('Error creating service:', error);
         res.status(500).json({
             success: false,
             message: 'Error creating service',
@@ -95,7 +102,7 @@ exports.getAllServices = async (req, res) => {
     try {
         const {
             page = 1,
-            limit = 10,
+            limit = 20,
             status,
             doctor,
             clinic,

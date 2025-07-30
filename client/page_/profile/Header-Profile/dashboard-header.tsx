@@ -14,7 +14,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onLogout }) => {
     <header className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 text-white shadow-lg">
       <div className="container mx-auto px-6 py-4">
         <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-3">
+          <div className="flex mt-6 items-center space-x-3">
             <div className="bg-white/20 rounded-full p-2">
               <Activity className="h-8 w-8" />
             </div>

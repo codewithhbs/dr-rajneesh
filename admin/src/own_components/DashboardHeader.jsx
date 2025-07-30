@@ -9,9 +9,14 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
+import useAdminProfile from '@/hooks/admin';
 
 const DashboardHeader = ({ toggleMobileMenu, isMobileMenuOpen, user = null, logout = () => { console.log("logout") } }) => {
     const [imageError, setImageError] = useState(false);
+    const { profile, handleLogout } = useAdminProfile()
+
+
+
 
     const handleImageError = () => {
         setImageError(true);
@@ -19,7 +24,7 @@ const DashboardHeader = ({ toggleMobileMenu, isMobileMenuOpen, user = null, logo
 
     const imageUrl = imageError
         ? "https://res.cloudinary.com/dglihfwse/image/upload/v1745318543/user_2_pltaly.png"
-        : user?.picture;
+        : profile?.profileImage?.url;
 
     return (
         <header className="bg-white border-b sticky top-0 z-10">
@@ -27,9 +32,9 @@ const DashboardHeader = ({ toggleMobileMenu, isMobileMenuOpen, user = null, logo
                 <div className="flex h-15 items-center justify-between">
                     {/* Mobile Menu Button */}
                     <div className=" hidden md:flex invisible items-center">
-                       
 
-                    
+
+
                     </div>
 
                     {/* Notifications and User Dropdown */}
@@ -59,8 +64,8 @@ const DashboardHeader = ({ toggleMobileMenu, isMobileMenuOpen, user = null, logo
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem>
-                                    <LogOut onClick={logout} className="mr-2 h-4 w-4" />
-                                    <span onClick={logout}>Log out</span>
+                                    <LogOut onClick={() => handleLogout()} className="mr-2 h-4 w-4" />
+                                    <span onClick={() => handleLogout()}>Log out</span>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>

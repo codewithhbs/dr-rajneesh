@@ -14,37 +14,29 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+
 import { Badge } from "@/components/ui/badge"
 import DashboardHome from "./DashboardHome"
 
 import DashboardHeader from "@/own_components/DashboardHeader"
 import { ADMIN_WEB_NAME, menuSections } from "@/context/ui.constant"
-import AllServices from "./services/AllServices"
+
 import AddNewTreatMents from "./services/AddNewTreatMents"
 import AllSessions from "./sessions/AllSessions"
 import SessionDetails from "./sessions/SessionDetails"
-import AllUsers from "./users/AllUsers"
-import AllClinic from "./clinic/AllClinic"
 
 
 const DashboardPage = () => {
   const location = useLocation()
   const [openSections, setOpenSections] = useState({})
-
+  const { profile } = useAdminProfile()
   const toggleSection = (title) => {
     setOpenSections((prev) => ({
       ...prev,
       [title]: !prev[title],
     }))
   }
+
 
 
   const isActive = (path) => location.pathname === path
@@ -122,32 +114,15 @@ const DashboardPage = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Avatar>
-                <AvatarImage src="/avatars/admin.png" />
-                <AvatarFallback>AD</AvatarFallback>
+                <AvatarImage src={profile?.profileImage?.url} />
+                <AvatarFallback>{profile?.name}</AvatarFallback>
               </Avatar>
               <div>
-                <p className="text-sm font-medium">Admin User</p>
-                <p className="text-xs text-gray-500">admin@petcare.com</p>
+                <p className="text-sm font-medium">{profile?.name}</p>
+                <p className="text-xs text-gray-500">{profile?.email}</p>
               </div>
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full h-8 w-8">
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuItem>Settings</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-red-600">
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+
           </div>
         </div>
       </aside>
@@ -204,13 +179,66 @@ const DashboardPage = () => {
         {/* Main Content */}
         <main className="flex-1 bg-white p-4 md:p-6 overflow-auto">
           <Routes>
-            <Route path="/" element={<DashboardHome />} />
-            <Route path="/treatments" element={<AllServices />} />
-            <Route path="/add-or-update-treatments" element={<AddNewTreatMents />} />
+
+            <Route path="/" element={
+              <ProtectedRoute>
+                <DashboardHome />
+              </ProtectedRoute>
+            } />
+
+
+            <Route path="/add-or-update-treatments" element={
+              <ProtectedRoute>
+                <AddNewTreatMents />
+              </ProtectedRoute>
+            } />
 
             {/* Sessions */}
-            <Route path="/Sessions" element={<AllSessions />} />
-            <Route path="/admin/sessions/:id" element={<SessionDetails />} />
+            <Route path="/Sessions" element={
+              <ProtectedRoute>
+                <AllSessions />
+              </ProtectedRoute>
+            } />
+            <Route path="/Users" element={
+              <ProtectedRoute>
+                <AllUsers />
+              </ProtectedRoute>
+            } />
+            <Route path="/treatments" element={
+              <ProtectedRoute>
+                <AllServices />
+              </ProtectedRoute>
+            } />
+            <Route path="/blogs-categories" element={
+              <ProtectedRoute>
+                <AllBlogCategories />
+              </ProtectedRoute>
+            } />
+            <Route path="/all-blogs" element={
+              <ProtectedRoute>
+                <AllBlogs />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <AdminProfile />
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor" element={
+              <ProtectedRoute>
+                <AllDoctors />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/sessions/:id" element={
+              <ProtectedRoute>
+                <SessionDetails />
+              </ProtectedRoute>
+            } />
+            <Route path="/notifications" element={
+              <ProtectedRoute>
+                <AllNotifications />
+              </ProtectedRoute>
+            } />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
 
             {/* All Users */}

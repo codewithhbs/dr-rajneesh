@@ -62,3 +62,19 @@ exports.authorizeRoles = (...roles) => {
     next();
   };
 };
+
+
+exports.isAdmin = (req, res, next) => {
+  const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+
+  if (req.session && req.session.role === "admin") {
+    return next();
+  }
+
+  console.warn(`Unauthorized access attempt from IP: ${ip}`);
+  
+  return res.status(403).json({
+    message: "Access denied: You do not have the necessary administrative privileges to perform this action.",
+    ipBlocked: ip
+  });
+};
