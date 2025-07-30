@@ -7,6 +7,11 @@ const { getAllReviews, getReviewById, updateReview, deleteReview } = require('..
 const { createSettings, getOnlyOneSettings } = require('../controllers/settings/settings');
 const { getAdminAllBookings, getAdminSingleBookings, getAdminChangeSessionInformation, addAndUpdateSessionPrescriptions, addNextSessionDate } = require('../controllers/bookings/CreateBooking');
 const { getAvailableDates } = require('../controllers/D_Booking/D_Booking_Controoller');
+const { createNotification, getAllValidNotifications, deleteNotification, updateNotification } = require('../controllers/settings/notification');
+const { getAllUsers, adminLogin, adminProfile, adminLogout, updateAdminProfile, changeAdminPassword } = require('../controllers/auth/user.controller');
+const { isAdmin } = require('../middleware/protect');
+const { createCategory, getAllCategories, getSingleCategory, updateCategory, deleteCategory } = require('../controllers/Blogs/BlogCategory');
+const { createBlog, getAllBlogs, updateBlog, deleteBlog, getSingleBlog } = require('../controllers/Blogs/Blogs');
 const router = express.Router()
 
 
@@ -59,5 +64,50 @@ router.post('/admin-add-next-sessions', addNextSessionDate);
 
 // New Bookings
 router.get('/get-available-date', getAvailableDates)
+
+
+
+// New Notification Routes
+router.post('/add-notification', createNotification);
+router.get('/get-notifications', getAllValidNotifications);
+router.delete('/delete-notification/:id', deleteNotification);
+router.put('/update-notification/:id', updateNotification);
+
+
+// for admin web
+router.get('/admin/get-all-user', isAdmin, getAllUsers);
+
+//for admin login
+router.post("/admin/login", adminLogin);
+router.get("/admin/profile", isAdmin, adminProfile);
+router.get("/admin/logout", isAdmin, adminLogout);
+router.put("/admin/update-profile", isAdmin, updateAdminProfile);
+router.put("/admin/change-password", isAdmin, changeAdminPassword);
+
+
+router.get("/admin/check-auth", (req, res) => {
+    if (req.session && req.session.role === "admin") {
+        res.json({ authenticated: true });
+    } else {
+        res.status(401).json({ authenticated: false });
+    }
+});
+
+
+router.post("/create-category", isAdmin, createCategory);
+router.get("/all-categories", getAllCategories);
+router.get("/get-category/:id", getSingleCategory);
+router.put("/update-category/:id", isAdmin, updateCategory);
+router.delete("/delete-category/:id", isAdmin, deleteCategory);
+
+
+
+
+router.post("/create-blog", isAdmin, upload.single("image"), createBlog);
+router.get("/get-all-blogs", getAllBlogs);
+router.get("/get-blog/:id", getSingleBlog);
+router.put("/update-blog/:id", isAdmin, upload.single("image"), updateBlog);
+router.delete("/delete-blog/:id", isAdmin, deleteBlog)
+
 
 module.exports = router;   

@@ -19,6 +19,18 @@ const userSchema = new mongoose.Schema({
 
     },
 
+    aadhhar: {
+        type: String,
+        trim: true,
+        validate: {
+            validator: function (value) {
+                return /^\d{12}$/.test(value);
+            },
+            message: 'Aadhaar number must be 12 digits'
+        },
+       
+    },
+    
     phone: {
         type: String,
         required: function () {
@@ -37,6 +49,20 @@ const userSchema = new mongoose.Schema({
         trim: true,
 
 
+    },
+    new_number:{
+        type: String,
+        validate: {
+            validator: function (value) {
+                return /^\d{10}$/.test(value);
+            },
+            message: 'New phone number must be 10 digits'
+        },
+        trim: true
+    },
+    new_email:{
+        type: String,
+        trim: true,
     },
 
     // Profile image with validation

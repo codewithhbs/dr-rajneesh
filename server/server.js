@@ -18,6 +18,8 @@ const server = app.listen(PORT, () => {
 
 
 
+
+
 const gracefulShutdown = async (signal) => {
   logger.info(`${signal} signal received: closing HTTP server`, {
     component: 'Server',
@@ -53,6 +55,8 @@ const gracefulShutdown = async (signal) => {
     process.exit(1);
   }, 10000);
 };
+
+
 
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));

@@ -21,10 +21,9 @@ const PatientDashboard = () => {
   const { data: bookingData, loading: bookingLoading, error: bookingError, fetchBooking: refetchBookings } = useGetBooking()
   const { setToken } = useAuth()
   const { data: user, loading: userLoading, error: userError, getProfile: refetch } = useGetProfile()
-  console.log("bookingData",bookingData)
+
   const handleLogout = () => {
 
-    console.log("Logging out...")
     sessionStorage.clear()
     localStorage.clear()
     setToken('')
@@ -90,10 +89,12 @@ const PatientDashboard = () => {
         <DashboardHeader onLogout={handleLogout} />
 
         <div className="container mx-auto py-8 px-4 space-y-8">
-          {/* User Summary */}
+
           <UserSummaryCard user={user} />
 
-          {/* Main Content Tabs */}
+          {/* Tabs for different sections */} 
+          <div  className="bg-white rounded-xl shadow-lg p-6 overflow-scroll   space-y-6">
+
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full pt-4 pb-4">
             <TabsList className="flex overflow-x-auto scrollbar-hide gap-1 p-1.5 rounded-2xl bg-gradient-to-r from-gray-50 to-gray-100 shadow-lg border border-gray-200/50 mb-8 backdrop-blur-sm">
               <TabsTrigger
@@ -208,6 +209,9 @@ const PatientDashboard = () => {
               </div>
             </TabsContent>
           </Tabs>
+          </div>
+
+
         </div>
       </div>
     </ErrorBoundary>

@@ -39,6 +39,8 @@ const BookNowConsultations = ({ searchParams }) => {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>(searchParams.get('time') || "")
   const [patientName, setPatientName] = useState<string>(searchParams.get('name') || "")
   const [patientPhone, setPatientPhone] = useState<string>(searchParams.get('phone') || "")
+  const [patientEmail, setPatientEmail] = useState<string>(searchParams.get('email') || "")
+  const [patientAadhhar, setPatientAadhhar] = useState<string>(searchParams.get('aadhhar') || "")
   const [otp, setOtp] = useState<string>("")
   const [isOtpSent, setIsOtpSent] = useState<boolean>(false)
   const [isOtpVerified, setIsOtpVerified] = useState<boolean>(
@@ -215,6 +217,10 @@ const BookNowConsultations = ({ searchParams }) => {
     setPatientName,
     patientPhone,
     setPatientPhone,
+    patientEmail,
+    setPatientEmail,
+    patientAadhhar,
+    setPatientAadhhar,
     otp,
     setOtp,
     isOtpSent,
@@ -298,7 +304,7 @@ const BookNowConsultations = ({ searchParams }) => {
   const stepTitles = ["Choose Location", "Select Sessions", "Schedule & Details", "Payment & Confirmation"]
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-6 px-4">
+    <div ref={containerRef} className="min-h-screen mt-5 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-6 px-4">
       <div className="max-w-6xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: -20 }}

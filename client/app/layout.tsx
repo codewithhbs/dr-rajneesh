@@ -16,6 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body >
         <AuthProvider>
           <Header />
+
           {children}
           <Footer />
           <Toaster />

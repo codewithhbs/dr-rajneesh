@@ -68,6 +68,7 @@ export interface BookingFormData {
     name: string;
     email: string;
     phone: string;
+    aadhar: string;
   };
 }
 

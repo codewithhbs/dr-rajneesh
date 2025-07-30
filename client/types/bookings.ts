@@ -182,6 +182,7 @@ export interface User {
     url: string
     public_id: string
   }
+  aadhhar?: string
   createdAt: string
   updatedAt: string
 }

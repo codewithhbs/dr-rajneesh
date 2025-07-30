@@ -2,17 +2,18 @@
 import {
 
     Home,
-   
+
     Calendar,
     Tag,
-  
+
     Building,
-  
+
     FileText,
-  
+
     User2,
     StethoscopeIcon,
     TrafficCone,
+    Bell,
 } from "lucide-react"
 export const ADMIN_WEB_NAME = 'Dr. Rajneesh Kant'
 
@@ -42,7 +43,7 @@ export const menuSections = [
             { to: "/dashboard/product-coupons", label: "Product Coupons" }
         ],
     },
-     {
+    {
         title: "Treatments",
         icon: <TrafficCone className="h-5 w-5" />,
         singleItem: true,
@@ -63,7 +64,14 @@ export const menuSections = [
         to: "/dashboard/doctor",
         label: "Doctors",
     },
-    
+    {
+        title: "Notifications",
+        icon: <Bell className="h-5 w-5" />,
+        singleItem: true,
+        to: "/dashboard/notifications",
+        label: "Notifications",
+    },
+
     {
         title: "Clinic",
         icon: <Building className="h-5 w-5" />,
@@ -77,7 +85,7 @@ export const menuSections = [
         icon: <FileText className="h-5 w-5" />,
         items: [
             { to: "/dashboard/all-blogs", label: "All Blogs" },
-            { to: "/dashboard/create-blogs", label: "Create Blogs" },
+            { to: "/dashboard/blogs-categories", label: "Blog Categories" }
         ],
     },
 ]

@@ -5,7 +5,8 @@ const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
 const helmet = require('helmet');
 const compression = require('compression');
-
+const session = require("express-session");
+const MongoStore = require("connect-mongo");
 const logger = require('./config/logger');
 const redisClient = require('./config/redis');
 
@@ -56,6 +57,24 @@ app.use(cors({
   },
   credentials: true
 }));
+
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "superSecretKey",
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGODB_URL,
+    }),
+    cookie: {
+      httpOnly: true,
+      secure: false, 
+      maxAge: 1000 * 60 * 60, 
+    },
+  })
+);
+
+
 
 app.use(compression());
 app.set('trust proxy', true);

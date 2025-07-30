@@ -11,8 +11,8 @@ function App() {
   return (
     <Routes>
       <Route path="/" Component={DashboardPage} />
-      <Route path="/signin" Component={SignInPage} />
- 
+
+      <Route path="/admin/login" element={<SignInPage />} />
       <Route path="/dashboard/*" element={<DashboardPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

@@ -27,7 +27,8 @@ const BookingSessionSchema = new mongoose.Schema({
     patient_details: {
         name: String,
         email: String,
-        phone: String
+        phone: String,
+        aadhar: String,
     },
 
     // Session details with enhanced tracking

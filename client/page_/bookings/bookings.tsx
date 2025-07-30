@@ -36,6 +36,7 @@ import {
     Mail,
     UserCheck,
     CheckCircle,
+    FileDigit,
 } from "lucide-react";
 import { API_ENDPOINT } from "@/constant/url";
 import Cookies from "js-cookie";
@@ -620,7 +621,7 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
     };
 
 
-    // Initialize booking form
+
     const {
         formData,
         errors,
@@ -814,7 +815,7 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {/* Main Booking Section */}
-                        <div className="lg:col-span-2 space-y-6">
+                        <div className="lg:col-span-2 mt-4 space-y-6">
                             {/* Service Information */}
                             <Card className="border-2 border-blue-100 shadow-lg">
                                 <CardHeader className="">
@@ -1013,35 +1014,65 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
                                             )}
                                         </div>
                                     </div>
-
-                                    <div>
-                                        <Label
-                                            htmlFor="patient-email"
-                                            className="text-sm font-medium"
-                                        >
-                                            Email Address *
-                                        </Label>
-                                        <div className="relative">
-                                            <Mail className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-                                            <Input
-                                                id="patient-email"
-                                                type="email"
-                                                placeholder="your.email@example.com"
-                                                value={formData.patient_details?.email || ""}
-                                                onChange={(e) =>
-                                                    updateField("patient_details.email", e.target.value)
-                                                }
-                                                className={`pl-10 ${getFieldError("patient_details.email")
-                                                    ? "border-red-500"
-                                                    : ""
-                                                    }`}
-                                            />
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <Label
+                                                htmlFor="patient-email"
+                                                className="text-sm font-medium"
+                                            >
+                                                Aadhar Number *
+                                            </Label>
+                                            <div className="relative">
+                                                <FileDigit className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                                                <Input
+                                                    id="patient-aadhar"
+                                                    type="text"
+                                                    placeholder="**** ***** ****"
+                                                    value={formData.patient_details?.aadhar || ""}
+                                                    onChange={(e) =>
+                                                        updateField("patient_details.aadhar", e.target.value)
+                                                    }
+                                                    className={`pl-10 ${getFieldError("patient_details.aadhar")
+                                                        ? "border-red-500"
+                                                        : ""
+                                                        }`}
+                                                />
+                                            </div>
+                                            {getFieldError("patient_details.aadhar") && (
+                                                <p className="text-red-500 text-xs mt-1">
+                                                    {getFieldError("patient_details.aadhar")}
+                                                </p>
+                                            )}
                                         </div>
-                                        {getFieldError("patient_details.email") && (
-                                            <p className="text-red-500 text-xs mt-1">
-                                                {getFieldError("patient_details.email")}
-                                            </p>
-                                        )}
+                                        <div>
+                                            <Label
+                                                htmlFor="patient-email"
+                                                className="text-sm font-medium"
+                                            >
+                                                Email Address *
+                                            </Label>
+                                            <div className="relative">
+                                                <Mail className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                                                <Input
+                                                    id="patient-email"
+                                                    type="email"
+                                                    placeholder="your.email@example.com"
+                                                    value={formData.patient_details?.email || ""}
+                                                    onChange={(e) =>
+                                                        updateField("patient_details.email", e.target.value)
+                                                    }
+                                                    className={`pl-10 ${getFieldError("patient_details.email")
+                                                        ? "border-red-500"
+                                                        : ""
+                                                        }`}
+                                                />
+                                            </div>
+                                            {getFieldError("patient_details.email") && (
+                                                <p className="text-red-500 text-xs mt-1">
+                                                    {getFieldError("patient_details.email")}
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -1362,7 +1393,7 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
                         </div>
 
                         {/* Booking Summary Sidebar */}
-                        <div className="space-y-6">
+                        <div className="space-y-6 mt-4">
                             <Card className="sticky py-0 pb-4 top-6 border-2 border-blue-200 shadow-lg">
                                 <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-t-2xl shadow-md">
                                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
