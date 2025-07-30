@@ -46,7 +46,7 @@ const ChiropracticClinic = () => {
         "from-amber-500 to-yellow-500"
     ];
 
-    const treatmentConditions = dbServices?.map((service, index) => ({
+    const treatmentConditions = dbServices?.reverse().map((service, index) => ({
         name: service.service_name,
         icon: icons[index % icons.length],
         color: colors[index % colors.length]

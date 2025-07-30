@@ -9,7 +9,7 @@ const Page = () => {
             <section className="max-w-4xl mx-auto px-4 py-8 text-gray-800">
                 <h1 className="text-3xl font-bold text-teal-600 mb-4">Privacy Policy</h1>
                 <p className="mb-4">
-                    At <strong>Dr. Rajneesh Kant Clinic</strong>, your privacy is our priority. Located in Delhi, we are a top-rated establishment in the field of Orthopedic care, servicing patients both locally and from other parts of the city.
+                    At <strong>Dr. Rajneesh Kant Clinic</strong>, your privacy is our priority. Located in Mumbai, we are a top-rated establishment in the field of Orthopedic care, servicing patients both locally and from other parts of the city.
                 </p>
 
                 <p className="mb-4">
