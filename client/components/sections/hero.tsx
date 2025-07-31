@@ -46,10 +46,10 @@ const Hero = () => {
   const [isVisible, setIsVisible] = useState(false)
 
   // Counter values
-  const patientsCount = useCounter(12000, 2000, 300)
-  const experienceCount = useCounter(5, 1500, 600)
-  const successCount = useCounter(95, 2000, 900)
-  const branchesCount = useCounter(3, 1000, 1200)
+  const patientsCount = useCounter(50000, 2000, 300)
+  const experienceCount = useCounter(15, 1500, 600)
+  const successCount = useCounter(98, 2000, 900)
+  const branchesCount = useCounter(2, 1000, 1200)
 
   useEffect(() => {
     setIsVisible(true)
@@ -244,7 +244,7 @@ const Hero = () => {
               <div className=" text-2xl md:text-3xl font-bold text-gray-900 mb-1">
                 {patientsCount.toLocaleString()}+
               </div>
-              <div className="text-gray-600 text-sm font-medium">Happy Patients</div>
+              <div className="text-gray-600 text-sm font-medium">50,000 Patients</div>
             </div>
 
             <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 text-center hover:shadow-lg transition-all duration-300">

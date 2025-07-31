@@ -808,7 +808,7 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
                             </div>
                             <div className="flex items-center gap-1">
                                 <Heart className="w-4 h-4 text-red-500" />
-                                <span>Trusted by 10,000+ Patients</span>
+                                <span>Trusted by 50,000+ Patients</span>
                             </div>
                         </div>
                     </div> */}

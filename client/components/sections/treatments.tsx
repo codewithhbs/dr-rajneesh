@@ -53,7 +53,7 @@ const ChiropracticClinic = () => {
     }));
 
     const stats = [
-        { icon: <Users className="w-6 h-6" />, number: "10,000+", label: "Happy Patients" },
+        { icon: <Users className="w-6 h-6" />, number: "50,000+", label: "Happy Patients" },
         { icon: <Award className="w-6 h-6" />, number: "15+", label: "Years Experience" },
         { icon: <Star className="w-6 h-6" />, number: "4.9", label: "Average Rating" },
         { icon: <CheckCircle className="w-6 h-6" />, number: "98%", label: "Success Rate" }

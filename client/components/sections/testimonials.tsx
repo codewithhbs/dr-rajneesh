@@ -107,7 +107,7 @@ const Testimonials = () => {
   }
 
   const stats = [
-    { number: "500+", label: "Happy Patients", icon: <Users className="w-5 h-5" /> },
+    { number: "50000+", label: "Happy Patients", icon: <Users className="w-5 h-5" /> },
     { number: "98%", label: "Success Rate", icon: <TrendingUp className="w-5 h-5" /> },
     { number: "4.9/5", label: "Average Rating", icon: <Star className="w-5 h-5" /> },
     { number: "15+", label: "Years Experience", icon: <Award className="w-5 h-5" /> },
@@ -265,11 +265,11 @@ const Testimonials = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4" />
-                    <span>12000+ Happy Patients</span>
+                    <span>50000+ Happy Patients</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Award className="w-4 h-4" />
-                    <span>5+ Years Experience</span>
+                    <span>15+ Years Experience</span>
                   </div>
                 </div>
               </div>

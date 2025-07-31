@@ -63,8 +63,8 @@ const AboutUs = () => {
   ]
 
   const achievements = [
-    { number: "12,000+", label: "Patients Treated", icon: <Users className="w-5 h-5" /> },
-    { number: "5+", label: "Years Experience", icon: <Award className="w-5 h-5" /> },
+    { number: "2,000+", label: "Patients Treated", icon: <Users className="w-5 h-5" /> },
+    { number: "15+", label: "Years Experience", icon: <Award className="w-5 h-5" /> },
     { number: "98%", label: "Success Rate", icon: <TrendingUp className="w-5 h-5" /> },
     { number: "24/7", label: "Support Available", icon: <Clock className="w-5 h-5" /> },
   ]

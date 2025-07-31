@@ -176,7 +176,7 @@ export function Footer() {
               <h3 className="font-bold text-lg mb-4">Statistics</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-blue-50 p-4 rounded-lg text-center">
-                  <div className="text-[#1e7fd0] text-2xl font-bold">15+</div>
+                  <div className="text-[#1e7fd0] text-2xl font-bold">5+</div>
                   <div className="text-sm text-gray-600">Years Experience</div>
                 </div>
                 <div className="bg-green-50 p-4 rounded-lg text-center">
@@ -185,10 +185,10 @@ export function Footer() {
                 </div>
                 <div className="bg-yellow-50 p-4 rounded-lg text-center">
                   <div className="text-yellow-600 text-2xl font-bold">50K+</div>
-                  <div className="text-sm text-gray-600">Happy Patients</div>
+                  <div className="text-sm text-gray-600">50,000 Patients</div>
                 </div>
                 <div className="bg-purple-50 p-4 rounded-lg text-center">
-                  <div className="text-purple-600 text-2xl font-bold">2</div>
+                  <div className="text-purple-600 text-2xl font-bold">3</div>
                   <div className="text-sm text-gray-600">Clinic Locations</div>
                 </div>
               </div>
