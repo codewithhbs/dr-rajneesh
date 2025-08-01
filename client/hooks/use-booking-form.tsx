@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { BookingFormData, BookingError, PricingBreakdown } from '@/types/booking';
 
 interface UseBookingFormProps {
@@ -13,32 +13,50 @@ export function useBookingForm({ onSubmit, calculatePricing }: UseBookingFormPro
       name: '',
       email: '',
       phone: '',
-      aadhar: '' // Added Aadhar field
-    }
+      aadhar: '',
+    },
   });
 
   const [errors, setErrors] = useState<BookingError[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // ✅ Fixed: More stable updateField function
   const updateField = useCallback((field: string, value: any) => {
     setFormData(prev => {
       if (field.includes('.')) {
         const [parent, child] = field.split('.');
+        const parentObj = (prev[parent as keyof typeof prev] || {}) as Record<string, any>;
+        
+        // Only update if the value actually changed
+        if (parentObj[child] === value) {
+          return prev;
+        }
+        
         return {
           ...prev,
           [parent]: {
-            ...prev[parent as keyof typeof prev],
-            [child]: value
-          }
+            ...parentObj,
+            [child]: value,
+          },
         };
       }
+      
+      // Only update if the value actually changed
+      if (prev[field as keyof typeof prev] === value) {
+        return prev;
+      }
+      
       return { ...prev, [field]: value };
     });
 
-    // Clear field-specific errors
-    setErrors(prev => prev.filter(error => error.field !== field));
+    // Clear field-specific errors only when value changes
+    setErrors(prev => {
+      const filtered = prev.filter(error => error.field !== field);
+      return filtered.length === prev.length ? prev : filtered;
+    });
   }, []);
 
+  // ✅ Memoize validation function to prevent unnecessary recalculations
   const validateForm = useCallback((): BookingError[] => {
     const newErrors: BookingError[] = [];
 
@@ -58,22 +76,25 @@ export function useBookingForm({ onSubmit, calculatePricing }: UseBookingFormPro
       newErrors.push({ field: 'time', message: 'Please select a time slot' });
     }
 
-    if (!formData.patient_details?.name?.trim()) {
+    const { name, email, phone, aadhar } = formData.patient_details || {};
+
+    if (!name?.trim()) {
       newErrors.push({ field: 'patient_details.name', message: 'Patient name is required' });
     }
 
-    if (!formData.patient_details?.email?.trim()) {
+    if (!email?.trim()) {
       newErrors.push({ field: 'patient_details.email', message: 'Email is required' });
-    } else if (!/\S+@\S+\.\S+/.test(formData.patient_details.email)) {
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
       newErrors.push({ field: 'patient_details.email', message: 'Please enter a valid email' });
     }
-    else if (!formData.patient_details.aadhar?.trim()) {
-      newErrors.push({ field: 'patient_details.aadhar', message: 'Please enter a valid aadhar number' });
+
+    if (!aadhar?.trim()) {
+      newErrors.push({ field: 'patient_details.aadhar', message: 'Please enter a valid Aadhar number' });
     }
 
-    if (!formData.patient_details?.phone?.trim()) {
+    if (!phone?.trim()) {
       newErrors.push({ field: 'patient_details.phone', message: 'Phone number is required' });
-    } else if (!/^\d{10}$/.test(formData.patient_details.phone.replace(/\D/g, ''))) {
+    } else if (!/^\d{10}$/.test(phone.replace(/\D/g, ''))) {
       newErrors.push({ field: 'patient_details.phone', message: 'Please enter a valid 10-digit phone number' });
     }
 
@@ -100,11 +121,16 @@ export function useBookingForm({ onSubmit, calculatePricing }: UseBookingFormPro
     }
   }, [formData, validateForm, onSubmit]);
 
-  const getFieldError = useCallback((field: string) => {
-    return errors.find(error => error.field === field)?.message;
-  }, [errors]);
+  const getFieldError = useCallback(
+    (field: string) => errors.find(error => error.field === field)?.message,
+    [errors]
+  );
 
-  const pricing = calculatePricing(formData);
+  // ✅ Memoize pricing calculation to prevent unnecessary recalculations
+  const pricing = useMemo(() => calculatePricing(formData), [calculatePricing, formData]);
+
+  // ✅ Memoize validation result
+  const isValid = useMemo(() => validateForm().length === 0, [validateForm]);
 
   return {
     formData,
@@ -114,6 +140,6 @@ export function useBookingForm({ onSubmit, calculatePricing }: UseBookingFormPro
     handleSubmit,
     getFieldError,
     pricing,
-    isValid: errors.length === 0 && validateForm().length === 0
+    isValid,
   };
 }

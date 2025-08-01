@@ -18,7 +18,6 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -147,7 +146,7 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
 
     useEffect(() => {
         checkAvailability();
-    }, [checkAvailability]);
+    }, []);
 
     // Your original time slot generation
     function timeToMinutes(timeString: string) {
@@ -782,6 +781,7 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
 
     return (
         <>
+       
             <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
                 <div className="container mx-auto p-6">
                     {/* Header with catchy copy */}
@@ -1093,77 +1093,75 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
                                     </div>
                                 </CardHeader>
 
-                                <CardContent className="pt-6">
-                                    <RadioGroup
-                                        value={selectedClinic?._id}
-                                        onValueChange={(value) => {
-                                            const clinic = clinics?.find((c) => c._id === value);
-                                            setSelectedClinic(clinic || null);
-                                        }}
-                                    >
-                                        {clinics?.map((clinic) => (
-                                            <div
-                                                key={clinic._id}
-                                                className="flex items-start space-x-3 p-4 rounded-lg border-2 border-gray-100 hover:border-orange-200 transition-colors"
-                                            >
-                                                <RadioGroupItem
-                                                    value={clinic._id}
-                                                    id={clinic._id}
-                                                    className="mt-1"
-                                                />
-                                                <Label
-                                                    htmlFor={clinic._id}
-                                                    className="flex-1 cursor-pointer"
-                                                >
-                                                    <div className="space-y-2">
-                                                        <div className="flex items-center gap-2">
-                                                            <h4 className="font-semibold text-lg">
-                                                                {clinic.clinic_name}
-                                                            </h4>
-                                                            <Badge
-                                                                variant="outline"
-                                                                className="bg-green-50 text-green-700 border-green-200"
-                                                            >
-                                                                ✅ Available
-                                                            </Badge>
-                                                        </div>
-                                                        <p className="text-gray-600 text-sm flex items-start gap-1">
-                                                            <MapPin className="w-4 h-4 mt-0.5 text-gray-400" />
-                                                            {clinic?.clinic_contact_details.clinic_address}
-                                                        </p>
-                                                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                                                            {clinic.clinic_contact_details.phone && (
-                                                                <span className="flex items-center gap-1">
-                                                                    <Phone className="w-3 h-3" />
-                                                                    {clinic.clinic_contact_details.phone}
-                                                                </span>
-                                                            )}
-                                                            {clinic.clinic_contact_details.email && (
-                                                                <span className="flex items-center gap-1">
-                                                                    <Mail className="w-3 h-3" />
-                                                                    {clinic.clinic_contact_details.email}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        {clinic.BookingAvailabeAt && (
-                                                            <p className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                                                                📅 Bookings available until{" "}
-                                                                {new Date(
-                                                                    clinic.BookingAvailabeAt.end_date
-                                                                ).toDateString()}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </Label>
-                                            </div>
-                                        ))}
-                                    </RadioGroup>
-                                    {getFieldError("clinic_id") && (
-                                        <p className="text-red-500 text-sm mt-2">
-                                            {getFieldError("clinic_id")}
-                                        </p>
-                                    )}
-                                </CardContent>
+                              <CardContent className="pt-6">
+  <div className="space-y-4">
+    {clinics?.map((clinic) => (
+      <div
+        key={clinic._id}
+        className={`flex items-start space-x-3 p-4 rounded-lg border-2 ${
+          selectedClinic?._id === clinic._id ? "border-orange-300" : "border-gray-100"
+        } hover:border-orange-200 transition-colors`}
+      >
+        <input
+          type="checkbox"
+          id={clinic._id}
+          checked={selectedClinic?._id === clinic._id}
+          onChange={() => {
+            setSelectedClinic(
+              selectedClinic?._id === clinic._id ? null : clinic
+            ); // toggle off if already selected
+          }}
+          className="mt-1 accent-orange-500 w-5 h-5"
+        />
+        <label htmlFor={clinic._id} className="flex-1 cursor-pointer">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <h4 className="font-semibold text-lg">{clinic.clinic_name}</h4>
+              <Badge
+                variant="outline"
+                className="bg-green-50 text-green-700 border-green-200"
+              >
+                ✅ Available
+              </Badge>
+            </div>
+            <p className="text-gray-600 text-sm flex items-start gap-1">
+              <MapPin className="w-4 h-4 mt-0.5 text-gray-400" />
+              {clinic?.clinic_contact_details.clinic_address}
+            </p>
+            <div className="flex items-center gap-4 text-xs text-gray-500">
+              {clinic.clinic_contact_details.phone && (
+                <span className="flex items-center gap-1">
+                  <Phone className="w-3 h-3" />
+                  {clinic.clinic_contact_details.phone}
+                </span>
+              )}
+              {clinic.clinic_contact_details.email && (
+                <span className="flex items-center gap-1">
+                  <Mail className="w-3 h-3" />
+                  {clinic.clinic_contact_details.email}
+                </span>
+              )}
+            </div>
+            {clinic.BookingAvailabeAt && (
+              <p className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                📅 Bookings available until{" "}
+                {new Date(clinic.BookingAvailabeAt.end_date).toDateString()}
+              </p>
+            )}
+          </div>
+        </label>
+      </div>
+    ))}
+  </div>
+
+  {/* Error display */}
+  {getFieldError("clinic_id") && (
+    <p className="text-red-500 text-sm mt-2">
+      {getFieldError("clinic_id")}
+    </p>
+  )}
+</CardContent>
+
                             </Card>
 
                             {/* Date Selection */}
@@ -1317,62 +1315,74 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
                                         </div>
                                     </CardHeader>
 
-                                    <CardContent className="pt-6">
-                                        <RadioGroup
-                                            value={paymentMethod}
-                                            onValueChange={setPaymentMethod}
-                                        >
-                                            <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-blue-100 hover:border-blue-200 transition-colors">
-                                                <RadioGroupItem value="razorpay" id="razorpay" />
-                                                <Label
-                                                    htmlFor="razorpay"
-                                                    className="flex-1 cursor-pointer"
-                                                >
-                                                    <div className="flex items-center justify-between">
-                                                        <div>
-                                                            <p className="font-medium">
-                                                                💳 UPI / Net Banking / Debit Card
-                                                            </p>
-                                                            <p className="text-sm text-gray-600">
-                                                                Powered by Razorpay - India's most trusted
-                                                                payment gateway
-                                                            </p>
-                                                        </div>
-                                                        <Badge
-                                                            variant="secondary"
-                                                            className="bg-green-100 text-green-800"
-                                                        >
-                                                            Recommended
-                                                        </Badge>
-                                                    </div>
-                                                </Label>
-                                            </div>
+                            <CardContent className="pt-6">
+  <div className="space-y-4">
+    {/* Razorpay Checkbox */}
+    <div
+      className={`flex items-center space-x-3 p-4 rounded-lg border-2 ${
+        paymentMethod === "razorpay" ? "border-blue-400" : "border-blue-100"
+      } hover:border-blue-200 transition-colors`}
+    >
+      <input
+        type="checkbox"
+        id="razorpay"
+        checked={paymentMethod === "razorpay"}
+        onChange={() => setPaymentMethod("razorpay")}
+        className="accent-blue-600 w-5 h-5"
+      />
+      <label htmlFor="razorpay" className="flex-1 cursor-pointer">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-medium">💳 UPI / Net Banking / Debit Card</p>
+            <p className="text-sm text-gray-600">
+              Powered by Razorpay - India's most trusted payment gateway
+            </p>
+          </div>
+          <Badge
+            variant="secondary"
+            className="bg-green-100 text-green-800"
+          >
+            Recommended
+          </Badge>
+        </div>
+      </label>
+    </div>
 
-                                            <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-gray-100 hover:border-gray-200 transition-colors">
-                                                <RadioGroupItem value="card" id="card" />
-                                                <Label htmlFor="card" className="flex-1 cursor-pointer">
-                                                    <div className="flex items-center justify-between">
-                                                        <div>
-                                                            <p className="font-medium">💎 Credit Card</p>
-                                                            <p className="text-sm text-gray-600">
-                                                                All major credit cards accepted
-                                                            </p>
-                                                        </div>
-                                                        {settings?.payment_config?.credit_card_fee &&
-                                                            settings.payment_config.credit_card_fee > 0 && (
-                                                                <Badge
-                                                                    variant="outline"
-                                                                    className="text-orange-600 border-orange-200"
-                                                                >
-                                                                    +{settings.payment_config.credit_card_fee}%
-                                                                    fee
-                                                                </Badge>
-                                                            )}
-                                                    </div>
-                                                </Label>
-                                            </div>
-                                        </RadioGroup>
-                                    </CardContent>
+    {/* Credit Card Checkbox */}
+    <div
+      className={`flex items-center space-x-3 p-4 rounded-lg border-2 ${
+        paymentMethod === "card" ? "border-gray-400" : "border-gray-100"
+      } hover:border-gray-200 transition-colors`}
+    >
+      <input
+        type="checkbox"
+        id="card"
+        checked={paymentMethod === "card"}
+        onChange={() => setPaymentMethod("card")}
+        className="accent-blue-600 w-5 h-5"
+      />
+      <label htmlFor="card" className="flex-1 cursor-pointer">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-medium">💎 Credit Card</p>
+            <p className="text-sm text-gray-600">
+              All major credit cards accepted
+            </p>
+          </div>
+          {settings?.payment_config?.credit_card_fee > 0 && (
+            <Badge
+              variant="outline"
+              className="text-orange-600 border-orange-200"
+            >
+              +{settings.payment_config.credit_card_fee}% fee
+            </Badge>
+          )}
+        </div>
+      </label>
+    </div>
+  </div>
+</CardContent>
+
                                 </Card>
                             )}
 
@@ -1581,7 +1591,6 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
                 </Button>
             </div>
 
-            {/* Razorpay Script */}
         </>
     );
 };

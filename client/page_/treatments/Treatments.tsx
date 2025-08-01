@@ -576,7 +576,7 @@ const Treatments: React.FC<{ slug: string }> = ({ slug }) => {
 
                         <CardContent className="p-4 md:p-6">
                             <div className="grid grid-cols-1 xl:grid-cols-10 gap-4 md:gap-6">
-                              
+
                                 {/* Reviews Content - Responsive */}
                                 <div className="xl:col-span-9">
                                     {service.service_reviews.length > 0 ? (
