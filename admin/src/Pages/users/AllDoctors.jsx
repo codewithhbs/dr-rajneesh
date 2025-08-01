@@ -102,7 +102,7 @@ const AllDoctors = () => {
 
   const fetchClinics = async () => {
     try {
-      const res = await axios.get("https://drkm.api.adsdigitalmedia.com/api/v1/get-all-clinic");
+      const res = await axios.get("http://localhost:8000/api/v1/get-all-clinic");
       setClinics(res.data?.data?.clinics || []);
     } catch (err) {
       console.error("Error fetching clinics:", err);
@@ -205,8 +205,8 @@ const AllDoctors = () => {
     });
 
     const endpoint = isEditMode
-      ? `https://drkm.api.adsdigitalmedia.com/api/v1/update-doctor/${editingDoctor._id}`
-      : `https://drkm.api.adsdigitalmedia.com/api/v1/create-doctor`;
+      ? `http://localhost:8000/api/v1/update-doctor/${editingDoctor._id}`
+      : `http://localhost:8000/api/v1/create-doctor`;
 
     const method = isEditMode ? "put" : "post";
 

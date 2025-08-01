@@ -129,7 +129,7 @@ const ContactPage: React.FC = () => {
   const locations: Record<'mumbai' | 'patna', Location> = {
     mumbai: {
       title: "Mumbai Clinic",
-      address: "Aston Building, 704, opposite Bank of Baroda, Lokhandwala Complex, Andheri West, Mumbai, Maharashtra 400053",
+      address: "Aston Building, 704, opposite Bank of Baroda, Above Mercedes Benz showroom, Lokhandwala Complex, Andheri West, Mumbai, Maharashtra 400053",
       phone: ["+91-09137352377", "+91-9308511357", "+91-8409313131"],
       hours: "Mon-Sat: 10:00 AM - 8:00 PM",
       mapUrl: "https://maps.google.com/?q=Aston+Building+Lokhandwala+Complex+Andheri+West+Mumbai",

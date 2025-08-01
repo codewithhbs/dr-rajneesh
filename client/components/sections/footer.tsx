@@ -152,7 +152,7 @@ export function Footer() {
                   <div>
                     <h4 className="font-medium">Mumbai Clinic</h4>
                     <p className="text-sm text-gray-600">
-                      Aston Building, 704, opposite Bank of Baroda, Lokhandwala Complex, Andheri West, Mumbai,
+                      Aston Building, 704, opposite Bank of Baroda, Above Mercedes Benz showroom, Lokhandwala Complex, Andheri West, Mumbai,
                       Maharashtra 400053
                     </p>
                   </div>

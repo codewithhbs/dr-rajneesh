@@ -24,6 +24,16 @@ import { ADMIN_WEB_NAME, menuSections } from "@/context/ui.constant"
 import AddNewTreatMents from "./services/AddNewTreatMents"
 import AllSessions from "./sessions/AllSessions"
 import SessionDetails from "./sessions/SessionDetails"
+import useAdminProfile from "@/hooks/admin"
+import ProtectedRoute from "@/lib/ProtectedRoute"
+import AllUsers from "./users/AllUsers"
+import AllServices from "./services/AllServices"
+import AllBlogCategories from "./Blogs/blogs-categories/AllBlogCategories"
+import AllDoctors from "./users/AllDoctors"
+import AllNotifications from "./Notifications/AllNotifications"
+import AllClinic from "./clinic/AllClinic"
+import BlogManagement from "./Blogs/Blog/AllBlogs"
+import AdminProfile from "./users/AdminProfile"
 
 
 const DashboardPage = () => {
@@ -216,7 +226,7 @@ const DashboardPage = () => {
             } />
             <Route path="/all-blogs" element={
               <ProtectedRoute>
-                <AllBlogs />
+                <BlogManagement />
               </ProtectedRoute>
             } />
             <Route path="/profile" element={

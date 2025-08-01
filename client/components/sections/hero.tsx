@@ -47,7 +47,7 @@ const Hero = () => {
 
   // Counter values
   const patientsCount = useCounter(50000, 2000, 300)
-  const experienceCount = useCounter(15, 1500, 600)
+  const experienceCount = useCounter(9, 1500, 600)
   const successCount = useCounter(98, 2000, 900)
   const branchesCount = useCounter(2, 1000, 1200)
 

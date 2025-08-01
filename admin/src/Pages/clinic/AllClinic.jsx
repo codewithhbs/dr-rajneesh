@@ -48,7 +48,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { toast } from "sonner"
 
-const API_URL = "https://drkm.api.adsdigitalmedia.com/api/v1"
+const API_URL = "http://localhost:8000/api/v1"
 
 
 
