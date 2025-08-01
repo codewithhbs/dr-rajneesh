@@ -621,7 +621,7 @@ exports.verifyEmailOtp = async (req, res, next) => {
                                         <table width="100%" cellpadding="0" cellspacing="0" border="0">
                                             <tr>
                                                 <td width="33.33%" style="text-align: center; padding: 10px; vertical-align: top;">
-                                                    <div style="color: #3b82f6; font-size: 28px; font-weight: bold; margin-bottom: 5px;">15+</div>
+                                                    <div style="color: #3b82f6; font-size: 28px; font-weight: bold; margin-bottom: 5px;">9+</div>
                                                     <p style="color: #d1d5db; font-size: 14px; margin: 0;">Years Experience</p>
                                                 </td>
                                                 <td width="33.33%" style="text-align: center; padding: 10px; vertical-align: top;">
@@ -699,7 +699,7 @@ exports.verifyEmailOtp = async (req, res, next) => {
                                                             </td>
                                                             <td style="vertical-align: middle;">
                                                                 <div style="color: #374151; font-size: 16px; font-weight: bold;">
-                                                                    Faridabad, Haryana
+                                                                    Mumbai & Patna
                                                                 </div>
                                                             </td>
                                                         </tr>
@@ -1903,7 +1903,7 @@ function welcome(user) {
                                         <table width="100%" cellpadding="0" cellspacing="0" border="0">
                                             <tr>
                                                 <td width="33.33%" style="text-align: center; padding: 10px; vertical-align: top;">
-                                                    <div style="color: #3b82f6; font-size: 28px; font-weight: bold; margin-bottom: 5px;">15+</div>
+                                                    <div style="color: #3b82f6; font-size: 28px; font-weight: bold; margin-bottom: 5px;">9+</div>
                                                     <p style="color: #d1d5db; font-size: 14px; margin: 0;">Years Experience</p>
                                                 </td>
                                                 <td width="33.33%" style="text-align: center; padding: 10px; vertical-align: top;">
@@ -1981,7 +1981,7 @@ function welcome(user) {
                                                             </td>
                                                             <td style="vertical-align: middle;">
                                                                 <div style="color: #374151; font-size: 16px; font-weight: bold;">
-                                                                    Faridabad, Haryana
+                                                                    Mumbai & Patna
                                                                 </div>
                                                             </td>
                                                         </tr>

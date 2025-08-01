@@ -176,7 +176,7 @@ export function Footer() {
               <h3 className="font-bold text-lg mb-4">Statistics</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-blue-50 p-4 rounded-lg text-center">
-                  <div className="text-[#1e7fd0] text-2xl font-bold">15+</div>
+                  <div className="text-[#1e7fd0] text-2xl font-bold">9+</div>
                   <div className="text-sm text-gray-600">Years Experience</div>
                 </div>
                 <div className="bg-green-50 p-4 rounded-lg text-center">
