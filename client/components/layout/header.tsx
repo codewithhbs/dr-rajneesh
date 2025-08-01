@@ -22,8 +22,6 @@ import Notification from "../Notifications/Notification"
 
 const phoneNumbers = [
     "+91-9308511357",
-    "+91-8409313131",
-    "+91-9031554875"
 ]
 
 export function Header() {

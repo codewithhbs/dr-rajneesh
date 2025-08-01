@@ -92,7 +92,7 @@ const ContactPage: React.FC = () => {
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
-    
+
     // Clear error when user starts typing
     if (formErrors[name as keyof FormErrors]) {
       setFormErrors(prev => ({ ...prev, [name]: undefined }))
@@ -101,7 +101,7 @@ const ContactPage: React.FC = () => {
 
   const handleSubmit = useCallback((e?: React.FormEvent<HTMLFormElement> | React.MouseEvent<HTMLButtonElement>) => {
     if (e) e.preventDefault()
-    
+
     if (!validateForm()) {
       return
     }
@@ -130,7 +130,7 @@ const ContactPage: React.FC = () => {
     mumbai: {
       title: "Mumbai Clinic",
       address: "Aston Building, 704, opposite Bank of Baroda, Above Mercedes Benz showroom, Lokhandwala Complex, Andheri West, Mumbai, Maharashtra 400053",
-      phone: ["+91-09137352377", "+91-9308511357", "+91-8409313131"],
+      phone: ["+91 9308511357", "+91 9137352377"],
       hours: "Mon-Sat: 10:00 AM - 8:00 PM",
       mapUrl: "https://maps.google.com/?q=Aston+Building+Lokhandwala+Complex+Andheri+West+Mumbai",
       rating: 4.8,
@@ -139,7 +139,7 @@ const ContactPage: React.FC = () => {
     patna: {
       title: "Patna Clinic",
       address: "Central jail, Near Kuswaha chock, beside of, SK Vihar Colony, Kisan Colony, Beur, Patna, Bihar 800002",
-      phone: ["+91-9308511357"],
+    phone: ["+91 9308511357", "+91 9137352377"],
       hours: "Mon-Sat: 9:00 AM - 7:00 PM",
       mapUrl: "https://maps.google.com/?q=Central+jail+Near+Kuswaha+chock+SK+Vihar+Colony+Patna",
       rating: 4.9,
@@ -186,11 +186,10 @@ const ContactPage: React.FC = () => {
 
                 {submitMessage.text && (
                   <div
-                    className={`mb-6 p-4 rounded-xl flex items-center ${
-                      submitMessage.type === "success"
+                    className={`mb-6 p-4 rounded-xl flex items-center ${submitMessage.type === "success"
                         ? "bg-green-50 text-green-800 border border-green-200"
                         : "bg-red-50 text-red-800 border border-red-200"
-                    }`}
+                      }`}
                   >
                     {submitMessage.type === "success" ? (
                       <CheckCircle className="w-5 h-5 mr-3 flex-shrink-0" />
@@ -212,9 +211,8 @@ const ContactPage: React.FC = () => {
                         name="name"
                         value={formData.name}
                         onChange={handleInputChange}
-                        className={`border-2 focus:ring-4 focus:ring-blue-100 transition-all duration-200 ${
-                          formErrors.name ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'
-                        }`}
+                        className={`border-2 focus:ring-4 focus:ring-blue-100 transition-all duration-200 ${formErrors.name ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'
+                          }`}
                         placeholder="Enter your full name"
                       />
                       {formErrors.name && (
@@ -234,9 +232,8 @@ const ContactPage: React.FC = () => {
                         type="email"
                         value={formData.email}
                         onChange={handleInputChange}
-                        className={`border-2 focus:ring-4 focus:ring-blue-100 transition-all duration-200 ${
-                          formErrors.email ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'
-                        }`}
+                        className={`border-2 focus:ring-4 focus:ring-blue-100 transition-all duration-200 ${formErrors.email ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'
+                          }`}
                         placeholder="your.email@example.com"
                       />
                       {formErrors.email && (
@@ -257,9 +254,8 @@ const ContactPage: React.FC = () => {
                       name="phone"
                       value={formData.phone}
                       onChange={handleInputChange}
-                      className={`border-2 focus:ring-4 focus:ring-blue-100 transition-all duration-200 ${
-                        formErrors.phone ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'
-                      }`}
+                      className={`border-2 focus:ring-4 focus:ring-blue-100 transition-all duration-200 ${formErrors.phone ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'
+                        }`}
                       placeholder="Your phone number (optional)"
                     />
                     {formErrors.phone && (
@@ -280,9 +276,8 @@ const ContactPage: React.FC = () => {
                       value={formData.message}
                       onChange={handleInputChange}
                       rows={5}
-                      className={`w-full p-4 border-2 rounded-lg focus:ring-4 focus:ring-blue-100 focus:outline-none transition-all duration-200 resize-none ${
-                        formErrors.message ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'
-                      }`}
+                      className={`w-full p-4 border-2 rounded-lg focus:ring-4 focus:ring-blue-100 focus:outline-none transition-all duration-200 resize-none ${formErrors.message ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'
+                        }`}
                       placeholder="Tell us how we can help you. Please include any specific concerns or questions you have about your condition."
                     />
                     {formErrors.message && (
@@ -293,9 +288,9 @@ const ContactPage: React.FC = () => {
                     )}
                   </div>
 
-                  <Button 
-                    onClick={handleSubmit} 
-                    disabled={isSubmitting} 
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
                     className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
                   >
                     {isSubmitting ? (
@@ -337,11 +332,10 @@ const ContactPage: React.FC = () => {
                   <button
                     key={key}
                     onClick={() => setActiveLocation(key as 'mumbai' | 'patna')}
-                    className={`flex-1 py-4 px-4 text-center font-semibold transition-all duration-200 ${
-                      activeLocation === key
+                    className={`flex-1 py-4 px-4 text-center font-semibold transition-all duration-200 ${activeLocation === key
                         ? "text-white bg-gradient-to-r from-blue-600 to-cyan-600"
                         : "text-gray-600 hover:bg-blue-50"
-                    }`}
+                      }`}
                   >
                     {location.title}
                   </button>
@@ -473,7 +467,8 @@ const ContactPage: React.FC = () => {
                     <div className="w-10 h-10 bg-gradient-to-r from-green-100 to-emerald-100 rounded-full flex items-center justify-center mr-3">
                       <Phone className="h-5 w-5 text-green-600" />
                     </div>
-                    <span className="text-gray-700 font-medium">+91-09137352377</span>
+                    <span className="text-gray-700 font-medium">+91 9308511357 , </span>  
+                    <span className="text-gray-700 font-medium">+91 9137352377</span>
                   </div>
                 </div>
               </CardContent>

@@ -558,7 +558,7 @@ exports.verifyEmailOtp = async (req, res, next) => {
                             </p>
                             
                             <p style="color: #6b7280; font-size: 16px; margin: 0 0 20px 0; line-height: 1.6;">
-                                Your email has been successfully verified. We're thrilled to welcome you to Dr. Rajneesh Kant's clinic - your trusted partner for physiotherapy and chiropractic care in Faridabad.
+                                Your email has been successfully verified. We're thrilled to welcome you to Dr. Rajneesh Kant's clinic - your trusted partner for physiotherapy and chiropractic care in Mumbai & Patna.
                             </p>
                             
                             <p style="color: #6b7280; font-size: 16px; margin: 0 0 30px 0; line-height: 1.6;">
@@ -1840,7 +1840,7 @@ function welcome(user) {
                             </p>
                             
                             <p style="color: #6b7280; font-size: 16px; margin: 0 0 20px 0; line-height: 1.6;">
-                                Your email has been successfully verified. We're thrilled to welcome you to Dr. Rajneesh Kant's clinic - your trusted partner for physiotherapy and chiropractic care in Faridabad.
+                                Your email has been successfully verified. We're thrilled to welcome you to Dr. Rajneesh Kant's clinic - your trusted partner for physiotherapy and chiropractic care in Mumbai & Patna.
                             </p>
                             
                             <p style="color: #6b7280; font-size: 16px; margin: 0 0 30px 0; line-height: 1.6;">
