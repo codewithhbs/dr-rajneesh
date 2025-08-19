@@ -108,7 +108,7 @@ const ScheduleStep = (props: ScheduleStepProps) => {
       if (!clinicId) return
       setIsLoadingSlots(true)
       try {
-        const response = await fetch(`http://localhost:8000/api/v1/get-available-date?_id=${clinicId}`)
+        const response = await fetch(`https://drkm.api.adsdigitalmedia.com/api/v1/get-available-date?_id=${clinicId}`)
         const result = await response.json()
 
         if (result.availableDates) {
@@ -187,7 +187,7 @@ const ScheduleStep = (props: ScheduleStepProps) => {
     setIsRegistering(true)
 
     try {
-      const { data } = await axios.post("http://localhost:8000/api/v1/user/register-via-number", {
+      const { data } = await axios.post("https://drkm.api.adsdigitalmedia.com/api/v1/user/register-via-number", {
         phone: patientPhone,
         name: patientName,
         email: patientEmail,
@@ -213,7 +213,7 @@ const ScheduleStep = (props: ScheduleStepProps) => {
     if (otp.length !== 6) return
     setIsVerifyingOtp(true)
     try {
-      const response = await axios.post("http://localhost:8000/api/v1/user/verify-email-otp", {
+      const response = await axios.post("https://drkm.api.adsdigitalmedia.com/api/v1/user/verify-email-otp", {
         number: patientPhone,
         otp: otp,
       })

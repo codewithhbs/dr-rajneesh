@@ -74,7 +74,7 @@ const UserSummaryCard: React.FC<UserSummaryCardProps> = ({ user }) => {
     setMessage({ type: '', text: '' })
 
     try {
-      const response = await fetch('http://localhost:8000/api/v1/user/update-profile', {
+      const response = await fetch('https://drkm.api.adsdigitalmedia.com/api/v1/user/update-profile', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -128,7 +128,7 @@ const UserSummaryCard: React.FC<UserSummaryCardProps> = ({ user }) => {
     setMessage({ type: '', text: '' })
 
     try {
-      const response = await fetch('http://localhost:8000/api/v1/user/verify-otp-update', {
+      const response = await fetch('https://drkm.api.adsdigitalmedia.com/api/v1/user/verify-otp-update', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
