@@ -13,7 +13,7 @@ const createOtpExpiry = (minutes = 10) => {
 exports.registerNormalUser = async (req, res, next) => {
     try {
         const { name, email, phone, password, termsAccepted } = req.body;
-        console.log(req.body);
+        console.log('registration data', req.body);
         if (!name || !email || !phone || !password) {
             return res.status(400).json({
                 success: false,
