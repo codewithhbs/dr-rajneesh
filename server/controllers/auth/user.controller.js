@@ -165,78 +165,84 @@ exports.registerNormalUser = async (req, res, next) => {
     }
 };
 
+
 exports.registerNormal = async (req, res, next) => {
     try {
-        const { name, phone, termsAccepted = true, email, aadhhar } = req.body;
+        const { name, phone, termsAccepted = true, email, aadhhar, age, gender } = req.body;
 
         if (!name || !phone) {
             return res.status(400).json({
                 success: false,
-                message: "All fields are required",
+                message: "Name and phone are required",
             });
         }
 
-        const existingUser = await userModel.findOne({
-            $or: [{ phone }],
-        });
+        // Normalize phone
+        const trimmedPhone = phone.trim();
 
-        const otp = 123456;
-        const otpExpiry = createOtpExpiry(30); // expires in 30 minutes
+        let user = await userModel.findOne({ phone: trimmedPhone });
 
-        if (existingUser) {
-            if (
-                existingUser.status === "active" &&
-                existingUser.phoneNumber?.isVerified
-            ) {
-                existingUser.phoneNumber = {
-                    isVerified: true,
+        const otp = 123456; // In production, use random 6-digit
+        const otpExpiry = createOtpExpiry(30);
+
+        if (user) {
+            // User exists
+
+            if (user.status === "active" && user.phoneNumber?.isVerified) {
+                // Fully verified user → Treat as LOGIN flow: send OTP for login
+                user.phoneNumber = {
+                    isVerified: true, // remains verified
                     otp,
                     otpExpiry,
                 };
-                await existingUser.save();
+                await user.save();
+
                 return res.status(200).json({
                     success: true,
-                    otp: otp,
-                    message: "A new OTP has been sent to your phone number.",
-                    userId: existingUser._id,
+                    message: "OTP sent for login",
+                    userId: user._id,
+                    otp: otp, // remove in production
                 });
             }
 
-            // User exists but not verified or inactive → update existing user
-            existingUser.name = name.trim();
-            existingUser.phone = phone.trim();
-            existingUser.termsAccepted = termsAccepted;
-            existingUser.profileImage = {
-                url: `https://api.dicebear.com/9.x/initials/svg?seed=${name}`,
+            // User exists but not fully verified → Update details & send OTP for verification
+            user.name = name.trim();
+            user.phone = trimmedPhone;
+            user.age = age;
+            user.gender = gender;
+            user.email = email ? email.toLowerCase().trim() : user.email || "";
+            user.aadhhar = aadhhar ? aadhhar.trim() : user.aadhhar || "";
+            user.termsAccepted = termsAccepted;
+            user.profileImage = {
+                url: `https://api.dicebear.com/9.x/initials/svg?seed=${name.trim()}`,
                 publicId: "",
             };
-            existingUser.phoneNumber = {
+            user.phoneNumber = {
                 isVerified: false,
                 otp,
                 otpExpiry,
             };
-            existingUser.status = "un-verified";
+            user.status = "un-verified";
 
-            await existingUser.save();
+            await user.save();
 
             return res.status(200).json({
                 success: true,
-                otp: otp,
-                message:
-                    "Your account is not verified. A new OTP has been sent to your phone number.",
-                userId: existingUser._id,
+                message: "OTP sent for verification",
+                userId: user._id,
+                otp: otp, // remove in production
             });
         }
 
-        // New User creation
+        // New user registration
         const newUser = new userModel({
             name: name.trim(),
-            phone: phone.trim(),
+            phone: trimmedPhone,
             email: email ? email.toLowerCase().trim() : "",
             aadhhar: aadhhar ? aadhhar.trim() : "",
             termsAccepted,
             profileImage: {
-                url: `https://api.dicebear.com/9.x/initials/svg?seed=${name}`,
+                url: `https://api.dicebear.com/9.x/initials/svg?seed=${name.trim()}`,
                 publicId: "",
             },
             phoneNumber: {
@@ -244,17 +250,72 @@ exports.registerNormal = async (req, res, next) => {
                 otp,
                 otpExpiry,
             },
+            age,
+            gender,
             status: "un-verified",
         });
 
         await newUser.save();
 
-        res.status(201).json({
+        return res.status(201).json({
             success: true,
-            message:
-                "Registration successful! Please check your Phone for verification OTP.",
+            message: "Registration successful! OTP sent for verification.",
             userId: newUser._id,
+            otp: otp, // remove in production
         });
+    } catch (error) {
+        next(error);
+    }
+};
+exports.verifyOtpViaNumber = async (req, res, next) => {
+    try {
+        const { phone, otp } = req.body;
+
+        if (!phone || !otp) {
+            return res.status(400).json({
+                success: false,
+                message: "Phone number and OTP are required",
+            });
+        }
+
+        const user = await userModel.findOne({ phone: phone.trim() });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found with this phone number",
+            });
+        }
+
+        // Check if OTP matches
+        if (String(user.phoneNumber?.otp) !== String(otp)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid OTP",
+            });
+        }
+
+        // Check if OTP expired
+        if (!user.phoneNumber?.otpExpiry || user.phoneNumber.otpExpiry < new Date()) {
+            return res.status(400).json({
+                success: false,
+                message: "OTP expired. Please request a new one",
+            });
+        }
+
+        // OTP is valid → Complete verification + Login
+
+        user.phoneNumber.isVerified = true;
+        user.phoneNumber.otp = null;
+        user.phoneNumber.otpExpiry = null;
+        user.status = "active";
+
+        await user.save();
+
+        // ✅ Always login the user after successful OTP verification
+        // Whether it was registration or login flow
+        await sendToken(user, 200, res, "Login successful");
+
     } catch (error) {
         next(error);
     }
@@ -2103,20 +2164,20 @@ exports.getAllUsers = async (req, res, next) => {
 
 // Get total users count (excluding deleted)
 exports.getUserCount = async (req, res, next) => {
-  try {
-    const userCount = await userModel.countDocuments({ status: { $ne: "deleted" } });
+    try {
+        const userCount = await userModel.countDocuments({ status: { $ne: "deleted" } });
 
-    return res.status(200).json({
-      success: true,
-      count: userCount,
-    });
-  } catch (error) {
-    console.error("Error fetching user count:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Something went wrong while fetching user count",
-    });
-  }
+        return res.status(200).json({
+            success: true,
+            count: userCount,
+        });
+    } catch (error) {
+        console.error("Error fetching user count:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong while fetching user count",
+        });
+    }
 };
 
 
@@ -2186,7 +2247,7 @@ exports.adminLogout = (req, res) => {
                 return res.status(500).json({ message: "Logout failed. Try again." });
             }
 
-            res.clearCookie("connect.sid"); 
+            res.clearCookie("connect.sid");
             return res.status(200).json({ message: "Admin logged out successfully." });
         });
     } catch (error) {
@@ -2196,100 +2257,100 @@ exports.adminLogout = (req, res) => {
 };
 
 exports.updateAdminProfile = async (req, res) => {
-  try {
-    const adminId = req.session.userId;
-    if (!adminId) {
-      return res.status(401).json({ message: "Unauthorized: Session expired or invalid." });
+    try {
+        const adminId = req.session.userId;
+        if (!adminId) {
+            return res.status(401).json({ message: "Unauthorized: Session expired or invalid." });
+        }
+
+        const { name, email, phone } = req.body;
+
+        const updatedFields = {};
+        const currentAdmin = await userModel.findById(adminId);
+        if (!currentAdmin) {
+            return res.status(404).json({ message: "Admin not found." });
+        }
+
+        // Check if email is changing and already taken
+        if (email && email.trim() !== currentAdmin.email) {
+            const existingEmailUser = await userModel.findOne({ email: email.trim(), _id: { $ne: adminId } });
+            if (existingEmailUser) {
+                return res.status(409).json({ message: "Email already in use by another user." });
+            }
+            updatedFields.email = email.trim();
+        }
+
+        // Check if phone is changing and already taken
+        if (phone && phone.trim() !== currentAdmin.phone) {
+            const existingPhoneUser = await userModel.findOne({ phone: phone.trim(), _id: { $ne: adminId } });
+            if (existingPhoneUser) {
+                return res.status(409).json({ message: "Phone number already in use by another user." });
+            }
+            updatedFields.phone = phone.trim();
+        }
+
+        // Check and update name and profile image
+        if (name && name.trim() !== currentAdmin.name) {
+            updatedFields.name = name.trim();
+            updatedFields.profileImage = {
+                url: `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(name.trim())}`,
+                publicId: "",
+            };
+        }
+
+        const updatedAdmin = await userModel.findByIdAndUpdate(
+            adminId,
+            { $set: updatedFields },
+            { new: true, runValidators: true }
+        ).select("-password");
+
+        return res.status(200).json({
+            success: true,
+            message: "Admin profile updated successfully.",
+            data: updatedAdmin,
+        });
+
+    } catch (error) {
+        console.error("Error updating admin profile:", error);
+        return res.status(500).json({ message: "Internal server error." });
     }
-
-    const { name, email, phone } = req.body;
-
-    const updatedFields = {};
-    const currentAdmin = await userModel.findById(adminId);
-    if (!currentAdmin) {
-      return res.status(404).json({ message: "Admin not found." });
-    }
-
-    // Check if email is changing and already taken
-    if (email && email.trim() !== currentAdmin.email) {
-      const existingEmailUser = await userModel.findOne({ email: email.trim(), _id: { $ne: adminId } });
-      if (existingEmailUser) {
-        return res.status(409).json({ message: "Email already in use by another user." });
-      }
-      updatedFields.email = email.trim();
-    }
-
-    // Check if phone is changing and already taken
-    if (phone && phone.trim() !== currentAdmin.phone) {
-      const existingPhoneUser = await userModel.findOne({ phone: phone.trim(), _id: { $ne: adminId } });
-      if (existingPhoneUser) {
-        return res.status(409).json({ message: "Phone number already in use by another user." });
-      }
-      updatedFields.phone = phone.trim();
-    }
-
-    // Check and update name and profile image
-    if (name && name.trim() !== currentAdmin.name) {
-      updatedFields.name = name.trim();
-      updatedFields.profileImage = {
-        url: `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(name.trim())}`,
-        publicId: "",
-      };
-    }
-
-    const updatedAdmin = await userModel.findByIdAndUpdate(
-      adminId,
-      { $set: updatedFields },
-      { new: true, runValidators: true }
-    ).select("-password");
-
-    return res.status(200).json({
-      success: true,
-      message: "Admin profile updated successfully.",
-      data: updatedAdmin,
-    });
-
-  } catch (error) {
-    console.error("Error updating admin profile:", error);
-    return res.status(500).json({ message: "Internal server error." });
-  }
 };
 
 
 
 
 exports.changeAdminPassword = async (req, res) => {
-  try {
-    const adminId = req.session.userId;
-    const { currentPassword, newPassword, confirmNewPassword } = req.body;
+    try {
+        const adminId = req.session.userId;
+        const { currentPassword, newPassword, confirmNewPassword } = req.body;
 
-    if (!currentPassword || !newPassword || !confirmNewPassword) {
-      return res.status(400).json({ message: "All fields are required." });
+        if (!currentPassword || !newPassword || !confirmNewPassword) {
+            return res.status(400).json({ message: "All fields are required." });
+        }
+
+        if (newPassword !== confirmNewPassword) {
+            return res.status(400).json({ message: "New password and confirmation do not match." });
+        }
+
+        const admin = await userModel.findById(adminId);
+
+        if (!admin) {
+            return res.status(404).json({ message: "Admin not found." });
+        }
+
+        const isMatch = await admin.comparePassword(currentPassword, admin.password);
+        if (!isMatch) {
+            return res.status(401).json({ message: "Current password is incorrect." });
+        }
+
+
+        admin.password = newPassword
+        await admin.save();
+
+        return res.status(200).json({ message: "Password changed successfully." });
+
+    } catch (error) {
+        console.error("Error changing password:", error);
+        return res.status(500).json({ message: "Internal server error." });
     }
-
-    if (newPassword !== confirmNewPassword) {
-      return res.status(400).json({ message: "New password and confirmation do not match." });
-    }
-
-    const admin = await userModel.findById(adminId);
-
-    if (!admin) {
-      return res.status(404).json({ message: "Admin not found." });
-    }
-
-    const isMatch = await admin.comparePassword(currentPassword, admin.password);
-    if (!isMatch) {
-      return res.status(401).json({ message: "Current password is incorrect." });
-    }
-
-   
-    admin.password = newPassword
-    await admin.save();
-
-    return res.status(200).json({ message: "Password changed successfully." });
-
-  } catch (error) {
-    console.error("Error changing password:", error);
-    return res.status(500).json({ message: "Internal server error." });
-  }
 };

@@ -10,6 +10,12 @@ const userSchema = new mongoose.Schema({
         minlength: [2, 'Name must be at least 2 characters'],
         maxlength: [50, 'Name cannot exceed 50 characters']
     },
+    age: {
+        type: String,
+    },
+    gender: {
+        type: String,
+    },
 
     email: {
         type: String,
@@ -28,9 +34,9 @@ const userSchema = new mongoose.Schema({
             },
             message: 'Aadhaar number must be 12 digits'
         },
-       
+
     },
-    
+
     phone: {
         type: String,
         required: function () {
@@ -50,7 +56,7 @@ const userSchema = new mongoose.Schema({
 
 
     },
-    new_number:{
+    new_number: {
         type: String,
         validate: {
             validator: function (value) {
@@ -60,7 +66,7 @@ const userSchema = new mongoose.Schema({
         },
         trim: true
     },
-    new_email:{
+    new_email: {
         type: String,
         trim: true,
     },

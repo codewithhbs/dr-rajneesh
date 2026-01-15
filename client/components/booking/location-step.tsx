@@ -1,90 +1,103 @@
-"use client"
+"use client";
 
-import { motion } from "framer-motion"
-import { MapPin, Phone, Check, Calendar, AlertCircle } from "lucide-react"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Badge } from "@/components/ui/badge"
-import { useGetAllClinic } from "@/hooks/common"
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { MapPin, Check } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Badge } from "@/components/ui/badge";
+import { useGetAllClinic } from "@/hooks/common";
+import { useRouter, useSearchParams } from "next/navigation";
 
 /* ================= TYPES ================= */
 
 interface BookingAvailableAt {
-  start_date: string
-  end_date: string
+  start_date: string;
+  end_date: string;
 }
 
 interface Clinic {
-  _id: string
-  clinic_name: string
+  _id: string;
+  clinic_name: string;
   clinic_contact_details: {
-    clinic_address: string
-    phone_numbers: string[]
-  }
-  BookingAvailabeAt?: BookingAvailableAt
-}
-
-interface LocationStepProps {
-  selectedLocation: string
-  setSelectedLocation: (id: string) => void
-  setSelectedClinic: (clinic: Clinic) => void
+    clinic_address: string;
+    phone_numbers: string[];
+  };
+  BookingAvailabeAt?: BookingAvailableAt;
 }
 
 /* ================= COMPONENT ================= */
 
-const formatDateRange = ({ start_date, end_date }: BookingAvailableAt): string => {
-  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' };
-  return `${new Date(start_date).toLocaleDateString('en-US', options)} - ${new Date(end_date).toLocaleDateString('en-US', options)}`;
-}
+const formatDateRange = ({
+  start_date,
+  end_date,
+}: BookingAvailableAt): string => {
+  const options: Intl.DateTimeFormatOptions = {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  };
+  return `${new Date(start_date).toLocaleDateString(
+    "en-US",
+    options
+  )} - ${new Date(end_date).toLocaleDateString("en-US", options)}`;
+};
 
+const LocationStep = () => {
+  const { data } = useGetAllClinic();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-const LocationStep = ({
-  selectedLocation,
-  setSelectedLocation,
-  setSelectedClinic,
-}: LocationStepProps) => {
-  const { data } = useGetAllClinic()
+  const [selectedLocation, setSelectedLocation] = useState("");
+  const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null);
 
   if (!data || Object.keys(data).length === 0) {
     return (
       <div className="text-center py-10 text-slate-500">
         No clinic locations available
       </div>
-    )
+    );
   }
 
   /* ================= HELPERS ================= */
 
   const isClinicAvailable = (clinic: Clinic) => {
-    if (!clinic.BookingAvailabeAt) return false
+    if (!clinic.BookingAvailabeAt) return false;
 
-    const now = new Date()
-    const start = new Date(clinic.BookingAvailabeAt.start_date)
-    const end = new Date(clinic.BookingAvailabeAt.end_date)
+    const now = new Date();
+    const start = new Date(clinic.BookingAvailabeAt.start_date);
+    const end = new Date(clinic.BookingAvailabeAt.end_date);
 
-    return now >= start && now <= end
-  }
+    return now >= start && now <= end;
+  };
 
   const getAvailabilityStatus = (clinic: Clinic) => {
     if (!clinic.BookingAvailabeAt) {
-      return { type: "not_set", label: "Booking not configured" }
+      return { type: "not_set", label: "Booking not configured" };
     }
 
-    const now = new Date()
-    const start = new Date(clinic.BookingAvailabeAt.start_date)
-    const end = new Date(clinic.BookingAvailabeAt.end_date)
+    const now = new Date();
+    const start = new Date(clinic.BookingAvailabeAt.start_date);
+    const end = new Date(clinic.BookingAvailabeAt.end_date);
 
-    if (now < start) return { type: "upcoming", label: "Booking opens soon" }
-    if (now > end) return { type: "expired", label: "Booking closed" }
+    if (now < start) return { type: "upcoming", label: "Booking opens soon" };
+    if (now > end) return { type: "expired", label: "Booking closed" };
 
-    return { type: "available", label: "Available for booking" }
-  }
+    return { type: "available", label: "Available for booking" };
+  };
+
+  const updateURLParams = (clinicId: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("clinic", clinicId);
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
 
   const handleSelect = (clinic: Clinic) => {
-    if (!isClinicAvailable(clinic)) return
-    setSelectedLocation(clinic._id)
-    setSelectedClinic(clinic)
-  }
+    if (!isClinicAvailable(clinic)) return;
+    setSelectedLocation(clinic._id);
+    setSelectedClinic(clinic);
+    updateURLParams(clinic._id);
+  };
 
   /* ================= UI ================= */
 
@@ -111,9 +124,9 @@ const LocationStep = ({
         className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-4xl mx-auto"
       >
         {Object.values(data).map((clinic, index) => {
-          const isSelected = selectedLocation === clinic._id
-          const available = isClinicAvailable(clinic)
-          const status = getAvailabilityStatus(clinic)
+          const isSelected = selectedLocation === clinic._id;
+          const available = isClinicAvailable(clinic);
+          const status = getAvailabilityStatus(clinic);
 
           return (
             <motion.div
@@ -133,72 +146,115 @@ const LocationStep = ({
                 htmlFor={clinic._id}
                 onClick={() => handleSelect(clinic)}
                 className={`relative block p-5 rounded-xl border cursor-pointer transition-all
-                  ${available
-                    ? "bg-white border-slate-200 hover:border-blue-400 hover:shadow-md"
-                    : "bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed"}
-                  ${isSelected && "border-blue-500 bg-blue-50 shadow-lg"}
+                  ${
+                    available
+                      ? "bg-white border-slate-200 hover:border-blue-400 hover:shadow-md"
+                      : "bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed"
+                  }
+                  ${
+                    isSelected &&
+                    "border-green-500 bg-green-50 shadow-lg ring-2 ring-green-200"
+                  }
                 `}
               >
                 {/* Title */}
                 <div className="flex justify-between items-center mb-3">
-                  <h3 className="text-lg font-semibold text-slate-900">
+                  <h3
+                    className={`text-lg font-semibold ${
+                      isSelected ? "text-green-900" : "text-slate-900"
+                    }`}
+                  >
                     {clinic.clinic_name}
                   </h3>
-                  <MapPin className="h-4 w-4 text-blue-600" />
+                  <MapPin
+                    className={`h-4 w-4 ${
+                      isSelected ? "text-green-600" : "text-blue-600"
+                    }`}
+                  />
                 </div>
 
                 {/* Address */}
-                <p className="text-sm text-slate-600 mb-3">
+                <p
+                  className={`text-sm mb-3 ${
+                    isSelected ? "text-green-700" : "text-slate-600"
+                  }`}
+                >
                   {clinic.clinic_contact_details.clinic_address}
                 </p>
 
                 {/* Status */}
                 <Badge
                   className={`mb-3
-                    ${status.type === "available" && "bg-green-100 text-green-700"}
-                    ${status.type === "upcoming" && "bg-yellow-100 text-yellow-700"}
+                    ${
+                      status.type === "available" &&
+                      "bg-green-100 text-green-700"
+                    }
+                    ${
+                      status.type === "upcoming" &&
+                      "bg-yellow-100 text-yellow-700"
+                    }
                     ${status.type === "expired" && "bg-red-100 text-red-700"}
-                    ${status.type === "not_set" && "bg-slate-100 text-slate-600"}
+                    ${
+                      status.type === "not_set" && "bg-slate-100 text-slate-600"
+                    }
                   `}
                 >
                   {status.label}
                 </Badge>
 
-                {clinic.BookingAvailabeAt
-                  && (
-                    <div className="text-xs text-slate-600">
-                      <span className="font-medium">Available: </span>
-                      {formatDateRange(clinic.BookingAvailabeAt
-                      )}
-                    </div>
-                  )}
+                {clinic.BookingAvailabeAt && (
+                  <div
+                    className={`text-xs ${
+                      isSelected ? "text-green-700" : "text-slate-600"
+                    }`}
+                  >
+                    <span className="font-medium">Available: </span>
+                    {formatDateRange(clinic.BookingAvailabeAt)}
+                  </div>
+                )}
 
                 {/* Phones */}
                 {clinic.clinic_contact_details.phone_numbers.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
-                    <span className="text-xs font-medium text-slate-600">Phone: </span>
+                    <span
+                      className={`text-xs font-medium ${
+                        isSelected ? "text-green-700" : "text-slate-600"
+                      }`}
+                    >
+                      Phone:
+                    </span>
                     {clinic.clinic_contact_details.phone_numbers.map((p, i) => (
-                      <Badge key={i} variant="secondary">
+                      <Badge
+                        key={i}
+                        variant="secondary"
+                        className={
+                          isSelected ? "bg-green-100 text-green-700" : ""
+                        }
+                      >
                         {p}
                       </Badge>
                     ))}
-                     
                   </div>
                 )}
 
                 {/* Selected Tick */}
                 {isSelected && available && (
-                  <div className="absolute -top-2 -right-2 bg-green-500 rounded-full p-1">
-                    <Check className="h-4 w-4 text-white" />
-                  </div>
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    className="absolute -top-2 -right-2 bg-green-500 rounded-full p-1.5 shadow-lg"
+                  >
+                    <Check className="h-5 w-5 text-white" strokeWidth={3} />
+                  </motion.div>
                 )}
               </Label>
             </motion.div>
-          )
+          );
         })}
       </RadioGroup>
     </motion.div>
-  )
-}
+  );
+};
 
-export default LocationStep
+export default LocationStep;

@@ -130,6 +130,30 @@ const BookingSessionSchema = new mongoose.Schema({
         index: true
     },
 
+    addOnsTotal: {
+    type: Number,
+    default: 0
+  },
+  addOns: [{
+    addOnId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'AddOn',
+      required: true    
+    },
+    title: {
+      type: String,
+      required: true
+    },
+    price: {
+      type: Number,
+      required: true
+    },
+    addedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+
     // Payment information
     payment_id: {
         type: mongoose.Schema.Types.ObjectId,

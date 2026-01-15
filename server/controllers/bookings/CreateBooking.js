@@ -12,6 +12,7 @@ const Payment = require("../../models/booking/payment.model"); // Assuming you h
 const { getBookingsByDateAndTimePeriodOnB } = require("./BookingService");
 const { uploadSingleFile, deleteFileCloud } = require("../../utils/upload");
 const { deleteFile } = require("../../middleware/multer");
+const AddOn = require("../../models/services/addon.model");
 
 const razorpay = new RazorpayUtils(
     process.env.RAZORPAY_KEY_ID,
@@ -33,16 +34,18 @@ exports.createAorderForSession = async (req, res) => {
             sessions,
             date,
             time,
-
+            addons = [] 
         } = req.body;
 
+        console.log(req.body)
         if (!user) {
             return res.status(401).json({
                 success: false,
                 message: "Please login to book a session",
             });
         }
-        const redisClient = getRedisClient(req)
+        
+        const redisClient = getRedisClient(req);
 
         // Required fields list
         const requiredFields = {
@@ -66,7 +69,7 @@ exports.createAorderForSession = async (req, res) => {
             });
         }
 
-        let findService
+        let findService;
         // Find service
         if (service_id) {
             findService = await Service.findById(service_id).session(session);
@@ -87,6 +90,35 @@ exports.createAorderForSession = async (req, res) => {
             }
         }
 
+        // ADD THIS: Fetch and validate add-ons
+        let addOnsData = [];
+        let addOnsTotal = 0;
+        
+        if (addons && addons.length > 0) {
+            // Fetch all add-ons from database
+            const fetchedAddOns = await AddOn.find({
+                _id: { $in: addons },
+                is_active: true
+            }).session(session);
+
+            if (fetchedAddOns.length !== addons.length) {
+                await session.abortTransaction();
+                return res.status(400).json({
+                    success: false,
+                    message: "One or more selected add-ons are not available",
+                });
+            }
+
+            // Prepare add-ons data and calculate total
+            addOnsData = fetchedAddOns.map(addon => ({
+                addOnId: addon._id,
+                title: addon.title,
+                price: addon.price
+            }));
+
+            addOnsTotal = fetchedAddOns.reduce((sum, addon) => sum + addon.price, 0);
+        }
+
         // Get settings
         const findSettings = await Settings.findOne({ is_active: true }).session(session);
         if (!findSettings) {
@@ -105,8 +137,6 @@ exports.createAorderForSession = async (req, res) => {
             req,
         });
 
-        console.log("checkBookings", checkBookings)
-
 
         if (!checkBookings.data?.available) {
             await session.abortTransaction();
@@ -116,7 +146,7 @@ exports.createAorderForSession = async (req, res) => {
             });
         }
 
-        // Calculate pricing
+        // Calculate pricing - UPDATE THIS FUNCTION
         const calculatePricing = () => {
             const basePrice =
                 (findService?.service_per_session_discount_price ??
@@ -127,15 +157,19 @@ exports.createAorderForSession = async (req, res) => {
             const taxPercentage = findSettings?.payment_config?.tax_percentage || 0;
             const creditCardFee = findSettings?.payment_config?.credit_card_fee || 0;
 
-            const taxAmount = (subtotal * taxPercentage) / 100;
+            // ADD THIS: Include add-ons in subtotal for tax and fee calculation
+            const subtotalWithAddOns = subtotal + addOnsTotal;
+
+            const taxAmount = (subtotalWithAddOns * taxPercentage) / 100;
 
             const creditCardAmount =
-                payment_method === "card" ? (subtotal * creditCardFee) / 100 : 0;
+                payment_method === "card" ? (subtotalWithAddOns * creditCardFee) / 100 : 0;
 
-            const total = subtotal + taxAmount + creditCardAmount;
+            const total = subtotalWithAddOns + taxAmount + creditCardAmount;
 
             return {
                 subtotal,
+                addOnsTotal, // ADD THIS
                 tax: taxAmount,
                 creditCard: creditCardAmount,
                 total,
@@ -143,9 +177,9 @@ exports.createAorderForSession = async (req, res) => {
             };
         };
 
-
         const {
             subtotal,
+            addOnsTotal: calculatedAddOnsTotal, // ADD THIS
             tax: taxAmount,
             creditCard: creditCardAmount,
             total,
@@ -182,7 +216,6 @@ exports.createAorderForSession = async (req, res) => {
             req,
         });
 
-
         if (!finalAvailabilityCheck?.data?.available) {
             await session.abortTransaction();
             return res.status(400).json({
@@ -203,19 +236,18 @@ exports.createAorderForSession = async (req, res) => {
             ];
         };
 
-
         const sessionDates = generateSessionDates(date, time);
 
-        // Create payment record
+        // Create payment record - UPDATE THIS
         const paymentRecord = new Payment({
             user_id: user,
             razorpay_order_id: createPaymentData.order.id,
             amount: total,
-
             paymentMethod: payment_method,
             status: 'pending',
             payment_details: {
                 subtotal,
+                addOnsTotal: calculatedAddOnsTotal, // ADD THIS
                 tax: taxAmount,
                 creditCardFee: creditCardAmount,
                 total
@@ -225,7 +257,7 @@ exports.createAorderForSession = async (req, res) => {
 
         const savedPayment = await paymentRecord.save({ session });
 
-        // Create booking
+        // Create booking - UPDATE THIS
         const newBooking = new Bookings({
             treatment_id: service_id,
             no_of_session_book: sessions,
@@ -238,6 +270,8 @@ exports.createAorderForSession = async (req, res) => {
             payment_id: savedPayment._id,
             totalAmount: total,
             amountPerSession: amountPerSession,
+            addOns: addOnsData, // ADD THIS
+            addOnsTotal: calculatedAddOnsTotal, // ADD THIS
             bookingSource: 'web'
         });
 
@@ -249,6 +283,7 @@ exports.createAorderForSession = async (req, res) => {
 
         await session.commitTransaction();
         committed = true;
+        
         // Clear Redis cache
         await cleanRedisDataFlush(redisClient, 'booking_availability*');
 
@@ -261,13 +296,22 @@ exports.createAorderForSession = async (req, res) => {
                     bookingNumber: savedBooking.bookingNumber,
                     sessionDates: savedBooking.SessionDates,
                     totalAmount: savedBooking.totalAmount,
+                    addOns: savedBooking.addOns, // ADD THIS
+                    addOnsTotal: savedBooking.addOnsTotal, // ADD THIS
                     status: savedBooking.session_status
                 },
                 payment: {
                     orderId: createPaymentData.order.id,
                     amount: total,
                     currency: 'INR',
-                    key: createPaymentData?.key
+                    key: createPaymentData?.key,
+                    breakdown: { // ADD THIS
+                        subtotal,
+                        addOnsTotal: calculatedAddOnsTotal,
+                        tax: taxAmount,
+                        creditCardFee: creditCardAmount,
+                        total
+                    }
                 },
                 razorpayOrder: createPaymentData.order
             }
@@ -322,6 +366,7 @@ exports.verifyPayment = async (req, res) => {
             timestamp
         } = req.method === 'GET' ? req.query : { ...req.query, ...req.body };
 
+        console.log(req.query)
         bookingId = booking_id;
         paymentId = payment_id;
 

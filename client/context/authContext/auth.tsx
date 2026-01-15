@@ -9,11 +9,51 @@ import React, {
   useContext,
 } from "react";
 import Cookies from "js-cookie";
+import axios from "axios";
+import { LOCAL_API_ENDPOINT } from "@/constant/url";
 
 type token = string;
 
+interface User {
+  _id: string;
+  name: string;
+  phone: string;
+
+  email?: string;
+  aadhhar?: string;
+  gender?: string;
+  age?: string;
+  role: "user" | "admin" | "driver";
+  status: "active" | "inactive" | "blocked";
+
+  isGoogleAuth: boolean;
+  isPhoneAuth: boolean;
+  isLocked: boolean;
+  termsAccepted: boolean;
+
+  phoneNumber: {
+    isVerified: boolean;
+    otp: string | null;
+    otpExpiry: string | null;
+  };
+
+  emailVerification: {
+    isVerified: boolean;
+  };
+
+  profileImage: {
+    url: string;
+    publicId?: string;
+  };
+
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface AuthContextType {
   token: string | null;
+  user: User | null;
+  setUser: Dispatch<SetStateAction<User | null>>;
   setToken: Dispatch<SetStateAction<token | null>>;
   loading: boolean;
   setLoading: Dispatch<SetStateAction<boolean>>;
@@ -29,9 +69,10 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [token, setToken] = useState<token | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [user, setUser] = useState<User | null>(null);
 
   const isAuthenticated = token !== null;
-
+  // console.log(token)
   useEffect(() => {
     try {
       const cookieToken = Cookies.get("token");
@@ -44,14 +85,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setTimeout(() => {
         setLoading(false);
-      }, 5000)
+      }, 5000);
     }
   }, []);
 
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchProfile = async () => {
+      try {
+        const res = await axios.get(`${LOCAL_API_ENDPOINT}/user/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (res.data.success) {
+          setUser(res.data.data);
+        }
+      } catch (error) {
+        console.error("Profile fetch failed", error);
+        setToken(null);
+      }
+    };
+
+    fetchProfile();
+  }, [token]);
 
   useEffect(() => {
     if (token) {
-      Cookies.set("token", token, { expires: 7 }); 
+      Cookies.set("token", token, { expires: 7 });
     } else {
       Cookies.remove("token");
     }
@@ -62,6 +124,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       value={{
         token,
         setToken,
+        user,
+        setUser,
         loading,
         setLoading,
         isAuthenticated,

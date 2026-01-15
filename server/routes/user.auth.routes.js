@@ -1,5 +1,5 @@
 const express = require('express');
-const { registerNormalUser, verifyEmailOtp, googleAuthRegisterAndLogin, getUserProfile, getBookingHistory, registerNormal, resendVerificationEmail, loginUser, requestPasswordReset, verifyPasswordResetOtp, googleVerifyRegisterAndLogin, updateUserProfile, verifyOtpWhileUpdating } = require('../controllers/auth/user.controller');
+const { registerNormalUser, verifyEmailOtp, googleAuthRegisterAndLogin, getUserProfile, getBookingHistory, registerNormal, resendVerificationEmail, loginUser, requestPasswordReset, verifyPasswordResetOtp, googleVerifyRegisterAndLogin, updateUserProfile, verifyOtpWhileUpdating, verifyOtpViaNumber } = require('../controllers/auth/user.controller');
 const { createReview } = require('../controllers/service/review.controller');
 const { isAuthenticated } = require('../middleware/protect');
 const { getBookingsByDateAndTimePeriod } = require('../controllers/bookings/BookingService');
@@ -22,6 +22,7 @@ user_auth_router.post('/verify-password-reset', verifyPasswordResetOtp)
 // Register Via Number and Otp Only
 
 user_auth_router.post('/register-via-number', registerNormal)
+user_auth_router.post('/verify-otp-via-number',verifyOtpViaNumber)
 // Demo code 
 user_auth_router.get('/auth/google', (req, res) => {
     const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=profile email&access_type=offline&prompt=consent`;
@@ -42,7 +43,7 @@ user_auth_router.post('/bookings/availability', isAuthenticated, getBookingsByDa
 user_auth_router.post('/bookings/sessions', isAuthenticated, createAorderForSession);
 
 user_auth_router.post('/bookings/verify-payment', verifyPayment);
-user_auth_router.post('/bookings/payemnt-failed', isAuthenticated, handlePaymentFailure);
+user_auth_router.post('/bookings/payment-failed', isAuthenticated, handlePaymentFailure);
 user_auth_router.get('/found-booking/:id', foundBookingViaId);
 
 user_auth_router.get('/found-bookings', isAuthenticated, getBookingHistory)

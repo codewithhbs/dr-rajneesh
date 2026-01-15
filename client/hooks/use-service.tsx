@@ -79,3 +79,40 @@ export const useServiceBySlug = (slug: string) => {
         fetchServiceBySlug,
     };
 };
+
+
+
+export const useServiceById = (id: string) => {
+    const [service, setService] = useState<ServiceData | null>(null);
+    const [loading, setLoading] = useState<boolean>(false);
+
+    const fetchServiceById = useCallback(async () => {
+        if (!id) return;
+
+        try {
+            setLoading(true);
+            const response = await axios.get(`${API_URL}/get-service-slug/${id}`);
+
+            if (response.data.success) {
+                setService(response.data.data);
+            } else {
+                toast.error("Failed to fetch service by slug");
+            }
+        } catch (error) {
+            console.error("Error fetching service by slug:", error);
+            toast.error("Something went wrong while fetching the service");
+        } finally {
+            setLoading(false);
+        }
+    }, [slug]);
+
+    useEffect(() => {
+        fetchServiceById();
+    }, [fetchServiceById]);
+
+    return {
+        service,
+        loading,
+        fetchServiceById,
+    };
+};

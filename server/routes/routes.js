@@ -13,6 +13,7 @@
     const { createCategory, getAllCategories, getSingleCategory, updateCategory, deleteCategory } = require('../controllers/Blogs/BlogCategory');
     const { createBlog, getAllBlogs, getBlogsCount, updateBlog, deleteBlog, getSingleBlog, getSingleBlogBySlug  } = require('../controllers/Blogs/Blogs');
     const { updateConfigSettings, getSettings } = require("../controllers/settings/settings.controller");
+const { createAddOn, getAllAddOns, getAddOnById, updateAddOn, deleteAddOn } = require('../controllers/service/addOn.controller');
 
     const router = express.Router()
 
@@ -92,6 +93,13 @@ router.get('/admin/get-all-user', isAdmin, getAllUsers);
 // Route to get user count for dashboard
 router.get('/get-user-count', getUserCount);
 
+// Route to for addons 
+
+router.post("/add-on",createAddOn);
+router.get("/add-on",getAllAddOns);
+router.get("/add-on/:id",getAddOnById);
+router.put("/add-on/:id",updateAddOn);
+router.delete("/add-on/:id",deleteAddOn);
 
 //for admin login
 router.post("/admin/login", adminLogin);

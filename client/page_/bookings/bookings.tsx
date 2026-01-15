@@ -307,375 +307,371 @@ const isDateAvailable = (date) => {
   return date >= start && date <= end;
 };
 
-  const handleBookingSubmit = useCallback(
-    async (data: BookingFormData) => {
-      console.log("Booking submission started", {
-        timestamp: new Date().toISOString(),
-        formData: data,
-        sessions,
-      });
+const handleBookingSubmit = useCallback(
+  async (data: BookingFormData) => {
+    console.log("Booking submission started", {
+      timestamp: new Date().toISOString(),
+      formData: data,
+      sessions,
+    });
 
-      setIsProcessing(true);
-      const cookieToken = Cookies.get("token");
-      let bookingId = null;
-      let paymentId = null;
-
-      try {
-        // Format date
-        const formattedDate = data?.date
-          ? format(new Date(data.date), "yyyy-MM-dd")
-          : "";
-
-        console.log("Date formatted", {
-          originalDate: data?.date,
-          formattedDate,
-        });
-
-        // Calculate payment details
-        const paymentDetails = calculatePricing(data);
-        console.log("Payment details calculated", paymentDetails);
-
-        // Prepare complete payload
-        const completeData = {
-          ...data,
-          date: formattedDate,
-          paymentDetails,
-          sessions,
-        };
-
-        console.log("Complete payload prepared", {
-          dataKeys: Object.keys(completeData),
-          paymentAmount: paymentDetails?.amount || "N/A",
-        });
-
-        // Make booking request
-        console.log(
-          "Making booking API request to:",
-          `${API_ENDPOINT}/user/bookings/sessions`
-        );
-
-        const response = await axios.post(
-          `${API_ENDPOINT}/user/bookings/sessions`,
-          completeData,
-          {
-            headers: {
-              Authorization: `Bearer ${cookieToken}`,
-            },
-          }
-        );
-
-        console.log("Booking API response received", {
-          status: response.status,
-          success: response.data?.success,
-          dataKeys: Object.keys(response.data?.data || {}),
-        });
-
-        const { booking, payment } = response.data?.data;
-        bookingId = booking?.id;
-        paymentId = payment?.id;
-
-        console.log("Booking and payment IDs extracted", {
-          bookingId,
-          paymentId,
-          paymentAmount: payment?.amount,
-          paymentKey: payment?.key,
-        });
-
-        if (response.data.success) {
-          // Show processing modal
-          setPaymentModal({ isOpen: true, status: "processing" });
-          console.log("Payment modal set to processing");
-
-          // Construct callback URL with enhanced logging parameters
-          const callbackUrl = `${API_ENDPOINT}/user/bookings/verify-payment?&booking_id=${bookingId}&payment_id=${paymentId}`;
-
-          console.log("Callback URL constructed", { callbackUrl });
-
-          const options: unknown = {
-            key: payment?.key || "rzp_test_demo_key",
-            amount: payment?.amount * 100,
-            currency: "INR",
-            name: "🏥 Dr. Rajneesh Kant Clinic",
-            description: `${dbService?.service_name} - ${sessions} Session(s)`,
-            order_id: payment?.orderId || undefined,
-            redirect: true,
-            callback_url: callbackUrl,
-
-            prefill: {
-              name: data.patient_details.name,
-              email: data.patient_details.email,
-              contact: data.patient_details.phone,
-            },
-            theme: {
-              color: "#3B82F6",
-            },
-            handler: function (response: unknown) {
-              console.log("Razorpay payment success handler", {
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_signature: response.razorpay_signature
-                  ? "present"
-                  : "missing",
-                timestamp: new Date().toISOString(),
-              });
-
-              // Log successful payment and redirect
-              console.log("Payment completed successfully, redirecting...");
-
-              // Redirect to success page or callback URL
-              window.location.href =
-                callbackUrl +
-                `&razorpay_payment_id=${response.razorpay_payment_id}&razorpay_order_id=${response.razorpay_order_id}&razorpay_signature=${response.razorpay_signature}`;
-            },
-            modal: {
-              ondismiss: async () => {
-                console.log("Payment modal dismissed by user", {
-                  bookingId,
-                  paymentId,
-                  timestamp: new Date().toISOString(),
-                });
-
-                try {
-                  console.log("📡 Reporting payment cancellation to server");
-
-                  const cancellationResponse = await axios.post(
-                    `${API_ENDPOINT}/user/bookings/payment-failed`,
-                    {
-                      booking_id: bookingId,
-                      payment_id: paymentId,
-                      error_description: "Payment was cancelled by the user.",
-                      cancellation_reason: "user_dismissed_modal",
-                      timestamp: new Date().toISOString(),
-                    },
-                    {
-                      headers: {
-                        Authorization: `Bearer ${cookieToken}`,
-                      },
-                    }
-                  );
-
-                  console.log("✅ Payment cancellation reported successfully", {
-                    status: cancellationResponse.status,
-                    data: cancellationResponse.data,
-                  });
-
-                  setPaymentModal({
-                    isOpen: true,
-                    status: "failed",
-                    error: "Payment was cancelled by the user.",
-                  });
-                } catch (err: unknown) {
-                  console.error("🚨 Error reporting payment cancellation:", {
-                    error: err.message,
-                    status: err.response?.status,
-                    data: err.response?.data,
-                    timestamp: new Date().toISOString(),
-                  });
-
-                  setPaymentModal({
-                    isOpen: true,
-                    status: "failed",
-                    error: "Payment cancelled. Could not notify server.",
-                  });
-                }
-              },
-              escape: false,
-              backdropclose: false,
-            },
-            retry: {
-              enabled: true,
-              max_count: 3,
-            },
-            timeout: 600, // 10 minutes timeout
-            remember_customer: false,
-          };
-
-          // Restrict to card payment if selected
-          if (data.payment_method === "card") {
-            console.log("Restricting payment to card only");
-            options.method = {
-              card: true,
-              netbanking: false,
-              upi: false,
-              wallet: false,
-              emi: false,
-              paylater: false,
-            };
-          }
-
-          console.log("🎛️ Razorpay options configured", {
-            key: options.key,
-            amount: options.amount,
-            currency: options.currency,
-            paymentMethod: data.payment_method,
-            hasOrderId: !!options.order_id,
-            callbackUrl: options.callback_url,
-          });
-
-          // Add error handling for Razorpay initialization
-          try {
-            // Check if Razorpay is loaded
-            if (!(window as unknown).Razorpay) {
-              throw new Error("Razorpay SDK not loaded");
-            }
-
-            const rzp = new (window as unknown).Razorpay(options);
-
-            // Add error handler for Razorpay
-            rzp.on("payment.failed", function (response: unknown) {
-              console.error("Razorpay payment failed", {
-                error: response.error,
-                timestamp: new Date().toISOString(),
-              });
-
-              // Report payment failure
-              reportPaymentFailure(
-                bookingId,
-                paymentId,
-                response.error.description || "Payment failed",
-                cookieToken
-              );
-            });
-
-            console.log("🚀 Opening Razorpay checkout");
-            rzp.open();
-          } catch (razorpayError: unknown) {
-            console.error("Razorpay initialization failed:", {
-              error: razorpayError.message,
-              timestamp: new Date().toISOString(),
-            });
-
-            await reportPaymentFailure(
-              bookingId,
-              paymentId,
-              "Razorpay initialization failed",
-              cookieToken
-            );
-
-            setPaymentModal({
-              isOpen: true,
-              status: "failed",
-              error: "Payment gateway failed to initialize. Please try again.",
-            });
-          }
-        } else {
-          console.error(
-            "Booking API returned unsuccessful response",
-            response.data
-          );
-          throw new Error(
-            response.data?.message || "Booking request was not successful"
-          );
-        }
-      } catch (error: unknown) {
-        console.error("Booking submission error:", {
-          message: error.message,
-          status: error.response?.status,
-          data: error.response?.data,
-          bookingId,
-          paymentId,
-          timestamp: new Date().toISOString(),
-          stack: error.stack,
-        });
-
-        // Attempt to report payment failure to backend
-        if (bookingId) {
-          await reportPaymentFailure(
-            bookingId,
-            paymentId,
-            error?.response?.data?.message ||
-              error.message ||
-              "Booking API failed.",
-            cookieToken
-          );
-        }
-
-        setPaymentModal({
-          isOpen: true,
-          status: "failed",
-          error:
-            error?.response?.data?.message ||
-            error.message ||
-            "Something went wrong.",
-        });
-      } finally {
-        setIsProcessing(false);
-        console.log("🏁 Booking submission process completed", {
-          timestamp: new Date().toISOString(),
-          bookingId,
-          paymentId,
-        });
-      }
-    },
-    [dbService, sessions, calculatePricing]
-  );
-
-  const reportPaymentFailure = async (
-    bookingId: string | null,
-    paymentId: string | null,
-    errorDescription: string,
-    token: string
-  ) => {
-    if (!bookingId) {
-      console.warn("⚠️ Cannot report payment failure - no booking ID");
-      return;
-    }
+    setIsProcessing(true);
+    const cookieToken = Cookies.get("token");
+    let bookingId = null;
+    let paymentId = null;
 
     try {
-      console.log("📡 Reporting payment failure", {
-        bookingId,
-        paymentId,
-        errorDescription,
-        timestamp: new Date().toISOString(),
+      // Format date
+      const formattedDate = data?.date
+        ? format(new Date(data.date), "yyyy-MM-dd")
+        : "";
+
+      console.log("Date formatted", {
+        originalDate: data?.date,
+        formattedDate,
       });
 
+      // Calculate payment details
+      const paymentDetails = calculatePricing(data);
+      console.log("Payment details calculated", paymentDetails);
+
+      // Prepare complete payload
+      const completeData = {
+        ...data,
+        date: formattedDate,
+        paymentDetails,
+        sessions,
+      };
+
+      console.log("Complete payload prepared", {
+        dataKeys: Object.keys(completeData),
+        paymentAmount: paymentDetails?.amount || "N/A",
+      });
+
+      
+
       const response = await axios.post(
-        `${API_ENDPOINT}/user/bookings/payment-failed`,
-        {
-          booking_id: bookingId,
-          payment_id: paymentId,
-          error_description: errorDescription,
-          failure_timestamp: new Date().toISOString(),
-          user_agent: navigator.userAgent,
-          page_url: window.location.href,
-        },
+        `${API_ENDPOINT}/user/bookings/sessions`,
+        completeData,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${cookieToken}`,
           },
         }
       );
 
-      console.log("✅ Payment failure reported successfully", {
+      console.log("Booking API response received", {
         status: response.status,
-        data: response.data,
+        success: response.data?.success,
+        dataKeys: Object.keys(response.data?.data || {}),
       });
-    } catch (reportError: unknown) {
-      console.error("🚨 Failed to report payment failure:", {
-        error: reportError.message,
-        status: reportError.response?.status,
-        data: reportError.response?.data,
+
+      const { booking, payment } = response.data?.data;
+      bookingId = booking?.id;
+      paymentId = payment?.id;
+
+      console.log("Booking and payment IDs extracted", {
+        bookingId,
+        paymentId,
+        paymentAmount: payment?.amount,
+        paymentKey: payment?.key,
+      });
+
+      if (response.data.success) {
+        // Show processing modal
+        setPaymentModal({ isOpen: true, status: "processing" });
+        console.log("Payment modal set to processing");
+
+        // Construct callback URL with enhanced logging parameters
+        const callbackUrl = `${API_ENDPOINT}/user/bookings/verify-payment?&booking_id=${bookingId}&payment_id=${paymentId}`;
+
+        console.log("Callback URL constructed", { callbackUrl });
+
+        const options: unknown = {
+          key: payment?.key || "rzp_test_demo_key",
+          amount: payment?.amount * 100,
+          currency: "INR",
+          name: "🏥 Dr. Rajneesh Kant Clinic",
+          description: `${dbService?.service_name} - ${sessions} Session(s)`,
+          order_id: payment?.orderId || undefined,
+          redirect: true,
+          callback_url: callbackUrl,
+
+          prefill: {
+            name: data.patient_details.name,
+            email: data.patient_details.email,
+            contact: data.patient_details.phone,
+          },
+          theme: {
+            color: "#3B82F6",
+          },
+          handler: function (response: unknown) {
+            console.log("Razorpay payment success handler", {
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature
+                ? "present"
+                : "missing",
+              timestamp: new Date().toISOString(),
+            });
+
+            // Log successful payment and redirect
+            console.log("Payment completed successfully, redirecting...");
+
+            // Redirect to success page or callback URL
+            window.location.href =
+              callbackUrl +
+              `&razorpay_payment_id=${response.razorpay_payment_id}&razorpay_order_id=${response.razorpay_order_id}&razorpay_signature=${response.razorpay_signature}`;
+          },
+          modal: {
+            ondismiss: async () => {
+              console.log("Payment modal dismissed by user", {
+                bookingId,
+                paymentId,
+                timestamp: new Date().toISOString(),
+              });
+
+              try {
+                console.log("📡 Reporting payment cancellation to server");
+
+                const cancellationResponse = await axios.post(
+                  `${API_ENDPOINT}/user/bookings/payment-failed`,
+                  {
+                    booking_id: bookingId,
+                    payment_id: paymentId,
+                    error_description: "Payment was cancelled by the user.",
+                    cancellation_reason: "user_dismissed_modal",
+                    timestamp: new Date().toISOString(),
+                  },
+                  {
+                    headers: {
+                      Authorization: `Bearer ${cookieToken}`,
+                    },
+                  }
+                );
+
+                console.log("✅ Payment cancellation reported successfully", {
+                  status: cancellationResponse.status,
+                  data: cancellationResponse.data,
+                });
+
+                setPaymentModal({
+                  isOpen: true,
+                  status: "failed",
+                  error: "Payment was cancelled by the user.",
+                });
+              } catch (err: unknown) {
+                console.error("🚨 Error reporting payment cancellation:", {
+                  error: err.message,
+                  status: err.response?.status,
+                  data: err.response?.data,
+                  timestamp: new Date().toISOString(),
+                });
+
+                setPaymentModal({
+                  isOpen: true,
+                  status: "failed",
+                  error: "Payment cancelled. Could not notify server.",
+                });
+              }
+            },
+            escape: false,
+            backdropclose: false,
+          },
+          retry: {
+            enabled: true,
+            max_count: 3,
+          },
+          timeout: 600, // 10 minutes timeout
+          remember_customer: false,
+        };
+
+        // Restrict to card payment if selected
+        if (data.payment_method === "card") {
+          console.log("Restricting payment to card only");
+          options.method = {
+            card: true,
+            netbanking: false,
+            upi: false,
+            wallet: false,
+            emi: false,
+            paylater: false,
+          };
+        }
+
+        console.log("🎛️ Razorpay options configured", {
+          key: options.key,
+          amount: options.amount,
+          currency: options.currency,
+          paymentMethod: data.payment_method,
+          hasOrderId: !!options.order_id,
+          callbackUrl: options.callback_url,
+        });
+
+        // Add error handling for Razorpay initialization
+        try {
+          // Check if Razorpay is loaded
+          if (!(window as unknown).Razorpay) {
+            throw new Error("Razorpay SDK not loaded");
+          }
+
+          const rzp = new (window as unknown).Razorpay(options);
+
+          // Add error handler for Razorpay
+          rzp.on("payment.failed", function (response: unknown) {
+            console.error("Razorpay payment failed", {
+              error: response.error,
+              timestamp: new Date().toISOString(),
+            });
+
+            // Report payment failure
+            reportPaymentFailure(
+              bookingId,
+              paymentId,
+              response.error.description || "Payment failed",
+              cookieToken
+            );
+          });
+
+          console.log("🚀 Opening Razorpay checkout");
+          rzp.open();
+        } catch (razorpayError: unknown) {
+          console.error("Razorpay initialization failed:", {
+            error: razorpayError.message,
+            timestamp: new Date().toISOString(),
+          });
+
+          await reportPaymentFailure(
+            bookingId,
+            paymentId,
+            "Razorpay initialization failed",
+            cookieToken
+          );
+
+          setPaymentModal({
+            isOpen: true,
+            status: "failed",
+            error: "Payment gateway failed to initialize. Please try again.",
+          });
+        }
+      } else {
+        console.error(
+          "Booking API returned unsuccessful response",
+          response.data
+        );
+        throw new Error(
+          response.data?.message || "Booking request was not successful"
+        );
+      }
+    } catch (error: unknown) {
+      console.error("Booking submission error:", {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        bookingId,
+        paymentId,
         timestamp: new Date().toISOString(),
+        stack: error.stack,
+      });
+
+      // Attempt to report payment failure to backend
+      if (bookingId) {
+        await reportPaymentFailure(
+          bookingId,
+          paymentId,
+          error?.response?.data?.message ||
+            error.message ||
+            "Booking API failed.",
+          cookieToken
+        );
+      }
+
+      setPaymentModal({
+        isOpen: true,
+        status: "failed",
+        error:
+          error?.response?.data?.message ||
+          error.message ||
+          "Something went wrong.",
+      });
+    } finally {
+      setIsProcessing(false);
+      console.log("🏁 Booking submission process completed", {
+        timestamp: new Date().toISOString(),
+        bookingId,
+        paymentId,
       });
     }
-  };
+  },
+  [dbService, sessions, calculatePricing]
+);
 
-  // Optional: Add window event listeners for debugging redirect behavior
-  if (typeof window !== "undefined") {
-    window.addEventListener("beforeunload", (event) => {
-      console.log("🌐 Page is about to unload", {
-        timestamp: new Date().toISOString(),
-        url: window.location.href,
-      });
+const reportPaymentFailure = async (
+  bookingId: string | null,
+  paymentId: string | null,
+  errorDescription: string,
+  token: string
+) => {
+  if (!bookingId) {
+    console.warn("⚠️ Cannot report payment failure - no booking ID");
+    return;
+  }
+
+  try {
+    console.log("📡 Reporting payment failure", {
+      bookingId,
+      paymentId,
+      errorDescription,
+      timestamp: new Date().toISOString(),
     });
 
-    window.addEventListener("pagehide", (event) => {
-      console.log("🌐 Page is hidden", {
-        timestamp: new Date().toISOString(),
-        persisted: event.persisted,
-      });
+    const response = await axios.post(
+      `${API_ENDPOINT}/user/bookings/payment-failed`,
+      {
+        booking_id: bookingId,
+        payment_id: paymentId,
+        error_description: errorDescription,
+        failure_timestamp: new Date().toISOString(),
+        user_agent: navigator.userAgent,
+        page_url: window.location.href,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    console.log("✅ Payment failure reported successfully", {
+      status: response.status,
+      data: response.data,
+    });
+  } catch (reportError: unknown) {
+    console.error("🚨 Failed to report payment failure:", {
+      error: reportError.message,
+      status: reportError.response?.status,
+      data: reportError.response?.data,
+      timestamp: new Date().toISOString(),
     });
   }
+};
+
+// Optional: Add window event listeners for debugging redirect behavior
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeunload", (event) => {
+    console.log("🌐 Page is about to unload", {
+      timestamp: new Date().toISOString(),
+      url: window.location.href,
+    });
+  });
+
+  window.addEventListener("pagehide", (event) => {
+    console.log("🌐 Page is hidden", {
+      timestamp: new Date().toISOString(),
+      persisted: event.persisted,
+    });
+  });
+}
 
   const handleDateSelect = (date: Date | undefined) => {
     if (!date) return;

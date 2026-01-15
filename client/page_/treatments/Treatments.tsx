@@ -25,10 +25,6 @@ import {
   MessageSquare,
   Shield,
   CreditCard,
-  ShieldCheck,
-  Lock,
-  RotateCcw,
-  Calculator,
   TrendingUp,
 } from "lucide-react";
 import { useServiceBySlug } from "@/hooks/use-service";

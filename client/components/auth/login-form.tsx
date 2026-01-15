@@ -30,7 +30,6 @@ export function LoginForm({
   onSubmit,
   onGoogleAuth,
   onSwitchToRegister,
-  onSwitchToPhone,
 }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false)
 
