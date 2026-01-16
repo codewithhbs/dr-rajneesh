@@ -283,53 +283,64 @@ useEffect(() => {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleLogin = async (): Promise<void> => {
-    try {
-      const response = await axios.post<AuthResponse>(
-        `${API_ENDPOINT}/user/login-user`,
-        {
-          email: formData.email,
-          password: formData.password,
-        },
-        {
-          timeout: 10000,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      )
+const handleLogin = async (): Promise<void> => {
+  try {
+const email = formData.email.trim().toLowerCase()
+    const password = formData.password.trim()
 
-      const { success, token, user, case: loginCase, message } = response.data
-
-      if (!success) {
-        throw new Error(message || "Login failed")
-      }
-
-      if (loginCase === "verify-otp") {
-        setCurrentView("otp-verify")
-        setMessage({ type: "success", text: "Please verify OTP sent to your Email." })
-        return
-      }
-
-      if (token) {
-        setToken(token)
-      }
-
-      if (user) {
-        localStorage.setItem("userData", JSON.stringify(user))
-
-      }
-
-      setMessage({ type: "success", text: "Login successful! Redirecting..." })
-
-      setTimeout(() => {
-        window.location.href = lastRoute
-      }, 1500)
-
-    } catch (error) {
-      throw error
+    if (!email || !password) {
+      setMessage({ type: "error", text: "Email and password are required" })
+      return
     }
+
+    const response = await axios.post<AuthResponse>(
+      `${API_ENDPOINT}/user/login-user`,
+      {
+        email,
+        password,
+      },
+      {
+        timeout: 10000,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    )
+
+    const { success, token, user, case: loginCase, message } = response.data
+
+    if (!success) {
+      throw new Error(message || "Login failed")
+    }
+
+    if (loginCase === "verify-otp") {
+      setCurrentView("otp-verify")
+      setMessage({
+        type: "success",
+        text: "Please verify OTP sent to your Email.",
+      })
+      return
+    }
+
+    if (token) {
+      setToken(token)
+    }
+
+    if (user) {
+      localStorage.setItem("userData", JSON.stringify(user))
+    }
+
+    setMessage({ type: "success", text: "Login successful! Redirecting..." })
+
+    setTimeout(() => {
+      window.location.href = lastRoute
+    }, 1500)
+
+  } catch (error) {
+    throw error
   }
+}
+
 
 
   const handleRegister = async (): Promise<void> => {

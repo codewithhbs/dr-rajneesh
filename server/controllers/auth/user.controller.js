@@ -901,7 +901,9 @@ exports.verifyEmailOtp = async (req, res, next) => {
 // Login User
 exports.loginUser = async (req, res, next) => {
     try {
-        const { email, password } = req.body;
+        let { email, password } = req.body;
+        email = email?.trim().toLowerCase();
+        password = password?.trim();
 
         if (!email || !password) {
             return res.status(400).json({
@@ -910,15 +912,12 @@ exports.loginUser = async (req, res, next) => {
             });
         }
 
-        // Find user and include password for comparison
-        const user = await userModel.findOne({
-            email: email.toLowerCase().trim(),
-        });
-
+        const user = await userModel.findOne({ email });
+        console.log(user)
         if (!user) {
             return res.status(401).json({
                 success: false,
-                message: "Invalid email or password",
+                message: "User Not Found With Email Id",
             });
         }
 
@@ -946,7 +945,7 @@ exports.loginUser = async (req, res, next) => {
             await user.incLoginAttempts();
             return res.status(401).json({
                 success: false,
-                message: "Invalid email or password",
+                message: "Password is not match with account",
             });
         }
 
