@@ -13,6 +13,7 @@ const { getBookingsByDateAndTimePeriodOnB } = require("./BookingService");
 const { uploadSingleFile, deleteFileCloud } = require("../../utils/upload");
 const { deleteFile } = require("../../middleware/multer");
 const AddOn = require("../../models/services/addon.model");
+const userModel = require("../../models/users/user.model");
 
 const razorpay = new RazorpayUtils(
     process.env.RAZORPAY_KEY_ID,
@@ -34,7 +35,7 @@ exports.createAorderForSession = async (req, res) => {
             sessions,
             date,
             time,
-            addons = [] 
+            addons = []
         } = req.body;
 
         console.log(req.body)
@@ -44,7 +45,7 @@ exports.createAorderForSession = async (req, res) => {
                 message: "Please login to book a session",
             });
         }
-        
+
         const redisClient = getRedisClient(req);
 
         // Required fields list
@@ -93,7 +94,7 @@ exports.createAorderForSession = async (req, res) => {
         // ADD THIS: Fetch and validate add-ons
         let addOnsData = [];
         let addOnsTotal = 0;
-        
+
         if (addons && addons.length > 0) {
             // Fetch all add-ons from database
             const fetchedAddOns = await AddOn.find({
@@ -283,7 +284,7 @@ exports.createAorderForSession = async (req, res) => {
 
         await session.commitTransaction();
         committed = true;
-        
+
         // Clear Redis cache
         await cleanRedisDataFlush(redisClient, 'booking_availability*');
 
@@ -648,7 +649,6 @@ exports.verifyPayment = async (req, res) => {
         }
     }
 };
-
 // Handle payment failure
 exports.handlePaymentFailure = async (req, res) => {
     try {
@@ -695,9 +695,7 @@ exports.handlePaymentFailure = async (req, res) => {
         });
     }
 };
-
-
-exports.foundBookingViaId = async (req, res) => {   
+exports.foundBookingViaId = async (req, res) => {
     try {
 
 
@@ -818,8 +816,6 @@ exports.getAdminAllBookings = async (req, res) => {
     }
 };
 
-
-
 exports.getAllBookingCount = async (req, res) => {
     try {
         const totalBookings = await Bookings.countDocuments();
@@ -837,9 +833,6 @@ exports.getAllBookingCount = async (req, res) => {
         });
     }
 };
-
-
-
 
 exports.getAdminSingleBookings = async (req, res) => {
     try {
@@ -1131,71 +1124,7 @@ exports.addAndUpdateSessionPrescriptions = async (req, res) => {
         });
     }
 };
-
-// exports.addNextSessionDate = async (req, res) => {
-//     try {
-//         const { bookingId, newDate, newTime } = req.body;
-
-//         if (!bookingId || !newDate || !newTime) {
-//             return res.status(400).json({
-//                 success: false,
-//                 message: "Booking ID, new date, and new time are required."
-//             });
-//         }
-
-//         const booking = await Bookings.findById(bookingId);
-//         if (!booking) {
-//             return res.status(404).json({
-//                 success: false,
-//                 message: "Booking not found."
-//             });
-//         }
-
-//         // Check if the booking is already completed or cancelled
-//         if (booking.session_status === 'Completed' || booking.session_status === 'Cancelled') {
-//             return res.status(400).json({
-//                 success: false,
-//                 message: "Cannot add a session to a completed or cancelled booking."
-//             });
-//         }
-
-//         //first check no_of_session_book is alloed to add new sessionNumber and Date
-//         if (booking.SessionDates.length >= booking.no_of_session_book) {
-//             return res.status(400).json({
-//                 success: false,
-//                 message: "Cannot add more sessions than the allowed limit."
-//             });
-//         }
-
-//         // Add the new session date
-//         const nextSessionNumber = booking.SessionDates.length + 1;
-//         booking.SessionDates.push({
-//             sessionNumber: nextSessionNumber,
-//             date: new Date(newDate),
-//             time: newTime,
-//             status: 'Pending'
-//         });
-
-//         await booking.save();
-
-//         return res.status(200).json({
-//             success: true,
-//             message: "Next session date added successfully.",
-//             data: booking
-//         });
-
-//     } catch (error) {
-//         console.error("Error adding next session date:", error);
-//         return res.status(500).json({
-//             success: false,
-//             message: "Unable to add next session date. Please try again later.",
-//             error: error.message
-//         });
-//     }
-// }
-
-
-  exports.addNextSessionDate = async (req, res) => {
+exports.addNextSessionDate = async (req, res) => {
     try {
         const { bookingId, new_date, new_time } = req.body;
 
@@ -1217,13 +1146,13 @@ exports.addAndUpdateSessionPrescriptions = async (req, res) => {
         // Get the last session in the booking
         const lastSession = booking.SessionDates[booking.SessionDates.length - 1];
 
-       // Check if the last session is completed OR cancelled
-                if (lastSession && !["Completed", "Cancelled"].includes(lastSession.status)) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Next session can only be added after the previous session is completed or cancelled."
-                });
-                }
+        // Check if the last session is completed OR cancelled
+        if (lastSession && !["Completed", "Cancelled"].includes(lastSession.status)) {
+            return res.status(400).json({
+                success: false,
+                message: "Next session can only be added after the previous session is completed or cancelled."
+            });
+        }
 
 
         // Check if session limit is reached
@@ -1260,116 +1189,113 @@ exports.addAndUpdateSessionPrescriptions = async (req, res) => {
         });
     }
 };
-
-
-
 // Change session status
 exports.changeSessionStatus = async (req, res) => {
-  const sessionDb = await mongoose.startSession();
-  sessionDb.startTransaction();
-  try {
-    const { bookingId, sessionNumber, newStatus, reason } = req.body;
+    const sessionDb = await mongoose.startSession();
+    sessionDb.startTransaction();
+    try {
+        const { bookingId, sessionNumber, newStatus, reason } = req.body;
 
-    if (!bookingId || !sessionNumber || !newStatus) {
-      return res.status(400).json({
-        success: false,
-        message: "bookingId, sessionNumber, and newStatus are required."
-      });
+        if (!bookingId || !sessionNumber || !newStatus) {
+            return res.status(400).json({
+                success: false,
+                message: "bookingId, sessionNumber, and newStatus are required."
+            });
+        }
+
+        const booking = await Bookings.findById(bookingId).session(sessionDb);
+        if (!booking) {
+            return res.status(404).json({ success: false, message: "Booking not found." });
+        }
+
+        const sessionToUpdate = booking.SessionDates.find(
+            s => s.sessionNumber === Number(sessionNumber)
+        );
+
+        if (!sessionToUpdate) {
+            return res.status(404).json({ success: false, message: "Session not found." });
+        }
+
+        // Update status
+        sessionToUpdate.status = newStatus;
+        if (reason) sessionToUpdate.statusReason = reason;
+
+        await booking.save({ session: sessionDb });
+        await sessionDb.commitTransaction();
+
+        return res.status(200).json({
+            success: true,
+            message: "Session status updated successfully.",
+            data: sessionToUpdate
+        });
+
+    } catch (error) {
+        await sessionDb.abortTransaction();
+        console.error("Error updating session status:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to update session status.",
+            error: error.message
+        });
+    } finally {
+        sessionDb.endSession();
     }
-
-    const booking = await Bookings.findById(bookingId).session(sessionDb);
-    if (!booking) {
-      return res.status(404).json({ success: false, message: "Booking not found." });
-    }
-
-    const sessionToUpdate = booking.SessionDates.find(
-      s => s.sessionNumber === Number(sessionNumber)
-    );
-
-    if (!sessionToUpdate) {
-      return res.status(404).json({ success: false, message: "Session not found." });
-    }
-
-    // Update status
-    sessionToUpdate.status = newStatus;
-    if (reason) sessionToUpdate.statusReason = reason;
-
-    await booking.save({ session: sessionDb });
-    await sessionDb.commitTransaction();
-
-    return res.status(200).json({
-      success: true,
-      message: "Session status updated successfully.",
-      data: sessionToUpdate
-    });
-
-  } catch (error) {
-    await sessionDb.abortTransaction();
-    console.error("Error updating session status:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to update session status.",
-      error: error.message
-    });
-  } finally {
-    sessionDb.endSession();
-  }
 };
 
 // Delete a session
 exports.deleteSession = async (req, res) => {
-  const sessionDb = await mongoose.startSession();
-  sessionDb.startTransaction();
-  try {
-    const { bookingId, sessionNumber } = req.body;
+    const sessionDb = await mongoose.startSession();
+    sessionDb.startTransaction();
+    try {
+        const { bookingId, sessionNumber } = req.body;
 
-    if (!bookingId || !sessionNumber) {
-      return res.status(400).json({
-        success: false,
-        message: "bookingId and sessionNumber are required."
-      });
+        if (!bookingId || !sessionNumber) {
+            return res.status(400).json({
+                success: false,
+                message: "bookingId and sessionNumber are required."
+            });
+        }
+
+        const booking = await Bookings.findById(bookingId).session(sessionDb);
+        if (!booking) {
+            return res.status(404).json({ success: false, message: "Booking not found." });
+        }
+
+        // Filter out the session to delete
+        const sessionIndex = booking.SessionDates.findIndex(
+            s => s.sessionNumber === Number(sessionNumber)
+        );
+
+        if (sessionIndex === -1) {
+            return res.status(404).json({ success: false, message: "Session not found." });
+        }
+
+        booking.SessionDates.splice(sessionIndex, 1);
+
+        // Re-number remaining sessions
+        booking.SessionDates = booking.SessionDates.map((s, idx) => ({
+            ...s.toObject(),
+            sessionNumber: idx + 1
+        }));
+
+        await booking.save({ session: sessionDb });
+        await sessionDb.commitTransaction();
+
+        return res.status(200).json({
+            success: true,
+            message: "Session deleted successfully.",
+            data: booking.SessionDates
+        });
+
+    } catch (error) {
+        await sessionDb.abortTransaction();
+        console.error("Error deleting session:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to delete session.",
+            error: error.message
+        });
+    } finally {
+        sessionDb.endSession();
     }
-
-    const booking = await Bookings.findById(bookingId).session(sessionDb);
-    if (!booking) {
-      return res.status(404).json({ success: false, message: "Booking not found." });
-    }
-
-    // Filter out the session to delete
-    const sessionIndex = booking.SessionDates.findIndex(
-      s => s.sessionNumber === Number(sessionNumber)
-    );
-
-    if (sessionIndex === -1) {
-      return res.status(404).json({ success: false, message: "Session not found." });
-    }
-
-    booking.SessionDates.splice(sessionIndex, 1);
-
-    // Re-number remaining sessions
-    booking.SessionDates = booking.SessionDates.map((s, idx) => ({
-      ...s.toObject(),
-      sessionNumber: idx + 1
-    }));
-
-    await booking.save({ session: sessionDb });
-    await sessionDb.commitTransaction();
-
-    return res.status(200).json({
-      success: true,
-      message: "Session deleted successfully.",
-      data: booking.SessionDates
-    });
-
-  } catch (error) {
-    await sessionDb.abortTransaction();
-    console.error("Error deleting session:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to delete session.",
-      error: error.message
-    });
-  } finally {
-    sessionDb.endSession();
-  }
 };

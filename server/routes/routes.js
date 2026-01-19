@@ -1,21 +1,22 @@
-    const express = require('express');
-    const { upload } = require('../middleware/multer');
-    const { createClinic, updateClinic, DeleteClinic, GetAllClinic, GetClinicCount, GetSingleClinic } = require('../controllers/clinic/clinic.controllers');
-    const { createDoctor, updateDoctor, DeleteDoctor, getAllDoctor, getDoctorCount, getSingleDoctor } = require('../controllers/doctor/doctor.controllers');
-    const { createService, getAllServices, getServiceCount, getServiceById, updateService, deleteService, getServicesByDoctor, getServicesByClinic, updateServiceStatus, getServiceBySlug } = require('../controllers/service/service.controller');
-    const { getAllReviews, getReviewById, updateReview, deleteReview } = require('../controllers/service/review.controller');
-    const { createSettings, getOnlyOneSettings } = require('../controllers/settings/settings');
-    const { getAdminAllBookings, getAllBookingCount, getAdminSingleBookings, getAdminChangeSessionInformation, addAndUpdateSessionPrescriptions, addNextSessionDate, changeSessionStatus, deleteSession } = require('../controllers/bookings/CreateBooking');
-    const { getAvailableDates } = require('../controllers/D_Booking/D_Booking_Controoller');
-    const { createNotification, getAllValidNotifications, deleteNotification, updateNotification } = require('../controllers/settings/notification');
-    const { getAllUsers, getUserCount, adminLogin, adminProfile, adminLogout, updateAdminProfile, changeAdminPassword } = require('../controllers/auth/user.controller');
-    const { isAdmin } = require('../middleware/protect');
-    const { createCategory, getAllCategories, getSingleCategory, updateCategory, deleteCategory } = require('../controllers/Blogs/BlogCategory');
-    const { createBlog, getAllBlogs, getBlogsCount, updateBlog, deleteBlog, getSingleBlog, getSingleBlogBySlug  } = require('../controllers/Blogs/Blogs');
-    const { updateConfigSettings, getSettings } = require("../controllers/settings/settings.controller");
+const express = require('express');
+const { upload } = require('../middleware/multer');
+const { createClinic, updateClinic, DeleteClinic, GetAllClinic, GetClinicCount, GetSingleClinic } = require('../controllers/clinic/clinic.controllers');
+const { createDoctor, updateDoctor, DeleteDoctor, getAllDoctor, getDoctorCount, getSingleDoctor } = require('../controllers/doctor/doctor.controllers');
+const { createService, getAllServices, getServiceCount, getServiceById, updateService, deleteService, getServicesByDoctor, getServicesByClinic, updateServiceStatus, getServiceBySlug } = require('../controllers/service/service.controller');
+const { getAllReviews, getReviewById, updateReview, deleteReview } = require('../controllers/service/review.controller');
+const { createSettings, getOnlyOneSettings } = require('../controllers/settings/settings');
+const { getAdminAllBookings, getAllBookingCount, getAdminSingleBookings, getAdminChangeSessionInformation, addAndUpdateSessionPrescriptions, addNextSessionDate, changeSessionStatus, deleteSession } = require('../controllers/bookings/CreateBooking');
+const { getAvailableDates } = require('../controllers/D_Booking/D_Booking_Controoller');
+const { createNotification, getAllValidNotifications, deleteNotification, updateNotification } = require('../controllers/settings/notification');
+const { getAllUsers, getUserCount, adminLogin, adminProfile, adminLogout, updateAdminProfile, changeAdminPassword } = require('../controllers/auth/user.controller');
+const { isAdmin } = require('../middleware/protect');
+const { createCategory, getAllCategories, getSingleCategory, updateCategory, deleteCategory } = require('../controllers/Blogs/BlogCategory');
+const { createBlog, getAllBlogs, getBlogsCount, updateBlog, deleteBlog, getSingleBlog, getSingleBlogBySlug } = require('../controllers/Blogs/Blogs');
+const { updateConfigSettings, getSettings } = require("../controllers/settings/settings.controller");
 const { createAddOn, getAllAddOns, getAddOnById, updateAddOn, deleteAddOn } = require('../controllers/service/addOn.controller');
+const { getServices } = require('../controllers/service/other.controller');
 
-    const router = express.Router()
+const router = express.Router()
 
 
 //Clinic Routes For CRUD
@@ -68,8 +69,8 @@ router.post('/admin-changes-sessions', getAdminChangeSessionInformation);
 router.post('/admin-add-updated-prescriptions', upload.single('image'), addAndUpdateSessionPrescriptions);
 router.post('/admin-add-next-sessions', addNextSessionDate);
 
-  // ADMIN WEB ROUTES
-  router.put("/admin-session-change-status/:id", isAdmin, changeSessionStatus);
+// ADMIN WEB ROUTES
+router.put("/admin-session-change-status/:id", isAdmin, changeSessionStatus);
 router.post("/admin-session-delete", deleteSession);
 
 
@@ -95,11 +96,11 @@ router.get('/get-user-count', getUserCount);
 
 // Route to for addons 
 
-router.post("/add-on",createAddOn);
-router.get("/add-on",getAllAddOns);
-router.get("/add-on/:id",getAddOnById);
-router.put("/add-on/:id",updateAddOn);
-router.delete("/add-on/:id",deleteAddOn);
+router.post("/add-on", createAddOn);
+router.get("/add-on", getAllAddOns);
+router.get("/add-on/:id", getAddOnById);
+router.put("/add-on/:id", updateAddOn);
+router.delete("/add-on/:id", deleteAddOn);
 
 //for admin login
 router.post("/admin/login", adminLogin);
@@ -110,11 +111,11 @@ router.put("/admin/change-password", isAdmin, changeAdminPassword);
 
 
 router.get("/admin/check-auth", (req, res) => {
-    if (req.session && req.session.role === "admin") {
-        res.json({ authenticated: true });
-    } else {
-        res.status(401).json({ authenticated: false });
-    }
+  if (req.session && req.session.role === "admin") {
+    res.json({ authenticated: true });
+  } else {
+    res.status(401).json({ authenticated: false });
+  }
 });
 
 
@@ -125,6 +126,11 @@ router.put("/update-category/:id", isAdmin, updateCategory);
 router.delete("/delete-category/:id", isAdmin, deleteCategory);
 
 
+router.post("/other-service", createService);
+router.get("/other-service", getServices);
+router.get("/other-service/:id", getServiceById);
+router.put("/other-service/:id", updateService);
+router.delete("/other-service/:id", deleteService);
 
 
 router.post("/create-blog", isAdmin, upload.single("image"), createBlog);
