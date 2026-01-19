@@ -1,5 +1,6 @@
 import Blogs from "@/components/sections/Blog";
 import Hero from "@/components/sections/hero";
+import OtherTreatMents from "@/components/sections/OtherTreatMents";
 import Testimonials from "@/components/sections/testimonials";
 import TreatmentReels from "@/components/sections/TreatmentReels";
 import ChiropracticClinic from "@/components/sections/treatments";
@@ -14,6 +15,7 @@ export default function Home() {
     <main>
      <Hero/>
      <ChiropracticClinic/>
+     <OtherTreatMents/>
      <TreatmentReels/>
      <Blogs/>
      <Testimonials/>
