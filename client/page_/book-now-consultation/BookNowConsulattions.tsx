@@ -17,6 +17,7 @@ export default function BookNowConsultations() {
     phone: "",
     email: "",
     aadhhar: "",
+    passport:"",
     gender: "male",
     age: "",
     guest: false,

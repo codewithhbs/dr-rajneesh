@@ -104,6 +104,7 @@ export default function PatientDetailsStep({
         gender: formData.gender,
         age: formData.age,
         email: formData.email,
+        passport:formData.passport,
         aadhhar: formData.aadhhar,
         userId: String(user?._id),
         guest: "true",
@@ -149,6 +150,7 @@ export default function PatientDetailsStep({
         name: formData.name.trim(),
         phone: formData.phone,
         email: formData.email.trim(),
+        passport:formData.passport.trim(),
         aadhhar: formData.aadhhar.trim(),
         age: formData.age,
         gender: formData.gender,
@@ -204,6 +206,8 @@ export default function PatientDetailsStep({
           phone: formData.phone,
           gender: formData.gender,
           age: formData.age,
+                  passport:formData.passport,
+
           email: formData.email,
           aadhhar: formData.aadhhar,
           userId: response.data.userId || userId || "",
@@ -298,7 +302,7 @@ export default function PatientDetailsStep({
               value={formData.gender}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              disabled={token && choice === "same"}
+     
             >
               <option value="male">Male</option>
               <option value="female">Female</option>
@@ -314,7 +318,7 @@ export default function PatientDetailsStep({
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter Your Age"
-              disabled={token && choice === "same"}
+           
             />
           </div>
 
@@ -327,7 +331,7 @@ export default function PatientDetailsStep({
               type="email"
               placeholder="Email address"
               className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              disabled={token && choice === "same"}
+            
             />
           </div>
 
@@ -338,11 +342,27 @@ export default function PatientDetailsStep({
             <Input
               name="aadhhar"
               value={formData.aadhhar}
+              type="password"
               onChange={handleChange}
               placeholder="XXXX-XXXX-1234"
               maxLength={12}
               className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              disabled={token && choice === "same"}
+            
+            />
+          </div>
+          <div>
+            <Label className="block text-sm text-gray-600">
+              Passport Number (Optional)
+            </Label>
+            <Input
+              name="passport"
+              value={formData.passport}
+              type="password"
+              onChange={handleChange}
+              placeholder="XXXX-XXXX"
+              maxLength={12}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            
             />
           </div>
         </div>
