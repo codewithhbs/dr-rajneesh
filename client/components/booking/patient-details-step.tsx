@@ -249,8 +249,8 @@ export default function PatientDetailsStep({
               onValueChange={(val) => setChoice(val as "same" | "other")}
             >
               <div className="flex items-center space-x-3 mb-4">
-                <RadioGroupItem value="same" id="same" />
-                <Label htmlFor="same" className="text-base cursor-pointer">
+                <RadioGroupItem value="other" id="same" />
+                <Label htmlFor="other" className="text-base cursor-pointer">
                   Myself (use my existing details)
                 </Label>
               </div>
