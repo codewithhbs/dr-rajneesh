@@ -1,7 +1,7 @@
 "use client"
 import React, { useState } from "react"
 import { format } from "date-fns"
-import { User, X, Edit, Mail, Phone, CreditCard, Loader2, Check } from "lucide-react"
+import { User, X, Edit, Mail, Phone, CreditCard, Loader2, Check, Calendar, Shield, MapPin } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -93,7 +93,6 @@ const UserSummaryCard: React.FC<UserSummaryCardProps> = ({ user }) => {
       if (response.ok) {
         setMessage({ type: 'success', text: data.message })
         
-        // Check if OTP verification is needed
         const emailChanged = formData.email !== user?.email
         const phoneChanged = formData.phone !== user?.phone
         
@@ -110,7 +109,7 @@ const UserSummaryCard: React.FC<UserSummaryCardProps> = ({ user }) => {
           setTimeout(() => {
             setIsModalOpen(false)
             resetModal()
-            window.location.reload() // Refresh to show updated data
+            window.location.reload()
           }, 1500)
         }
       } else {
@@ -161,19 +160,19 @@ const UserSummaryCard: React.FC<UserSummaryCardProps> = ({ user }) => {
   }
 
   const resendOtp = async () => {
-    updateProfile() // Resend OTP by calling update profile again
+    updateProfile()
   }
 
   if (!user) {
     return (
-      <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-200 shadow-lg">
-        <CardContent className="p-4 sm:p-8">
+      <Card className="bg-white border border-gray-200 shadow-sm">
+        <CardContent className="p-6">
           <div className="text-center">
-            <div className="bg-blue-100 rounded-full p-5 w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 flex items-center justify-center">
-              <User className="h-6 w-6 sm:h-8 sm:w-8 text-blue-400" />
+            <div className="bg-gray-100 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <User className="h-8 w-8 text-gray-400" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-800 mb-1">Loading User Profile</h3>
-            <p className="text-slate-600 text-sm">Please wait while we load your information.</p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading Profile</h3>
+            <p className="text-gray-600 text-sm">Please wait...</p>
           </div>
         </CardContent>
       </Card>
@@ -182,229 +181,318 @@ const UserSummaryCard: React.FC<UserSummaryCardProps> = ({ user }) => {
 
   return (
     <>
-      <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300">
-        <CardContent className="p-4 sm:p-8">
-          <div className="flex flex-col lg:flex-row items-center lg:items-start gap-4 sm:gap-8">
-            {/* Avatar Section */}
-            <div className="relative group">
-              <Avatar className="h-20 w-20 sm:h-24 sm:w-24 lg:h-32 lg:w-32 border-4 border-white shadow-lg">
+      <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+        <CardContent className="p-6">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <Avatar className="h-16 w-16 border-2 border-blue-100">
                 {user.profileImage?.url ? (
                   <img
                     src={user.profileImage.url}
                     alt={user.name || 'User'}
                     onError={(e) => { e.currentTarget.src = "/placeholder.svg" }}
-                    className="h-full w-full object-cover rounded-full"
+                    className="h-full w-full object-cover"
                   />
                 ) : (
-                  <AvatarFallback className="bg-blue-100 text-blue-600 text-lg sm:text-xl font-bold">
+                  <AvatarFallback className="bg-blue-50 text-blue-600 text-xl font-semibold">
                     {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                   </AvatarFallback>
                 )}
               </Avatar>
-              
-              <div className="absolute -bottom-2 -right-2 bg-green-500 rounded-full p-1.5 sm:p-2 border-4 border-white shadow-lg">
-                <User className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                  {user.name || 'Unknown User'}
+                </h3>
+                <Badge variant="outline" className="text-xs font-normal">
+                  Patient
+                </Badge>
               </div>
             </div>
-            
-            {/* User Info Section */}
-            <div className="flex-1 text-center lg:text-left space-y-3 sm:space-y-4">
-              <div>
-                <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 mb-2">{user.name || 'Unknown User'}</h2>
-                <p className="text-gray-600 text-sm sm:text-base lg:text-lg">Email: {user.email || 'No email provided'}</p>
-                {user.phone && <p className="text-gray-600 text-sm sm:text-base">Mobile: {user.phone}</p>}
-                {user.aadhhar && <p className="text-gray-600 text-sm sm:text-base">Aadhaar: {user.aadhhar}</p>}
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label="Edit profile"
+            >
+              <Edit className="h-4 w-4 text-gray-600" />
+            </button>
+          </div>
+
+          {/* Info Grid */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <div className="p-2 bg-white rounded-md">
+                <Mail className="h-4 w-4 text-blue-600" />
               </div>
-              <div className="flex flex-wrap justify-center lg:justify-start gap-2 sm:gap-3">
-                      <Badge className="text-white 
-                                        bg-gradient-to-r from-[#155DFC] to-[#0092B8] 
-                                        border-2 border-[#155DFC]  
-                                        px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm 
-                                        rounded-md">
-                        Member since {user.createdAt ? format(new Date(user.createdAt), "MMM yyyy") : 'Unknown'}
-                      </Badge>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-gray-500 mb-0.5">Email</p>
+                <p className="text-sm text-gray-900 truncate">
+                  {user.email || 'Not provided'}
+                </p>
+              </div>
+            </div>
 
-                      <Badge 
-                        onClick={() => setIsModalOpen(true)} 
-                        className="text-white 
-                                  bg-gradient-to-r from-[#155DFC] to-[#0092B8] 
-                                  border-2 border-[#155DFC]  
-                                  px-3 py-1.5 sm:px-4 sm:py-2 cursor-pointer text-xs sm:text-sm 
-                                  rounded-md"
-                      >
-                        Update Profile
-                      </Badge>
-                    </div>
+            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <div className="p-2 bg-white rounded-md">
+                <Phone className="h-4 w-4 text-emerald-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-gray-500 mb-0.5">Phone</p>
+                <p className="text-sm text-gray-900 truncate">
+                  {user.phone || 'Not provided'}
+                </p>
+              </div>
+            </div>
 
+            {user.aadhhar && (
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="p-2 bg-white rounded-md">
+                  <Shield className="h-4 w-4 text-purple-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-gray-500 mb-0.5">Aadhaar</p>
+                  <p className="text-sm text-gray-900 font-mono">
+                    {user.aadhhar}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <div className="p-2 bg-white rounded-md">
+                <Calendar className="h-4 w-4 text-orange-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-gray-500 mb-0.5">Member Since</p>
+                <p className="text-sm text-gray-900">
+                  {user.createdAt ? format(new Date(user.createdAt), "MMMM yyyy") : 'Unknown'}
+                </p>
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Modal */}
+      {/* Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 sm:p-6 border-b ">
-              <h3 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center gap-2 ">
-                <Edit className="h-5 w-5" />
-                Update Profile
-              </h3>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-50 rounded-lg">
+                  <Edit className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">Edit Profile</h3>
+                  <p className="text-sm text-gray-500">Update your personal information</p>
+                </div>
+              </div>
               <button
                 onClick={() => {
                   setIsModalOpen(false)
                   resetModal()
                 }}
-                className="transition-colors bg-gradient-to-r from-[#155DFC] to-[#0092B8] 
-                                        border-2 border-[#155DFC] text-white p-1.5 rounded-full flex items-center justify-center"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <X className="h-6 w-6" />
+                <X className="h-5 w-5 text-gray-500" />
               </button>
             </div>
 
-            {/* Content */}
-            <div className="p-4 sm:p-6 space-y-4">
-              {/* Message */}
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {/* Alert Message */}
               {message.text && (
-                <div className={`p-3 rounded-lg text-sm ${
-                  message.type === 'success' ? 'bg-green-100 text-green-800' :
-                  message.type === 'error' ? 'bg-red-100 text-red-800' :
-                  'bg-blue-100 text-blue-800'
+                <div className={`mb-6 p-4 rounded-lg flex items-start gap-3 ${
+                  message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' :
+                  message.type === 'error' ? 'bg-red-50 text-red-800 border border-red-200' :
+                  'bg-blue-50 text-blue-800 border border-blue-200'
                 }`}>
-                  {message.text}
+                  <div className={`p-1 rounded-full ${
+                    message.type === 'success' ? 'bg-green-100' :
+                    message.type === 'error' ? 'bg-red-100' :
+                    'bg-blue-100'
+                  }`}>
+                    {message.type === 'success' ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <Mail className="h-4 w-4" />
+                    )}
+                  </div>
+                  <p className="text-sm flex-1">{message.text}</p>
                 </div>
               )}
 
-              {/* Form Fields */}
-              <div className="space-y-4">
-                {/* Name */}
+              {/* Form */}
+              <div className="space-y-5">
+                {/* Name Field */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    Name
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Full Name
                   </label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter your name"
-                  />
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                      <User className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Enter your full name"
+                    />
+                  </div>
                 </div>
 
-                {/* Email */}
+                {/* Email Field */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                    <Mail className="h-4 w-4" />
-                    Email
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email Address
                   </label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter your email"
-                  />
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                      <Mail className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => handleInputChange('email', e.target.value)}
+                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="your.email@example.com"
+                    />
+                  </div>
                   {showOtpFields.email && (
-                    <div className="mt-2">
+                    <div className="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Email OTP
+                      </label>
                       <input
                         type="text"
                         value={otpData.emailOtp}
                         onChange={(e) => handleOtpChange('emailOtp', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        placeholder="Enter email OTP"
+                        className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-center text-lg tracking-widest"
+                        placeholder="000000"
                         maxLength={6}
                       />
                     </div>
                   )}
                 </div>
 
-                {/* Phone */}
+                {/* Phone Field */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                    <Phone className="h-4 w-4" />
-                    Phone
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone Number
                   </label>
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter your phone number"
-                  />
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                      <Phone className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="+91 98765 43210"
+                    />
+                  </div>
                   {showOtpFields.phone && (
-                    <div className="mt-2">
+                    <div className="mt-3 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Phone OTP
+                      </label>
                       <input
                         type="text"
                         value={otpData.phoneOtp}
                         onChange={(e) => handleOtpChange('phoneOtp', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        placeholder="Enter phone OTP"
+                        className="w-full px-4 py-3 border border-emerald-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-mono text-center text-lg tracking-widest"
+                        placeholder="000000"
                         maxLength={6}
                       />
                     </div>
                   )}
                 </div>
 
-                {/* Aadhaar */}
+                {/* Aadhaar Field */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                    <CreditCard className="h-4 w-4" />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Aadhaar Number
                   </label>
-                  <input
-                    type="text"
-                    value={formData.aadhhar}
-                    onChange={(e) => handleInputChange('aadhhar', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter your Aadhaar number"
-                    maxLength={12}
-                  />
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                      <CreditCard className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      value={formData.aadhhar}
+                      onChange={(e) => handleInputChange('aadhhar', e.target.value)}
+                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-mono"
+                      placeholder="1234 5678 9012"
+                      maxLength={12}
+                    />
+                  </div>
                 </div>
               </div>
+            </div>
 
-              {/* Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                {(showOtpFields.email || showOtpFields.phone) ? (
-                  <>
-                    <button
-                      onClick={verifyOtp}
-                      disabled={otpLoading.email || otpLoading.phone}
-                      className="flex-1 bg-green-600 text-white py-2.5 px-4 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-                    >
-                      {(otpLoading.email || otpLoading.phone) ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Check className="h-4 w-4" />
-                      )}
-                      Verify OTP
-                    </button>
-                    <button
-                      onClick={resendOtp}
-                      disabled={isLoading}
-                      className="flex-1 bg-gray-600 text-white py-2.5 px-4 rounded-lg hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-                    >
-                      Resend OTP
-                    </button>
-                  </>
-                ) : (
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-gray-200 bg-gray-50">
+              {(showOtpFields.email || showOtpFields.phone) ? (
+                <div className="flex gap-3">
+                  <button
+                    onClick={verifyOtp}
+                    disabled={otpLoading.email || otpLoading.phone}
+                    className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all font-medium flex items-center justify-center gap-2"
+                  >
+                    {(otpLoading.email || otpLoading.phone) ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        Verifying...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="h-5 w-5" />
+                        Verify OTP
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={resendOtp}
+                    disabled={isLoading}
+                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed transition-all font-medium"
+                  >
+                    Resend
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setIsModalOpen(false)
+                      resetModal()
+                    }}
+                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-all font-medium"
+                  >
+                    Cancel
+                  </button>
                   <button
                     onClick={updateProfile}
                     disabled={isLoading}
-                    className="w-full text-white 
-                                        bg-gradient-to-r from-[#155DFC] to-[#0092B8] 
-                                        border-1 border-[#155DFC] py-2.5 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                    className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all font-medium flex items-center justify-center gap-2"
                   >
                     {isLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        Saving...
+                      </>
                     ) : (
-                      <Edit className="h-4 w-4" />
+                      <>
+                        <Check className="h-5 w-5" />
+                        Save Changes
+                      </>
                     )}
-                    Update Profile
                   </button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
