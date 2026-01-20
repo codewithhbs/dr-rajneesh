@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, isToday } from "date-fns";
+import Link from "next/link";
 
 interface SessionDate {
   sessionNumber: number;
@@ -68,16 +69,18 @@ const AppointmentsCard: React.FC<AppointmentsCardProps> = ({
 
   // ✅ Build rows per booking (not per session)
   let rows = appointments.map((appointment) => {
-    const completedCount =
-      appointment.SessionDates.filter((s) => s.status === "Completed").length;
-    const cancelledCount =
-      appointment.SessionDates.filter((s) => s.status === "Cancelled").length;
+    const completedCount = appointment.SessionDates.filter(
+      (s) => s.status === "Completed",
+    ).length;
+    const cancelledCount = appointment.SessionDates.filter(
+      (s) => s.status === "Cancelled",
+    ).length;
 
     // Find next upcoming session
     const nextSession = appointment.SessionDates.find(
       (s) =>
         (s.status === "Pending" || s.status === "Confirmed") &&
-        new Date(s.date) >= new Date()
+        new Date(s.date) >= new Date(),
     );
 
     return {
@@ -92,8 +95,7 @@ const AppointmentsCard: React.FC<AppointmentsCardProps> = ({
   if (type === "appointments") {
     rows = rows.filter(
       (row) =>
-        row.nextSession ||
-        row.session_status === "Payment Not Completed"
+        row.nextSession || row.session_status === "Payment Not Completed",
     );
   }
 
@@ -149,139 +151,153 @@ const AppointmentsCard: React.FC<AppointmentsCardProps> = ({
           </thead>
           <tbody className="divide-y divide-gray-100">
             {paginatedRows.map((row) => (
-              <tr
-                key={row._id}
-                className="hover:bg-blue-50/50 transition-colors odd:bg-white even:bg-blue-50/20"
-              >
-                <td className="px-4 py-3 font-semibold text-xs text-gray-700 whitespace-nowrap">
-                  {row.bookingNumber}
-                </td>
+              <>
+                <Link href={`/pages/view-booking-details/${row?._id}`}>
+                  <tr
+                    key={row._id}
+                    className="hover:bg-blue-50/50 transition-colors odd:bg-white even:bg-blue-50/20"
+                  >
+                    <td className="px-4 py-3 font-semibold text-xs text-gray-700 whitespace-nowrap">
+                      {row.bookingNumber}
+                    </td>
 
-                <td className="px-4 py-3">
-                  <div className="font-medium text-slate-800">
-                    {row.patient_details?.name || "Unknown"}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {row.patient_details?.phone} • {row.patient_details?.email}
-                  </div>
-                </td>
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-slate-800">
+                        {row.patient_details?.name || "Unknown"}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {row.patient_details?.phone} •{" "}
+                        {row.patient_details?.email}
+                      </div>
+                    </td>
 
-                <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
-                  {row.treatment_id?.service_name || "-"}
-                  <div className="text-xs text-gray-500">
-                    {row.no_of_session_book}
-                  </div>
-                </td>
+                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
+                      {row.treatment_id?.service_name || "-"}
+                      <div className="text-xs text-gray-500">
+                        {row.no_of_session_book}
+                      </div>
+                    </td>
 
-                {/* Date/Time (next session) */}
-                <td className="px-4 py-3">
-                  {row.nextSession ? (
-                    <div className="inline-flex items-center gap-3 whitespace-nowrap text-xs text-gray-700 font-semibold">
-                      <div className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded">
-                        <Calendar className="h-3 w-3" />
-                        {format(new Date(row.nextSession.date), "MMM d, yyyy")}
-                        <Clock className="h-3 w-3" />
-                        <span>
-                          {new Date(
-                            `1970-01-01T${row.nextSession.time}:00`
-                          ).toLocaleTimeString([], {
-                            hour: "numeric",
-                            minute: "2-digit",
-                            hour12: true,
-                          })}
+                    {/* Date/Time (next session) */}
+                    <td className="px-4 py-3">
+                      {row.nextSession ? (
+                        <div className="inline-flex items-center gap-3 whitespace-nowrap text-xs text-gray-700 font-semibold">
+                          <div className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded">
+                            <Calendar className="h-3 w-3" />
+                            {format(
+                              new Date(row.nextSession.date),
+                              "MMM d, yyyy",
+                            )}
+                            <Clock className="h-3 w-3" />
+                            <span>
+                              {new Date(
+                                `1970-01-01T${row.nextSession.time}:00`,
+                              ).toLocaleTimeString([], {
+                                hour: "numeric",
+                                minute: "2-digit",
+                                hour12: true,
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400">
+                          No upcoming session
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="px-4 py-3">
+                      <div className="inline-flex items-center gap-3 whitespace-nowrap text-xs text-gray-700 font-semibold">
+                        <div className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded">
+                          <MapPin className="h-3 w-3" />
+                          {row.session_booking_for_clinic?.clinic_name ||
+                            "Unknown Clinic"}
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-3 text-slate-700 font-medium">
+                      ₹{row.amountPerSession.toLocaleString()}
+                    </td>
+
+                    {/* Progress */}
+                    <td className="px-4 py-3 text-slate-700">
+                      <div className="flex flex-col gap-1">
+                        <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className={`h-3 rounded-full transition-all duration-300 ${
+                              row.completedCount === row.no_of_session_book
+                                ? "bg-green-600"
+                                : "bg-green-400"
+                            }`}
+                            style={{
+                              width: `${
+                                (row.completedCount / row.no_of_session_book) *
+                                100
+                              }%`,
+                            }}
+                          ></div>
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {row.completedCount}/{row.no_of_session_book}{" "}
+                          completed
                         </span>
                       </div>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-gray-400">
-                      No upcoming session
-                    </span>
-                  )}
-                </td>
+                    </td>
 
-                <td className="px-4 py-3">
-                  <div className="inline-flex items-center gap-3 whitespace-nowrap text-xs text-gray-700 font-semibold">
-                    <div className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded">
-                      <MapPin className="h-3 w-3" />
-                      {row.session_booking_for_clinic?.clinic_name ||
-                        "Unknown Clinic"}
-                    </div>
-                  </div>
-                </td>
-
-                <td className="px-4 py-3 text-slate-700 font-medium">
-                  ₹{row.amountPerSession.toLocaleString()}
-                </td>
-
-                {/* Progress */}
-                <td className="px-4 py-3 text-slate-700">
-                  <div className="flex flex-col gap-1">
-                    <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-                      <div
-                        className={`h-3 rounded-full transition-all duration-300 ${
-                          row.completedCount === row.no_of_session_book
-                            ? "bg-green-600"
-                            : "bg-green-400"
-                        }`}
-                        style={{
-                          width: `${
-                            (row.completedCount / row.no_of_session_book) * 100
-                          }%`,
-                        }}
-                      ></div>
-                    </div>
-                    <span className="text-xs text-gray-500">
-                      {row.completedCount}/{row.no_of_session_book} completed
-                    </span>
-                  </div>
-                </td>
-
-                {/* Next Session */}
-                <td className="px-4 py-3 whitespace-nowrap">
-                  {row.nextSession ? (
-                    <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-800 px-3 py-1 rounded text-xs font-semibold">
-                      <Calendar className="h-4 w-4" />
-                      <span>
-                        {format(new Date(row.nextSession.date), "MMM dd, yyyy")}
-                      </span>
-                      <Clock className="h-4 w-4 ml-2" />
-                      <span>
-                        {new Date(
-                          `1970-01-01T${row.nextSession.time}:00`
-                        ).toLocaleTimeString([], {
-                          hour: "numeric",
-                          minute: "2-digit",
-                          hour12: true,
-                        })}
-                      </span>
-                      {isToday(new Date(row.nextSession.date)) && (
-                        <Badge variant="secondary" className="ml-2">
-                          Today
-                        </Badge>
+                    {/* Next Session */}
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {row.nextSession ? (
+                        <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-800 px-3 py-1 rounded text-xs font-semibold">
+                          <Calendar className="h-4 w-4" />
+                          <span>
+                            {format(
+                              new Date(row.nextSession.date),
+                              "MMM dd, yyyy",
+                            )}
+                          </span>
+                          <Clock className="h-4 w-4 ml-2" />
+                          <span>
+                            {new Date(
+                              `1970-01-01T${row.nextSession.time}:00`,
+                            ).toLocaleTimeString([], {
+                              hour: "numeric",
+                              minute: "2-digit",
+                              hour12: true,
+                            })}
+                          </span>
+                          {isToday(new Date(row.nextSession.date)) && (
+                            <Badge variant="secondary" className="ml-2">
+                              Today
+                            </Badge>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400 font-medium">
+                          No upcoming session
+                        </span>
                       )}
-                    </div>
-                  ) : (
-                    <span className="text-xs text-gray-400 font-medium">
-                      No upcoming session
-                    </span>
-                  )}
-                </td>
+                    </td>
 
-                {/* Status */}
-                <td className="px-4 py-3">
-                  <Badge
-                    variant="outline"
-                    className={`${getStatusColor(
-                      row.completedCount === row.no_of_session_book
-                        ? "Completed"
-                        : "Pending"
-                    )} px-2 py-1 rounded text-xs`}
-                  >
-                    {row.completedCount} Completed
-                    {row.cancelledCount > 0 && ` / ${row.cancelledCount} Cancelled`}
-                  </Badge>
-                </td>
-              </tr>
+                    {/* Status */}
+                    <td className="px-4 py-3">
+                      <Badge
+                        variant="outline"
+                        className={`${getStatusColor(
+                          row.completedCount === row.no_of_session_book
+                            ? "Completed"
+                            : "Pending",
+                        )} px-2 py-1 rounded text-xs`}
+                      >
+                        {row.completedCount} Completed
+                        {row.cancelledCount > 0 &&
+                          ` / ${row.cancelledCount} Cancelled`}
+                      </Badge>
+                    </td>
+                  </tr>
+                </Link>
+              </>
             ))}
           </tbody>
         </table>
@@ -312,7 +328,7 @@ const AppointmentsCard: React.FC<AppointmentsCardProps> = ({
               >
                 {pageNum}
               </Button>
-            )
+            ),
           )}
 
           <Button
