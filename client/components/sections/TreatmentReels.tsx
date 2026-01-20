@@ -79,7 +79,7 @@ const FeaturedTreatmentReels = () => {
       id: 5,
       title: "Pawan Singh Power Treatment",
       description: "Bhojpuri superstar's chiropractic treatment session",
-      videoSrc: "/Reels/pawan.mp4",
+      videoSrc: "https://www.youtube.com/embed/_Wz8SESI-yg?autoplay=0&mute=1",
       views: "366K",
       likes: "11.6K",
       category: "Celebrity Care",
@@ -201,7 +201,7 @@ const FeaturedTreatmentReels = () => {
         </div>
 
         {/* Featured Reel */}
-        <Card className="bg-white/90 backdrop-blur-xl border border-gray-200 rounded-3xl shadow-xl overflow-hidden mb-12 transform hover:scale-105 transition-all duration-500">
+        <Card className="bg-white/90 cursor-pointer backdrop-blur-xl border border-gray-200 rounded-3xl shadow-xl overflow-hidden mb-12 transform hover:scale-105 transition-all duration-500">
           <CardContent className="p-0">
             <div className="grid lg:grid-cols-5">
               <div className="lg:col-span-2 relative">
@@ -214,7 +214,7 @@ const FeaturedTreatmentReels = () => {
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
-                    className="w-full h-full object-cover"
+                    className="w-full h-full  pointer-events-none object-cover"
                   />
                 </div>
               </div>
@@ -223,7 +223,7 @@ const FeaturedTreatmentReels = () => {
                   className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white 
                             rounded-lg shadow-md border-0
                             bg-gradient-to-r from-red-500 via-red-600 to-red-700
-                            before:absolute before:inset-0 before:rounded-lg mb-4"
+                             before:inset-0 before:rounded-lg mb-4"
                 >
                   <Zap className="w-3 h-3" />
                   Trending Now
@@ -240,7 +240,8 @@ const FeaturedTreatmentReels = () => {
                 <Button
                   className="mt-6 bg-gradient-to-r from-red-500 via-red-600 to-red-700 text-white px-8 py-4 text-lg w-full 
                                 hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
-                  onClick={() => handleVideoPlay(featuredReel.id)}
+         onClick={() => window.open(featuredReel?.videoSrc, "_blank")}
+
                 >
                   {playingVideos[featuredReel.id] ? <Pause className="w-5 h-5 mr-2" /> : <Play className="w-5 h-5 mr-2" />}
                   {playingVideos[featuredReel.id] ? "Pause" : "Watch"} Now
@@ -348,9 +349,9 @@ const FeaturedTreatmentReels = () => {
                             onClick={(e) => toggleMute(reel.id, e)}
                           >
                             {mutedVideos[reel.id] !== false ? (
-                              <VolumeX className="w-3 h-3" />
+                              <VolumeX color={"#fff"} className="w-3 h-3" />
                             ) : (
-                              <Volume2 className="w-3 h-3" />
+                              <Volume2  color={"#fff"} className="w-3 h-3" />
                             )}
                           </Button>
                           <Button
@@ -358,7 +359,7 @@ const FeaturedTreatmentReels = () => {
                             variant="ghost"
                             className="bg-black/50 text-gray-800 hover:bg-black/70 rounded-full p-1.5"
                           >
-                            <MoreVertical className="w-3 h-3" />
+                            <MoreVertical color={"#fff"} className="w-3 h-3" />
                           </Button>
                         </div>
 

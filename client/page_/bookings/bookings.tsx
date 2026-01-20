@@ -111,6 +111,7 @@ const EnhancedBookings = ({ searchParams }: EnhancedBookingsProps) => {
     useState<BookingAvailability | null>(null);
     
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
+  
   const [paymentModal, setPaymentModal] = useState<{
     isOpen: boolean;
     status: "success" | "failed" | "processing";
@@ -223,7 +224,7 @@ const [bookedSlots, setBookedSlots] = useState<string[]>([]);
 useEffect(() => {
   async function fetchBookings() {
     const res = await axios.get(`${API_ENDPOINT}/admin-bookings`);
-    setBookingsFromAPI(res.data.data); // your API response array
+    setBookingsFromAPI(res.data.data); 
   }
   fetchBookings();
 }, []);

@@ -269,7 +269,7 @@ const PatientDashboard = () => {
                 </div>
               </div>
 
-              <QuickStatsCard summary={bookingData.summary} currentBookings={bookingData.current} />
+              {/* <QuickStatsCard summary={bookingData.summary} currentBookings={bookingData.current} /> */}
             </TabsContent>
 
             {/* Appointments Tab */}

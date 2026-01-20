@@ -854,7 +854,7 @@ exports.verifyEmailOtp = async (req, res, next) => {
     </style>
     
 </body>
-        </html>`;
+             </html>`;
 
             emailQueue
                 .add({
@@ -891,8 +891,9 @@ exports.verifyEmailOtp = async (req, res, next) => {
                 },
             });
         }
-
-        await sendToken(user, 200, res, "Verification successful");
+        console.log("Send token")
+       const tok = await sendToken(user, 200, res, "Verification successful");
+       console.log("oken", tok)
     } catch (error) {
         next(error);
     }

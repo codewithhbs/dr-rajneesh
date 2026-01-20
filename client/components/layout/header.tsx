@@ -113,21 +113,44 @@ export function Header() {
                                         <span>drrajneeshkant.com</span>
                                     </div>
                                 </div>
+<div className="flex items-center gap-3">
+  <a
+    href="https://www.facebook.com/backtonaturespineclinicbydrrajneeshkant/"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="hover:text-blue-200 transition-colors"
+  >
+    <Facebook className="h-4 w-4" />
+  </a>
 
-                                <div className="flex items-center gap-3">
-                                    <Link href="https://www.facebook.com/backtonaturespineclinicbydrrajneeshkant/" className="hover:text-blue-200 transition-colors">
-                                        <Facebook className="h-4 w-4" />
-                                    </Link>
-                                    <Link href="https://api.whatsapp.com/send?phone=91-9031554875" className="hover:text-blue-200 transition-colors">
-                                        <PhoneCall className="h-4 w-4" />
-                                    </Link>
-                                    <Link href="https://www.instagram.com/backtonaturespineclinic/" className="hover:text-blue-200 transition-colors">
-                                        <Instagram className="h-4 w-4" />
-                                    </Link>
-                                    <Link href="https://www.youtube.com/@drrajneeshkant" className="hover:text-blue-200 transition-colors">
-                                        <Youtube className="h-4 w-4" />
-                                    </Link>
-                                </div>
+  <a
+    href="https://api.whatsapp.com/send?phone=919031554875"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="hover:text-blue-200 transition-colors"
+  >
+    <PhoneCall className="h-4 w-4" />
+  </a>
+
+  <a
+    href="https://www.instagram.com/backtonaturespineclinic/"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="hover:text-blue-200 transition-colors"
+  >
+    <Instagram className="h-4 w-4" />
+  </a>
+
+  <a
+    href="https://www.youtube.com/@drrajneeshkant"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="hover:text-blue-200 transition-colors"
+  >
+    <Youtube className="h-4 w-4" />
+  </a>
+</div>
+
                             </div>
                         </div>
                     </div>

@@ -16,7 +16,7 @@ const { isAuthenticated } = require('../middleware/protect');
 
 
 router.get('/my-bookings',isAuthenticated, getUserBookings);
-router.get('/my-bookings/:bookingId',isAuthenticated, getUserSingleBooking);
+router.get('/my-bookings/:bookingId', getUserSingleBooking);
 
 // Get upcoming sessions
 router.get('/my-bookings/upcoming/sessions',isAuthenticated, getUserUpcomingSessions);

@@ -22,7 +22,7 @@ exports.getUserBookings = async (req, res) => {
         const { status, page = 1, limit = 10, sortBy = 'createdAt', order = 'desc' } = req.query;
 
         const query = { session_booking_user: userId };
-        
+
         // Filter by status if provided
         if (status) {
             query.session_status = status;
@@ -68,15 +68,15 @@ exports.getUserBookings = async (req, res) => {
 
 exports.getUserSingleBooking = async (req, res) => {
     try {
-        const userId = req.user?._id;
-        const { bookingId } = req.params;
-
-        if (!userId) {
-            return res.status(401).json({
-                success: false,
-                message: "Please login to view booking details"
-            });
-        }
+        // const userId = req.user?._id;
+        const { bookingId, userId } = req.params;
+        console.log(bookingId, userId)
+        // if (!userId) {
+        //     return res.status(401).json({
+        //         success: false,
+        //         message: "Please login to view booking details"
+        //     });
+        // }
 
         if (!mongoose.Types.ObjectId.isValid(bookingId)) {
             return res.status(400).json({
@@ -86,14 +86,18 @@ exports.getUserSingleBooking = async (req, res) => {
         }
 
         const booking = await Bookings.findOne({
-            _id: bookingId,
-            session_booking_user: userId
+            $or: [
+                { _id: bookingId },
+                { "sessionDates._id": bookingId }
+            ]
         })
-            .populate('treatment_id')
-            .populate('session_booking_for_clinic')
-            .populate('session_booking_for_doctor', 'doctor_name doctor_specialization')
-            .populate('payment_id');
-
+            .populate("treatment_id")
+            .populate("session_booking_for_clinic")
+            .populate(
+                "session_booking_for_doctor",
+                "doctor_name doctor_specialization"
+            )
+            .populate("payment_id");
         if (!booking) {
             return res.status(404).json({
                 success: false,
@@ -362,7 +366,7 @@ exports.userCancelSession = async (req, res) => {
                 cancellationReason: reason,
                 refundEligible: isRefundEligible,
                 refundAmount: isRefundEligible ? booking.amountPerSession : 0,
-                message: isRefundEligible 
+                message: isRefundEligible
                     ? "Your refund request has been initiated and will be processed within 5-7 business days"
                     : `Cancellations must be made at least ${refundEligibilityHours} hours in advance for refund eligibility`
             }
@@ -452,7 +456,7 @@ exports.userRequestRefund = async (req, res) => {
         payment.refund_requested_at = new Date();
         payment.refund_reason = refundReason;
         payment.refund_amount = booking.cancellation.refundAmount;
-        
+
         if (bankDetails) {
             payment.refund_bank_details = bankDetails;
         }
@@ -732,7 +736,7 @@ exports.getUserBookingHistory = async (req, res) => {
 function determineIssuePriority(issueType) {
     const highPriorityIssues = ['emergency', 'medical_concern', 'payment_issue'];
     const mediumPriorityIssues = ['reschedule_urgent', 'doctor_unavailable'];
-    
+
     if (highPriorityIssues.includes(issueType)) return 'high';
     if (mediumPriorityIssues.includes(issueType)) return 'medium';
     return 'low';

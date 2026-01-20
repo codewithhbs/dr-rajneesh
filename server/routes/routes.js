@@ -15,6 +15,7 @@ const { createBlog, getAllBlogs, getBlogsCount, updateBlog, deleteBlog, getSingl
 const { updateConfigSettings, getSettings } = require("../controllers/settings/settings.controller");
 const { createAddOn, getAllAddOns, getAddOnById, updateAddOn, deleteAddOn } = require('../controllers/service/addOn.controller');
 const { getServices } = require('../controllers/service/other.controller');
+const { createContact, getAllContacts, markAsSeen, solveContact } = require('../controllers/Contact/Contact.controller');
 
 const router = express.Router()
 
@@ -124,6 +125,13 @@ router.get("/all-categories", getAllCategories);
 router.get("/get-category/:id", getSingleCategory);
 router.put("/update-category/:id", isAdmin, updateCategory);
 router.delete("/delete-category/:id", isAdmin, deleteCategory);
+
+// contact
+router.post("/contact", createContact);
+router.get("/admin/contacts", getAllContacts);
+router.patch("/admin/contacts/:id/seen", markAsSeen);
+router.patch("/admin/contacts/:id/solve", solveContact);
+
 
 
 router.post("/other-service", createService);

@@ -65,7 +65,7 @@ const ChiropracticClinic = () => {
 
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#F8FAFC] via-[#F0F9FF] to-[#ECFDF5] overflow-hidden">
+        <div  className="min-h-screen bg-gradient-to-br from-[#F8FAFC] via-[#F0F9FF] to-[#ECFDF5] overflow-hidden">
             {/* Hero Section */}
             <section className="relative py-20 px-4 sm:px-6 lg:px-8 ">
                 {/* Background Elements */}
@@ -116,22 +116,30 @@ const ChiropracticClinic = () => {
                                 </Button>
                             </Link>
 
-                            <Link href={"https://api.whatsapp.com/send?phone=91-9031554875"} passHref>
-                                <Button
-                                    variant="outline"
-                                    className="relative px-8 py-4 text-lg font-semibold border-2 border-[#009689] text-[#009689] rounded-lg hover:bg-[#009689]/10 shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300"
-                                >
-                                    <Phone className="w-5 h-5 mr-2" />
-                                    Call Now
-                                    {/* Subtle glowing ring */}
-                                    <span className="absolute inset-0 rounded-full shadow-[0_0_10px_#009689] opacity-0 hover:opacity-30 transition-opacity duration-300 pointer-events-none"></span>
-                                </Button>
-                            </Link>
+                  <a
+  href="https://api.whatsapp.com/send?phone=919031554875"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="inline-block"
+>
+  <Button
+    variant="outline"
+    className="relative px-8 py-4 text-lg font-semibold border-2 border-[#009689] text-[#009689]
+               rounded-lg hover:bg-[#009689]/10 shadow-md hover:shadow-lg
+               transform hover:scale-105 transition-all duration-300"
+  >
+    <Phone className="w-5 h-5 mr-2" />
+    Call Now
+    <span className="absolute inset-0 rounded-full shadow-[0_0_10px_#009689]
+                     opacity-0 hover:opacity-30 transition-opacity duration-300 pointer-events-none" />
+  </Button>
+</a>
+
                         </div>
 
 
                         {/* Stats */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+                        <div  className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
                             {stats.map((stat, index) => {
                                 // Define different background colors for each card
                                 const cardColors = [
@@ -151,8 +159,8 @@ const ChiropracticClinic = () => {
                                         <div className="mb-2 flex justify-center text-[#155DFC]">
                                             {stat.icon}
                                         </div>
-                                        <div className="text-3xl font-bold text-gray-900">{stat.number}</div>
-                                        <div className="text-sm text-gray-600">{stat.label}</div>
+                                        <div  className="text-3xl font-bold text-gray-900">{stat.number}</div>
+                                        <div id='service' className="text-sm text-gray-600">{stat.label}</div>
                                     </div>
                                 );
                             })}
@@ -164,7 +172,7 @@ const ChiropracticClinic = () => {
             </section>
 
             {/* Treatment Conditions Section */}
-            <section className="py-16 px-4 sm:px-6 lg:px-8  max-w-7xl mx-auto">
+            <section  className="py-16  px-4 sm:px-6 lg:px-8  max-w-7xl mx-auto">
                 <div>
                     {/* Section Header */}
                     <div className="text-center mb-12">

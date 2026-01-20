@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { Star, Heart, Phone, MapPin, ChevronLeft, ChevronRight, Activity, Target, Sparkles } from "lucide-react"
 import Image from 'next/image'
 import drImage from '@/assets/DoctorImage/dr.png'
+import Link from 'next/link'
 
 // Typewriter component
 const TypeWriter = ({ strings, delay = 50, className = "" }: { strings: string[], delay?: number, className?: string }) => {
@@ -180,20 +181,25 @@ const Hero = () => {
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                <button className="group relative inline-flex items-center justify-center px-8 py-2 font-bold text-gray-900 bg-white rounded-xl overflow-hidden shadow-2xl transition-all duration-300 hover:shadow-yellow-400/50 hover:scale-105">
+                <Link href={`/book-now-consultation`}>
+                   <button className="group relative inline-flex items-center justify-center px-8 py-2 font-bold text-gray-900 bg-white rounded-xl overflow-hidden shadow-2xl transition-all duration-300 hover:shadow-yellow-400/50 hover:scale-105">
                   <span className="relative z-10 flex items-center space-x-2">
                     <span>Book Appointment</span>
                     <ChevronRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                   </span>
                   <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 to-orange-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </button>
-
-                <button className="group relative inline-flex items-center justify-center px-8 py-2 font-bold text-white bg-white/10 backdrop-blur-xl border-2 border-white/30 rounded-xl overflow-hidden shadow-2xl transition-all duration-300 hover:bg-white/20 hover:scale-105">
+                </Link>
+             
+        <a href="#service">
+     <button  className="group relative inline-flex items-center justify-center px-8 py-2 font-bold text-white bg-white/10 backdrop-blur-xl border-2 border-white/30 rounded-xl overflow-hidden shadow-2xl transition-all duration-300 hover:bg-white/20 hover:scale-105">
                   <span className="relative z-10 flex items-center space-x-2">
                     <span>Our Services</span>
                     <ChevronRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                   </span>
                 </button>
+        </a>
+           
               </div>
 
               {/* Contact Info */}

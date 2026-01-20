@@ -15,7 +15,7 @@ const router = require('./routes/routes');
 
 const setupBullBoard = require('./bullBoard');
 const user_auth_router = require('./routes/user.auth.routes');
-
+const user_booking_routes = require('./routes/user.booking.routes')
 
 dotenv.config();
 
@@ -104,6 +104,7 @@ if (NODE_ENV === 'production') {
 app.get('/', (req, res) => res.send('API Running'));
 app.use('/api/v1', router)
 app.use('/api/v1/user', user_auth_router)
+app.use('/api/v1/booking',user_booking_routes)
 
 // 404 handler
 app.use((req, res) => {
