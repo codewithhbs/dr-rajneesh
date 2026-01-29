@@ -133,7 +133,7 @@ export default function BookingDetails({ slug }: { slug: string  }) {
     try {
       setLoading(true);
       const res = await axios.get(
-        `https://drkm.api.adsdigitalmedia.com/api/v1/booking/my-bookings/${slug}`
+        `https://api.dikshantias.in/api/v1/booking/my-bookings/${slug}`
       );
       if (res.data.success) {
         setBooking(res.data.data);

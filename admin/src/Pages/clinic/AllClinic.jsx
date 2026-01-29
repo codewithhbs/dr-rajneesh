@@ -65,7 +65,7 @@ import {
 } from "@/components/ui/popover";
 import { toast } from "sonner";
 
-const API_URL = "https://drkm.api.adsdigitalmedia.com/api/v1";
+const API_URL = "https://api.dikshantias.in/api/v1";
 
 const AllClinic = () => {
   const [data, setData] = useState([]);

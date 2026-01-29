@@ -37,7 +37,7 @@ const WebSettings = () => {
     const fetchSettings = async () => {
       try {
         const res = await axios.get(
-          "https://drkm.api.adsdigitalmedia.com/api/v1/get-config-settings"
+          "https://api.dikshantias.in/api/v1/get-config-settings"
         );
         setSettings(res.data.data);
         setFormData(res.data.data);
@@ -81,7 +81,7 @@ const WebSettings = () => {
 
     try {
       const response = await axios.put(
-        `https://drkm.api.adsdigitalmedia.com/api/v1/update-config-settings/${settings._id}`,
+        `https://api.dikshantias.in/api/v1/update-config-settings/${settings._id}`,
         formData,
         { withCredentials: true } // session cookies
       );

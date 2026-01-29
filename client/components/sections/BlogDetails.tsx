@@ -16,7 +16,7 @@ const BlogDetails = ({ slug }: BlogDetailsProps) => {
   useEffect(() => {
     const fetchBlog = async () => {
       try {
-        const res = await fetch(`https://drkm.api.adsdigitalmedia.com/api/v1/get-blog/slug/${slug}`);
+        const res = await fetch(`https://api.dikshantias.in/api/v1/get-blog/slug/${slug}`);
         const data = await res.json();
         setBlog(data.data);
       } catch (err) {
@@ -28,7 +28,7 @@ const BlogDetails = ({ slug }: BlogDetailsProps) => {
 
     const fetchPopular = async () => {
       try {
-        const res = await fetch(`https://drkm.api.adsdigitalmedia.com/api/v1/get-all-blogs`);
+        const res = await fetch(`https://api.dikshantias.in/api/v1/get-all-blogs`);
         const data = await res.json();
         const popular = data.data
           .sort((a: any, b: any) => b.likes - a.likes || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())

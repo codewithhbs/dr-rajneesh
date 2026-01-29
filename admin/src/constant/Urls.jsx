@@ -1,5 +1,5 @@
 import axios from "axios";
-export const API_URL = "https://drkm.api.adsdigitalmedia.com/api/v1";
+export const API_URL = "https://api.dikshantias.in/api/v1";
 
 export const fetcher = async (url) => {
     try {

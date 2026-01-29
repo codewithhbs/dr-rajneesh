@@ -23,7 +23,7 @@ const Blogs = () => {
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
-        const res = await fetch("https://drkm.api.adsdigitalmedia.com/api/v1/get-all-blogs");
+        const res = await fetch("https://api.dikshantias.in/api/v1/get-all-blogs");
         const data = await res.json();
         setBlogs(data.data.filter((blog) => blog.status === "published"));
       } catch (error) {
