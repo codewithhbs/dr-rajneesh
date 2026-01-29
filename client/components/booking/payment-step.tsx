@@ -18,7 +18,7 @@ import axios from 'axios'
 import Cookies from 'js-cookie'
 import { format } from 'date-fns'
 
-const API_ENDPOINT = 'https://api.dikshantias.in/api/v1'
+const API_ENDPOINT = 'https://api.drrajneeshkant.in/api/v1'
 const convertTo24Hour = (time: string) => {
   const [timePart, modifier] = time.split(" ");
   let [hours, minutes] = timePart.split(":").map(Number);

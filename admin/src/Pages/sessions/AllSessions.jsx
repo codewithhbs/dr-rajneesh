@@ -207,7 +207,7 @@ const confirmStatusChange = async () => {
   if (!selectedSession) return;
 
   try {
-    const response = await fetch("https://api.dikshantias.in/admin-session-change-status", {
+    const response = await fetch("https://api.drrajneeshkant.in/admin-session-change-status", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -257,7 +257,7 @@ const confirmDelete = async () => {
     };
 
     const response = await axios.post(
-      "https://api.dikshantias.in/api/v1/admin-session-delete",
+      "https://api.drrajneeshkant.in/api/v1/admin-session-delete",
       payload,
       { headers }
     );

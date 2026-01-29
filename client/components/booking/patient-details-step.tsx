@@ -17,7 +17,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/authContext/auth";
 import Cookies from "js-cookie";
 
-const API_BASE_URL = "https://api.dikshantias.in/api/v1/user";
+const API_BASE_URL = "https://api.drrajneeshkant.in/api/v1/user";
 
 interface PatientDetailsStepProps {
   next: () => void;

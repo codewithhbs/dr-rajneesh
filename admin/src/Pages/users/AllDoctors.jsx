@@ -104,7 +104,7 @@ const AllDoctors = () => {
   const fetchClinics = async () => {
     try {
       const res = await axios.get(
-        "https://api.dikshantias.in/api/v1/get-all-clinic"
+        "https://api.drrajneeshkant.in/api/v1/get-all-clinic"
       );
       setClinics(res.data?.data?.clinics || []);
     } catch (err) {
@@ -213,8 +213,8 @@ const AllDoctors = () => {
     });
 
     const endpoint = isEditMode
-      ? `https://api.dikshantias.in/api/v1/update-doctor/${editingDoctor._id}`
-      : `https://api.dikshantias.in/api/v1/create-doctor`;
+      ? `https://api.drrajneeshkant.in/api/v1/update-doctor/${editingDoctor._id}`
+      : `https://api.drrajneeshkant.in/api/v1/create-doctor`;
 
     const method = isEditMode ? "put" : "post";
 

@@ -44,12 +44,12 @@ useEffect(() => {
         blogsRes,
          servicesRes,
       ] = await Promise.all([
-        axios.get("https://api.dikshantias.in/api/v1/get-booking-count", { headers }),
-        axios.get("https://api.dikshantias.in/api/v1/get-clinic-count", { headers }),
-        axios.get("https://api.dikshantias.in/api/v1/get-doctor-count", { headers }),
-        axios.get("https://api.dikshantias.in/api/v1/get-user-count", { headers }),
-        axios.get("https://api.dikshantias.in/api/v1/get-blogs-count", { headers }),
-         axios.get("https://api.dikshantias.in/api/v1/get-service-count", { headers }),
+        axios.get("https://api.drrajneeshkant.in/api/v1/get-booking-count", { headers }),
+        axios.get("https://api.drrajneeshkant.in/api/v1/get-clinic-count", { headers }),
+        axios.get("https://api.drrajneeshkant.in/api/v1/get-doctor-count", { headers }),
+        axios.get("https://api.drrajneeshkant.in/api/v1/get-user-count", { headers }),
+        axios.get("https://api.drrajneeshkant.in/api/v1/get-blogs-count", { headers }),
+         axios.get("https://api.drrajneeshkant.in/api/v1/get-service-count", { headers }),
       ]);
 
       setStatsData({
@@ -130,8 +130,8 @@ const stats = [
       try {
         // Fetch both APIs
         const [serviceRes, bookingRes] = await Promise.all([
-          axios.get("https://api.dikshantias.in/api/v1/get-all-service"),
-          axios.get("https://api.dikshantias.in/api/v1/admin-bookings"),
+          axios.get("https://api.drrajneeshkant.in/api/v1/get-all-service"),
+          axios.get("https://api.drrajneeshkant.in/api/v1/admin-bookings"),
         ]);
 
         const serviceData = serviceRes.data.data || [];
@@ -211,7 +211,7 @@ useEffect(() => {
       const token = localStorage.getItem("adminToken");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-      const res = await axios.get("https://api.dikshantias.in/api/v1/admin-bookings", { headers });
+      const res = await axios.get("https://api.drrajneeshkant.in/api/v1/admin-bookings", { headers });
 
       // Map API data to the structure used in your UI
       const latestAppointments = res.data.data.map((item) => ({
