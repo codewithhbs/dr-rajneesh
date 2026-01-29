@@ -392,7 +392,7 @@ exports.verifyPayment = async (req, res) => {
             await session.abortTransaction();
 
             return res.redirect(
-                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com'}/booking-failed?reason=missing-parameters&missing=${missingParams.join(',')}&booking_id=${booking_id || 'unknown'}`
+                `${process.env.FRONTEND_URL || 'https://drrajneeshkant.in'}/booking-failed?reason=missing-parameters&missing=${missingParams.join(',')}&booking_id=${booking_id || 'unknown'}`
             );
         }
 
@@ -421,7 +421,7 @@ exports.verifyPayment = async (req, res) => {
 
             await session.abortTransaction();
             return res.redirect(
-                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com'}/booking-failed?reason=signature-verification-failed&booking_id=${booking_id}`
+                `${process.env.FRONTEND_URL || 'https://drrajneeshkant.in'}/booking-failed?reason=signature-verification-failed&booking_id=${booking_id}`
             );
         }
 
@@ -434,7 +434,7 @@ exports.verifyPayment = async (req, res) => {
 
             await session.abortTransaction();
             return res.redirect(
-                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com'}/booking-failed?reason=invalid-signature&booking_id=${booking_id}`
+                `${process.env.FRONTEND_URL || 'https://drrajneeshkant.in'}/booking-failed?reason=invalid-signature&booking_id=${booking_id}`
             );
         }
 
@@ -449,7 +449,7 @@ exports.verifyPayment = async (req, res) => {
             await session.abortTransaction();
 
             return res.redirect(
-                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com'}/booking-failed?reason=booking-not-found&booking_id=${booking_id}`
+                `${process.env.FRONTEND_URL || 'https://drrajneeshkant.in'}/booking-failed?reason=booking-not-found&booking_id=${booking_id}`
             );
         }
 
@@ -465,7 +465,7 @@ exports.verifyPayment = async (req, res) => {
 
             await session.abortTransaction();
             return res.redirect(
-                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com'}/booking-failed?reason=payment-not-found&booking_id=${booking_id}`
+                `${process.env.FRONTEND_URL || 'https://drrajneeshkant.in'}/booking-failed?reason=payment-not-found&booking_id=${booking_id}`
             );
         }
 
@@ -491,7 +491,7 @@ exports.verifyPayment = async (req, res) => {
             await session.abortTransaction();
 
             return res.redirect(
-                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com'}/booking-success?sessions=${booking.sessions}&price=${payment.amount}&service=${booking.service_id?.service_name || 'service'}&bookingId=${booking._id}&status=already-processed`
+                `${process.env.FRONTEND_URL || 'https://drrajneeshkant.in'}/booking-success?sessions=${booking.sessions}&price=${payment.amount}&service=${booking.service_id?.service_name || 'service'}&bookingId=${booking._id}&status=already-processed`
             );
         }
 
@@ -507,7 +507,7 @@ exports.verifyPayment = async (req, res) => {
 
             await session.abortTransaction();
             return res.redirect(
-                `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com'}/booking-failed?reason=order-id-mismatch&booking_id=${booking_id}`
+                `${process.env.FRONTEND_URL || 'https://drrajneeshkant.in'}/booking-failed?reason=order-id-mismatch&booking_id=${booking_id}`
             );
         }
 
@@ -568,7 +568,7 @@ exports.verifyPayment = async (req, res) => {
 
         // Return response based on platform
         if (via === 'web') {
-            const successUrl = `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com'}/booking-success?bookingId=${booking._id}`;
+            const successUrl = `${process.env.FRONTEND_URL || 'https://drrajneeshkant.in'}/booking-success?bookingId=${booking._id}`;
             console.log("Redirecting to success page", { successUrl, ...logContext });
             return res.redirect(successUrl);
         } else {
@@ -618,7 +618,7 @@ exports.verifyPayment = async (req, res) => {
 
         // Return appropriate response
         if (via === 'web') {
-            const redirectUrl = `${process.env.FRONTEND_URL || 'https://drkm.adsdigitalmedia.com'}/booking-failed?reason=${reason}&booking_id=${bookingId || 'unknown'}&error=${encodeURIComponent(error.message)}`;
+            const redirectUrl = `${process.env.FRONTEND_URL || 'https://drrajneeshkant.in'}/booking-failed?reason=${reason}&booking_id=${bookingId || 'unknown'}&error=${encodeURIComponent(error.message)}`;
             return res.redirect(redirectUrl);
         } else {
             return res.status(500).json({

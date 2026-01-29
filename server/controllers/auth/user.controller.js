@@ -362,7 +362,7 @@ exports.googleAuthRegisterAndLogin = async (req, res) => {
                 );
             if (!existingUser.isGoogleAuth) {
                 res.redirect(
-                    `https://drkm.adsdigitalmedia.com/login?message=${encodeURIComponent(
+                    `https://drrajneeshkant.in/login?message=${encodeURIComponent(
                         message
                     )}`
                 );
@@ -377,7 +377,7 @@ exports.googleAuthRegisterAndLogin = async (req, res) => {
                 false
             );
             return res.redirect(
-                `https://drkm.adsdigitalmedia.com/login/login-success?token=${encodeURIComponent(
+                `https://drrajneeshkant.in/login/login-success?token=${encodeURIComponent(
                     token
                 )}`
             );
@@ -424,7 +424,7 @@ exports.googleAuthRegisterAndLogin = async (req, res) => {
             false
         );
         return res.redirect(
-            `https://drkm.adsdigitalmedia.com/login/login-success?token=${encodeURIComponent(
+            `https://drrajneeshkant.in/login/login-success?token=${encodeURIComponent(
                 token
             )}`
         );
