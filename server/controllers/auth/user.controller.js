@@ -744,7 +744,7 @@ exports.verifyEmailOtp = async (req, res, next) => {
                                                             </td>
                                                             <td style="vertical-align: middle;">
                                                                 <div style="color: #374151; font-size: 16px; font-weight: bold;">
-                                                                    +91 98765 43210
+                                                                    +91 84093 13131
                                                                 </div>
                                                             </td>
                                                         </tr>
@@ -892,8 +892,8 @@ exports.verifyEmailOtp = async (req, res, next) => {
             });
         }
         console.log("Send token")
-       const tok = await sendToken(user, 200, res, "Verification successful");
-       console.log("oken", tok)
+        const tok = await sendToken(user, 200, res, "Verification successful");
+        console.log("oken", tok)
     } catch (error) {
         next(error);
     }
@@ -2026,7 +2026,7 @@ function welcome(user) {
                                                             </td>
                                                             <td style="vertical-align: middle;">
                                                                 <div style="color: #374151; font-size: 16px; font-weight: bold;">
-                                                                    +91 98765 43210
+                                                                    +91 84093 13131
                                                                 </div>
                                                             </td>
                                                         </tr>
@@ -2204,8 +2204,8 @@ exports.adminLogin = async (req, res) => {
         // Save session
         req.session.userId = admin._id;
         req.session.role = admin.role;
-
-        res.status(200).json({ message: "Login successful." });
+        await sendToken(admin, 200, res, "Login Successfull")
+        // res.status(200).json({ message: "Login successful." });
 
     } catch (error) {
         console.error("Error during admin login:", error);

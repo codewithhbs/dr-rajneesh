@@ -210,7 +210,7 @@ const Hero = () => {
                   </div>
                   <div className="text-left">
                     <div className="text-xs text-white/70 font-medium">Call Us</div>
-                    <div className="font-bold text-white">+91 98765 43210</div>
+                    <div className="font-bold text-white">+91 84093 13131</div>
                   </div>
                 </div>
 

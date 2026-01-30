@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import axiosInstance from "@/lib/axios";
 import appointmentImg from '../assets/appointment-1.png';
+import Cookies from "js-cookie";
 
 const SignInPage = () => {
   const [email, setEmail] = useState("");
@@ -17,8 +18,10 @@ const SignInPage = () => {
     setIsLoading(true);
     try {
       const res = await axiosInstance.post("/admin/login", { email, password });
+      console.log("Drrajneesh@Admin",res.data)
       setMessage(res.data.message);
-      navigate("/");
+      // Cookies.set('')
+      // navigate("/");
     } catch (err) {
       setMessage(err.response?.data?.message || "Login failed");
     } finally {
