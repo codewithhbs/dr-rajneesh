@@ -70,13 +70,7 @@ exports.getUserSingleBooking = async (req, res) => {
     try {
         // const userId = req.user?._id;
         const { bookingId, userId } = req.params;
-        console.log(bookingId, userId)
-        // if (!userId) {
-        //     return res.status(401).json({
-        //         success: false,
-        //         message: "Please login to view booking details"
-        //     });
-        // }
+
 
         if (!mongoose.Types.ObjectId.isValid(bookingId)) {
             return res.status(400).json({
