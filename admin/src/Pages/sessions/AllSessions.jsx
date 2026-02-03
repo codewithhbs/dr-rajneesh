@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import axios from "axios";
 
-import { RefreshCw, Plus } from "lucide-react";
+import { RefreshCw, Plus, CalendarIcon, Eye, Edit, Trash2, Filter } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -16,7 +16,6 @@ import {
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
@@ -36,11 +35,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { CalendarIcon, Eye, Edit, Trash2, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -51,9 +48,9 @@ import {
 import { useSessionBookings } from "@/hooks/sessions";
 import { statusOptions } from "@/constant/Urls";
 import Loading from "@/components/ui/loading";
+
 const AllSessions = () => {
-  const { sessionDetails, loading, error, fetchSessionDetails } =
-    useSessionBookings({ id: null });
+  const { sessionDetails, loading, error, fetchSessionDetails } = useSessionBookings({ id: null });
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -68,523 +65,481 @@ const AllSessions = () => {
 
   const [selectedSession, setSelectedSession] = useState(null);
   const [newStatus, setNewStatus] = useState("");
+
   const uniqueClinics = useMemo(() => {
-    const clinics = sessionDetails.map(
-      (session) => session.session_booking_for_clinic.clinic_name
-    );
-    return [...new Set(clinics)];
-  }, []);
+    const clinics = sessionDetails.map((s) => s.session_booking_for_clinic?.clinic_name);
+    return [...new Set(clinics.filter(Boolean))];
+  }, [sessionDetails]);
 
-  console.log("Unique statusFilter:", statusFilter);
-  // Helper function to check if session is today
-  const isToday = (date) => {
-    const today = new Date();
-    const sessionDate = new Date(date);
-    return sessionDate.toDateString() === today.toDateString();
-  };
-
-  // Helper function to check if session is upcoming
-  const isUpcoming = (date) => {
-    const today = new Date();
-    const sessionDate = new Date(date);
-    return sessionDate > today;
-  };
+  // ────────────────────────────────────────────────
+  // Filters
+  // ────────────────────────────────────────────────
 
   const filteredSessions = useMemo(() => {
-    let filtered = sessionDetails;
-    console.log("Initial sessionDetails:", sessionDetails);
+    let result = [...sessionDetails];
 
-    if (searchTerm) {
-      const lowerSearch = searchTerm.toLowerCase();
-
-      filtered = filtered.filter((session) => {
-        const nameMatch = session.patient_details?.name
-          ?.toLowerCase()
-          .includes(lowerSearch);
-        const bookingMatch = session.bookingNumber
-          ?.toLowerCase()
-          .includes(lowerSearch);
-        const serviceMatch = session.treatment_id?.service_name
-          ?.toLowerCase()
-          .includes(lowerSearch);
-
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter((s) => {
         return (
-          nameMatch || bookingMatch || (!!session.treatment_id && serviceMatch)
+          s.patient_details?.name?.toLowerCase().includes(term) ||
+          s.bookingNumber?.toLowerCase().includes(term) ||
+          s.treatment_id?.service_name?.toLowerCase().includes(term)
         );
       });
-
-      console.log("After searchTerm filter:", filtered);
     }
 
     if (statusFilter !== "all") {
-      filtered = filtered.filter((session) => session.status === statusFilter);
-      console.log("After statusFilter:", filtered);
+      result = result.filter((s) => s.session_status === statusFilter);
     }
 
     if (clinicFilter !== "all") {
-      filtered = filtered.filter(
-        (session) => session.clinic_id === clinicFilter
-      );
-      console.log("After clinicFilter:", filtered);
+      result = result.filter((s) => s.session_booking_for_clinic?.clinic_name === clinicFilter);
     }
 
     if (dateRange === "today") {
-      filtered = filtered.filter((session) =>
-        session.SessionDates?.some((sessionDate) => isToday(sessionDate.date))
+      result = result.filter((s) =>
+        s.SessionDates?.some((d) => {
+          const sd = new Date(d.date);
+          return sd.toDateString() === new Date().toDateString();
+        })
       );
-      console.log('After dateRange "today":', filtered);
     } else if (dateRange === "upcoming") {
-      filtered = filtered.filter((session) =>
-        session.SessionDates?.some((sessionDate) =>
-          isUpcoming(sessionDate.date)
-        )
+      result = result.filter((s) =>
+        s.SessionDates?.some((d) => new Date(d.date) > new Date())
       );
-      console.log('After dateRange "upcoming":', filtered);
     }
 
     if (dateFilter) {
-      filtered = filtered.filter((session) =>
-        session.SessionDates?.some((sessionDate) => {
-          const sessionDateObj = new Date(sessionDate.date);
-          return sessionDateObj.toDateString() === dateFilter.toDateString();
-        })
+      const target = dateFilter.toDateString();
+      result = result.filter((s) =>
+        s.SessionDates?.some((d) => new Date(d.date).toDateString() === target)
       );
-      console.log("After specific dateFilter:", filtered);
     }
 
-    return filtered;
-  }, [
-    sessionDetails,
-    searchTerm,
-    statusFilter,
-    clinicFilter,
-    dateRange,
-    dateFilter,
-  ]);
+    return result;
+  }, [sessionDetails, searchTerm, statusFilter, clinicFilter, dateRange, dateFilter]);
 
-  // Pagination logic
   const totalPages = Math.ceil(filteredSessions.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedSessions = filteredSessions.slice(
-    startIndex,
-    startIndex + itemsPerPage
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
-  // Status badge color
   const getStatusColor = (status) => {
-    const colors = {
-      Pending: "bg-yellow-100 text-yellow-800",
-      Confirmed: "bg-green-100 text-green-800",
-      "Payment Not Completed": "bg-red-100 text-red-800",
-      Cancelled: "bg-gray-100 text-gray-800",
-      Completed: "bg-blue-100 text-blue-800",
-      Rescheduled: "bg-purple-100 text-purple-800",
-      "Partially Completed": "bg-orange-100 text-orange-800",
+    const map = {
+      Pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
+      Confirmed: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
+      "Payment Not Completed": "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
+      Cancelled: "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
+      Completed: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
+      Rescheduled: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
+      "Partially Completed": "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300",
     };
-    return colors[status] || "bg-gray-100 text-gray-800";
+    return map[status] || "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
   };
 
-    // Action handlers
-    const handleStatusChange = (session) => {
-    
-      setSelectedSession(session);
-      setNewStatus(session.session_status);
-      setStatusModalOpen(true);
-    };
-
-    const handleDelete = (session) => {
-          console.log("Session clicked for delete:", session); 
-      setSelectedSession(session);
-      setDeleteModalOpen(true);
-    };
-
-    const handleView = (session) => {
-      window.location.href = `/dashboard/admin/sessions/${session._id}`;
-    };
-
-// Update session status
-const confirmStatusChange = async () => {
-  if (!selectedSession) return;
-
-  try {
-    const response = await fetch("https://api.drrajneeshkant.in/admin-session-change-status", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
-      },
-      body: JSON.stringify({
-        bookingId: selectedSession.bookingId || selectedSession._id,
-        sessionNumber: selectedSession.sessionNumber,
-        newStatus: newStatus,
-      }),
-    });
-
-    const data = await response.json();
-
-    if (data.success) toast.success("Session status updated successfully!");
-    else toast.error(data.message || "Failed to update session status");
-  } catch (error) {
-    toast.error("Error updating session status");
-    console.error(error);
-  } finally {
-    setStatusModalOpen(false);
-    setSelectedSession(null);
-  }
-};
-
-// Delete session
-const confirmDelete = async () => {
-  if (!selectedSession) return;
-
-  const payload = {
-    bookingId: selectedSession.bookingId || selectedSession._id,
-    sessionNumber: selectedSession.sessionNumber,
+  const handleView = (session) => {
+    window.location.href = `/dashboard/admin/sessions/${session._id}`;
   };
 
-  console.log("Deleting session payload:", payload);
+  const handleStatusChange = (session) => {
+    setSelectedSession(session);
+    setNewStatus(session.session_status || "Pending");
+    setStatusModalOpen(true);
+  };
 
-  if (!payload.bookingId || !payload.sessionNumber) {
-    alert("Cannot delete session: bookingId or sessionNumber missing");
-    return;
-  }
+  const confirmStatusChange = async () => {
+    if (!selectedSession) return;
 
-  try {
-    const token = localStorage.getItem("admin"); // JWT token
-    const headers = {
-      "Content-Type": "application/json",
-      ...(token && { Authorization: `Bearer ${token}` }),
-    };
+    try {
+      const res = await fetch("https://api.drrajneeshkant.in/admin-session-change-status", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
+        },
+        body: JSON.stringify({
+          bookingId: selectedSession.bookingId || selectedSession._id,
+          sessionNumber: selectedSession.sessionNumber,
+          newStatus,
+        }),
+      });
 
-    const response = await axios.post(
-      "https://api.drrajneeshkant.in/api/v1/admin-session-delete",
-      payload,
-      { headers }
-    );
-
-    if (response.data.success) {
-      console.log("Session deleted successfully!");
-      // Optionally refetch updated sessions
-    } else {
-      console.error(response.data.message || "Failed to delete session");
+      const data = await res.json();
+      if (data.success) {
+        alert("Status updated successfully");
+        fetchSessionDetails();
+      } else {
+        alert(data.message || "Failed to update status");
+      }
+    } catch (err) {
+      alert("Error updating status");
+      console.error(err);
+    } finally {
+      setStatusModalOpen(false);
+      setSelectedSession(null);
     }
-  } catch (error) {
-    console.error(
-      "Delete session error:",
-      error.response?.data?.message || error.message
-    );
-  } finally {
-    setDeleteModalOpen(false);
-    setSelectedSession(null);
-  }
-};
+  };
 
+  const confirmDelete = async () => {
+    if (!selectedSession) return;
 
-  if (loading) return <Loading message="Loading sessions Bookings" />;
-  if (error)
-    return (
-      <div className="text-red-500">
-        Error loading sessions: {error.message}
-      </div>
-    );
+    const payload = {
+      bookingId: selectedSession.bookingId || selectedSession._id,
+      sessionNumber: selectedSession.sessionNumber,
+    };
+
+    try {
+      const res = await axios.post(
+        "https://api.drrajneeshkant.in/api/v1/admin-session-delete",
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
+          },
+        }
+      );
+
+      if (res.data.success) {
+        alert("Session deleted successfully");
+        fetchSessionDetails();
+      } else {
+        alert(res.data.message || "Failed to delete");
+      }
+    } catch (err) {
+      alert("Error deleting session");
+      console.error(err);
+    } finally {
+      setDeleteModalOpen(false);
+      setSelectedSession(null);
+    }
+  };
+
+  if (loading) return <Loading message="Loading session bookings..." />;
+  if (error) return <div className="text-red-600 dark:text-red-400 p-6">Error: {error.message}</div>;
 
   return (
-  <div className="container mx-auto p-6 bg-white rounded-xl shadow-lg">
-  {/* Header */}
-<div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 
-                bg-gradient-to-r from-blue-800 to-sky-700 text-white p-6 rounded-lg border-b border-white/30 shadow-md">
-  <div>
-    <h1 className="text-3xl font-bold">All Sessions Bookings</h1>
-    <p className="text-sm mt-1">
-      Manage all healthcare sessions •{" "}
-      <span className="font-semibold">{filteredSessions.length}</span> of{" "}
-      <span className="font-semibold">{sessionDetails.length}</span> total
-    </p>
-  </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 md:p-6 lg:p-8 transition-colors">
+      {/* Header */}
+      <div className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+            All Session Bookings
+          </h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            Total: <strong>{filteredSessions.length}</strong> / {sessionDetails.length}
+          </p>
+        </div>
 
-<div className="flex gap-3 flex-wrap">
-
-  {/* Refresh Button */}
-  <Button
-    onClick={fetchSessionDetails}
-    type="button"
-    className="inline-flex items-center gap-2 text-white bg-[#050708] hover:bg-[#050708]/80 focus:ring-4 focus:outline-none focus:ring-[#050708]/50  font-semibold rounded-lg text-sm px-5 py-2.5 transition"
-  >
-    <RefreshCw className="h-4 w-4" />
-    <span>Refresh</span>
-  </Button>
-
-  {/* Book New Session Button */}
-  <Button
-    type="button"
-    className="inline-flex items-center gap-2 text-white bg-[#FF9119] hover:bg-[#FF9119]/80 focus:ring-4 focus:outline-none focus:ring-[#FF9119]/50 font-medium rounded-lg text-sm px-5 py-2.5 transition"
-  >
-    <Plus className="h-4 w-4" />
-    <span>Book New Session</span>
-  </Button>
-
-</div>
-</div>
-
-
-
-  {/* Filters */}
-<div className="bg-white p-4 md:p-5 rounded-lg shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 xl:grid-cols-6 gap-3 mb-6">
-  <Input
-    type="text"
-    placeholder="Search"
-    value={searchTerm}
-    onChange={(e) => setSearchTerm(e.target.value)}
-    className="col-span-1 border border-gray-300 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
-  />
-
-  <Select value={statusFilter} onValueChange={setStatusFilter}>
-    <SelectTrigger className="border border-gray-300 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition">
-      <SelectValue placeholder="Status" />
-    </SelectTrigger>
-    <SelectContent> 
-      <SelectItem value="all">All Statuses</SelectItem>
-      {statusOptions.map((status) => (
-        <SelectItem key={status} value={status}>
-          {status}
-        </SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
-
-  <Select value={clinicFilter} onValueChange={setClinicFilter}>
-    <SelectTrigger className="border border-gray-300 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition">
-      <SelectValue placeholder="Clinic" />
-    </SelectTrigger>
-    <SelectContent>
-      <SelectItem value="all">All Clinics</SelectItem>
-      {uniqueClinics.map((clinic) => (
-        <SelectItem key={clinic} value={clinic}>
-          {clinic}
-        </SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
-
-  <Select value={dateRange} onValueChange={setDateRange}>
-    <SelectTrigger className="border border-gray-300 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition">
-      <SelectValue placeholder="Date Range" />
-    </SelectTrigger>
-    <SelectContent>
-      <SelectItem value="all">All Sessions</SelectItem>
-      <SelectItem value="today">Today</SelectItem>
-      <SelectItem value="upcoming">Upcoming</SelectItem>
-    </SelectContent>
-  </Select>
-
-  <Popover>
-    <PopoverTrigger asChild>
-      <Button
-        variant="outline"
-        className="flex items-center justify-start gap-2 border border-gray-300 rounded-lg px-3 py-2 hover:border-blue-500 transition"
-      >
-        <CalendarIcon className="h-4 w-4 text-gray-600" />
-        {dateFilter ? format(dateFilter, "PPP") : "Pick a date"}
-      </Button>
-    </PopoverTrigger>
-    <PopoverContent className="w-auto p-0">
-      <Calendar mode="single" selected={dateFilter} onSelect={setDateFilter} />
-    </PopoverContent>
-  </Popover>
-</div>
-
-
-  {/* Clear Filters */}
-  {(searchTerm ||
-    statusFilter !== "all" ||
-    clinicFilter !== "all" ||
-    dateFilter ||
-    dateRange !== "all") && (
-    <div className="mb-4">
-      <Button
-        variant="ghost"
-        onClick={() => {
-          setSearchTerm("");
-          setStatusFilter("all");
-          setClinicFilter("all");
-          setDateFilter(null);
-          setDateRange("all");
-        }}
-        className="flex items-center gap-2 text-gray-600 hover:text-blue-500 transition"
-      >
-        <Filter className="h-4 w-4" /> Clear All Filters
-      </Button>
-    </div>
-  )}
-
-  {/* Table */}
-  <div className="rounded-lg border border-gray-200 shadow-md">
-    <Table className="min-w-full table-auto">
-      <TableCaption className="text-left text-gray-500 py-2">
-        Session bookings management
-      </TableCaption>
-      <TableHeader className="bg-gradient-to-r from-blue-800 to-sky-700 sticky top-0 z-10 shadow-sm">
-        <TableRow>
-          <TableHead className="rounded-tl-lg text-left p-4 text-white">Booking #</TableHead>
-          <TableHead className="text-white text-left p-4 font-semibold">Patient</TableHead>
-          <TableHead className="text-white text-left p-4 font-semibold">Service</TableHead>
-          <TableHead className="text-white text-left p-4 font-semibold">Doctor/Clinic</TableHead>
-          <TableHead className="text-white text-left p-4 font-semibold">Next Session</TableHead>
-          <TableHead className="text-white text-left p-4 font-semibold">Status</TableHead>
-          <TableHead className="text-white text-left p-4 font-semibold">Progress</TableHead>
-          <TableHead className="text-white text-left p-4 font-semibold">Amount</TableHead>
-          <TableHead className="rounded-tr-lg text-white text-left p-4 font-semibold">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {paginatedSessions.map((session) => (
-          <TableRow 
-            key={session._id}
-            className="hover:bg-gray-50 transition-colors border-b last:border-b-0"
+        <div className="flex flex-wrap gap-3">
+          <Button
+            onClick={fetchSessionDetails}
+            variant="outline"
+            className="gap-2 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
           >
-            <TableCell className="font-mono text-gray-700">{session.bookingNumber}</TableCell>
-            <TableCell className="break-words">
-              <div className="flex flex-col">
-                <span className="font-medium text-gray-800">{session.patient_details.name}</span>
-                <span className="text-gray-500 text-sm">{session.patient_details?.email}</span>
-                <span className="text-gray-500 text-sm">{session.patient_details?.phone}</span>
-              </div>
-            </TableCell>
-            <TableCell className="break-words">
-              <div className="font-medium text-gray-800">{session?.treatment_id?.service_name || "N/A"}</div>
-              <div className="text-gray-400 text-sm">{session.no_of_session_book} sessions</div>
-            </TableCell>
-            <TableCell className="break-words">
-              <div className="flex flex-col">
-                <span className="font-medium text-gray-800">{session.session_booking_for_doctor.doctor_name}</span>
-                <span className="text-gray-400 text-sm truncate max-w-xs">{session.session_booking_for_clinic.clinic_name}</span>
-              </div>
-            </TableCell>
-            <TableCell className="break-words">
-              {session.nextSession ? (
-                <div>
-                  <div className="font-medium text-gray-800">{format(new Date(session.nextSession.date), "MMM dd, yyyy")}</div>
-                  <div className="text-gray-500 text-sm">
-                    {session.nextSession.time}{" "}
-                    {isToday(session.nextSession.date) && (
-                      <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-600">
-                        Today
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <span className="text-gray-400">No upcoming session</span>
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </Button>
+
+          <Button className="gap-2 bg-amber-600 hover:bg-amber-700 text-white">
+            <Plus className="h-4 w-4" />
+            Book New Session
+          </Button>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        <Input
+          placeholder="Search patient / booking / service..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-500"
+        />
+
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="border-gray-300 dark:border-gray-700">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            {statusOptions.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={clinicFilter} onValueChange={setClinicFilter}>
+          <SelectTrigger className="border-gray-300 dark:border-gray-700">
+            <SelectValue placeholder="Clinic" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Clinics</SelectItem>
+            {uniqueClinics.map((c) => (
+              <SelectItem key={c} value={c}>
+                {c}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={dateRange} onValueChange={setDateRange}>
+          <SelectTrigger className="border-gray-300 dark:border-gray-700">
+            <SelectValue placeholder="Date Range" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Sessions</SelectItem>
+            <SelectItem value="today">Today</SelectItem>
+            <SelectItem value="upcoming">Upcoming</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "justify-start text-left font-normal border-gray-300 dark:border-gray-700",
+                !dateFilter && "text-gray-500 dark:text-gray-400"
               )}
-            </TableCell>
-            <TableCell>
-              <Badge className={`${getStatusColor(session.session_status)} px-3 py-1 rounded-lg font-medium text-sm`}>
-                {session.session_status}
-              </Badge>
-            </TableCell>
-            <TableCell>
-              <div className="text-gray-600 text-sm mb-1">{session.completedSessionsCount}/{session.no_of_session_book} completed</div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full transition-all"
-                  style={{ width: `${(session.completedSessionsCount / session.no_of_session_book) * 100}%` }}
-                />
-              </div>
-            </TableCell>
-            <TableCell className="font-medium text-gray-900">₹{session.totalAmount.toLocaleString()}</TableCell>
-            <TableCell className="flex gap-2">
-                {/* View Button */}
-                <Button
-                  size="sm"
-                  className="flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white rounded shadow-sm transition"
-                  onClick={() => handleView(session)}
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
-
-                {/* Edit Button */}
-                <Button
-                  size="sm"
-                  className="flex items-center justify-center bg-amber-500 hover:bg-amber-600 text-white rounded shadow-sm transition"
-                  onClick={() => handleStatusChange(session)}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-
-                {/* Delete Button */}
-                <Button
-                  size="sm"
-                  className="flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded shadow-sm transition"
-                  onClick={() => handleDelete(session)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </TableCell>
-
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  </div>
-
-  {/* Pagination */}
-{totalPages > 1 && (
-  <div className="mt-6 flex justify-end">
-    <Pagination>
-      <PaginationContent className="space-x-2">
-        <PaginationItem>
-          <PaginationPrevious
-            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-            className={`px-3 py-1 rounded-md text-white bg-gradient-to-r from-blue-800 to-sky-700 ${
-              currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer hover:opacity-90"
-            }`}
-          />
-        </PaginationItem>
-        {[...Array(totalPages)].map((_, i) => (
-          <PaginationItem key={i + 1}>
-            <PaginationLink
-              onClick={() => setCurrentPage(i + 1)}
-              isActive={currentPage === i + 1}
-              className={`px-3 py-1 rounded-md text-white ${
-                currentPage === i + 1
-                  ? "bg-gradient-to-r from-blue-800 to-sky-700"
-                  : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-              }`}
             >
-              {i + 1}
-            </PaginationLink>
-          </PaginationItem>
-        ))}
-        <PaginationItem>
-          <PaginationNext
-            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-            className={`px-3 py-1 rounded-md text-white bg-gradient-to-r from-blue-800 to-sky-700 ${
-              currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer hover:opacity-90"
-            }`}
-          />
-        </PaginationItem>
-      </PaginationContent>
-    </Pagination>
-  </div>
-)}
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {dateFilter ? format(dateFilter, "PPP") : "Pick date"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <Calendar
+              mode="single"
+              selected={dateFilter}
+              onSelect={setDateFilter}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
 
-  {/* Status Change Modal */}
+      {/* Clear filters */}
+      {(searchTerm || statusFilter !== "all" || clinicFilter !== "all" || dateFilter || dateRange !== "all") && (
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setSearchTerm("");
+              setStatusFilter("all");
+              setClinicFilter("all");
+              setDateFilter(null);
+              setDateRange("all");
+            }}
+            className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+          >
+            <Filter className="mr-2 h-4 w-4" />
+            Clear filters
+          </Button>
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-gray-900 shadow-sm">
+        <Table>
+          <TableHeader className="bg-gray-100 dark:bg-gray-800">
+            <TableRow>
+              <TableHead className="text-gray-700 dark:text-gray-300">Booking #</TableHead>
+              <TableHead className="text-gray-700 dark:text-gray-300">Patient</TableHead>
+              <TableHead className="text-gray-700 dark:text-gray-300">Service</TableHead>
+              <TableHead className="text-gray-700 dark:text-gray-300">Doctor / Clinic</TableHead>
+              <TableHead className="text-gray-700 dark:text-gray-300">Next Session</TableHead>
+              <TableHead className="text-gray-700 dark:text-gray-300">Status</TableHead>
+              <TableHead className="text-gray-700 dark:text-gray-300">Progress</TableHead>
+              <TableHead className="text-gray-700 dark:text-gray-300">Amount</TableHead>
+              <TableHead className="text-gray-700 dark:text-gray-300 text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+
+          <TableBody>
+            {paginatedSessions.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={9} className="h-32 text-center text-gray-500 dark:text-gray-400">
+                  No sessions found
+                </TableCell>
+              </TableRow>
+            ) : (
+              paginatedSessions.map((session) => (
+                <TableRow
+                  key={session._id}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
+                >
+                  <TableCell className="font-mono text-gray-700 dark:text-gray-300">
+                    {session.bookingNumber}
+                  </TableCell>
+
+                  <TableCell>
+                    <div className="flex flex-col text-sm">
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {session.patient_details?.name || "—"}
+                      </span>
+                      <span className="text-gray-500 dark:text-gray-400">
+                        {session.patient_details?.phone || "—"}
+                      </span>
+                    </div>
+                  </TableCell>
+
+                  <TableCell className="text-gray-800 dark:text-gray-200">
+                    {session.treatment_id?.service_name || "—"}
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {session.no_of_session_book} sessions
+                    </div>
+                  </TableCell>
+
+                  <TableCell>
+                    <div className="text-gray-800 dark:text-gray-200">
+                      {session.session_booking_for_doctor?.doctor_name || "—"}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-xs">
+                      {session.session_booking_for_clinic?.clinic_name || "—"}
+                    </div>
+                  </TableCell>
+
+                  <TableCell className="text-sm">
+                    {session.nextSession ? (
+                      <>
+                        <div className="font-medium text-gray-800 dark:text-gray-200">
+                          {format(new Date(session.nextSession.date), "MMM dd, yyyy")}
+                        </div>
+                        <div className="text-gray-600 dark:text-gray-400">
+                          {session.nextSession.time}
+                          {new Date(session.nextSession.date).toDateString() === new Date().toDateString() && (
+                            <Badge className="ml-2 bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                              Today
+                            </Badge>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <span className="text-gray-400 dark:text-gray-500">No upcoming</span>
+                    )}
+                  </TableCell>
+
+                  <TableCell>
+                    <Badge className={cn("px-3 py-1", getStatusColor(session.session_status))}>
+                      {session.session_status || "Unknown"}
+                    </Badge>
+                  </TableCell>
+
+                  <TableCell>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                      {session.completedSessionsCount || 0} / {session.no_of_session_book}
+                    </div>
+                    <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-400 transition-all"
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            (session.completedSessionsCount / session.no_of_session_book) * 100 || 0
+                          )}%`,
+                        }}
+                      />
+                    </div>
+                  </TableCell>
+
+                  <TableCell className="font-medium text-gray-900 dark:text-gray-100">
+                    ₹{(session.totalAmount || 0).toLocaleString()}
+                  </TableCell>
+
+                  <TableCell className="text-right space-x-1.5">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                      onClick={() => handleView(session)}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+                      onClick={() => handleStatusChange(session)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                      onClick={() => handleDelete(session)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6 flex justify-center md:justify-end">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                />
+              </PaginationItem>
+
+              {[...Array(totalPages)].map((_, i) => {
+                const page = i + 1;
+                return (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      isActive={currentPage === page}
+                      onClick={() => setCurrentPage(page)}
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              })}
+
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
+
+      {/* Status Modal */}
       <Dialog open={statusModalOpen} onOpenChange={setStatusModalOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Change Session Status</DialogTitle>
+            <DialogTitle>Update Session Status</DialogTitle>
             <DialogDescription>
-              Update the status for booking {selectedSession?.bookingNumber}
+              Booking: {selectedSession?.bookingNumber || "—"}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Select value={newStatus} onValueChange={setNewStatus}>
               <SelectTrigger>
-                <SelectValue placeholder="Select new status" />
+                <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
-                {statusOptions.map(status => (
-                  <SelectItem key={status} value={status}>{status}</SelectItem>
+                {statusOptions.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -593,20 +548,20 @@ const confirmDelete = async () => {
             <Button variant="outline" onClick={() => setStatusModalOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={confirmStatusChange}>
-              Update Status
-            </Button>
+            <Button onClick={confirmStatusChange}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Modal */}
+      {/* Delete Confirmation */}
       <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Delete Session Booking</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete booking {selectedSession?.bookingNumber}? This action cannot be undone.
+              Are you sure you want to delete booking{" "}
+              <strong>{selectedSession?.bookingNumber || "—"}</strong>?<br />
+              This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -619,10 +574,7 @@ const confirmDelete = async () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-</div>
-
-
+    </div>
   );
 };
 

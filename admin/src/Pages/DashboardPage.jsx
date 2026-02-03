@@ -11,7 +11,6 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Sheet,
   SheetContent,
@@ -53,17 +52,18 @@ import {
   Circle,
   Settings,
   LogOut,
-  MessageSquare,
 } from "lucide-react";
 
-// Menu Sections
+// Constants
 import { menuSections, ADMIN_WEB_NAME } from "@/context/ui.constant";
 
 const DashboardPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile } = useAdminProfile();
+
   const [expandedSections, setExpandedSections] = useState({});
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const toggleSection = (title) => {
     setExpandedSections((prev) => ({
@@ -75,280 +75,208 @@ const DashboardPage = () => {
   const isActive = (path) =>
     location.pathname.toLowerCase() === path.toLowerCase();
 
-  const handleNavigation = (path) => navigate(path);
+  const handleNavigation = (path) => {
+    navigate(path);
+    setMobileOpen(false);
+  };
 
-  return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Desktop Sidebar */}
-      <aside className="fixed top-0 left-0 h-screen w-64 bg-white shadow-xl border-r border-gray-200 flex flex-col">
-        {/* Header - always fixed */}
-        <div className="flex items-center gap-2 px-3 py-3 border-b border-gray-200 bg-gradient-to-r from-blue-800 to-sky-700 z-20">
-          <div className="w-10 h-10 bg-white rounded flex items-center justify-center shadow-md">
-            <Stethoscope className="w-6 h-6 text-[#155DFC]" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-white">{ADMIN_WEB_NAME}</h1>
-            <p className="text-xs text-white/80 whitespace-nowrap">Physiotherapist | Osteopath | Chiropractor</p>
-          </div>
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-200 border-r border-gray-200 dark:border-gray-800">
+      {/* Logo / Header */}
+      <div className="flex items-center gap-3 px-5 py-6 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
+        <div className="w-10 h-10 bg-gray-200 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+          <Stethoscope className="w-6 h-6 text-gray-800 dark:text-gray-200" />
         </div>
+        <div>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
+            {ADMIN_WEB_NAME}
+          </h1>
+          <p className="text-xs text-gray-600 dark:text-gray-400">
+            Physio | Osteo | Chiro
+          </p>
+        </div>
+      </div>
 
-        {/* Menu - scrollable */}
-        <ScrollArea className="flex-1 overflow-y-auto py-5 px-4 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
-          <nav className="space-y-3">
-            {menuSections.map((section, idx) => {
-              const Icon = section.icon;
-              const isExpanded = expandedSections[section.title];
-              const isActiveSection = section.singleItem
-                ? isActive(section.to)
-                : section.items?.some((item) => isActive(item.to));
+      {/* Navigation */}
+      <ScrollArea className="flex-1 px-3 py-6">
+        <nav className="space-y-1.5">
+          {menuSections.map((section, idx) => {
+            const Icon = section.icon;
+            const isExpanded = expandedSections[section.title];
+            const isActiveSection = section.singleItem
+              ? isActive(section.to)
+              : section.items?.some((item) => isActive(item.to));
 
-              // Single menu item
-              if (section.singleItem) {
-                return (
-                  <button
-                    key={idx}
-                    onClick={() => handleNavigation(section.to)}
-                    className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg transition-all duration-200
-                ${
-                  isActiveSection
-                    ? "bg-gradient-to-r from-blue-800 to-sky-700 text-white shadow-md"
-                    : "bg-gray-50 text-gray-700 hover:bg-gradient-to-r hover:from-blue-800 hover:to-sky-700 hover:text-white"
-                }`}
-                  >
-                    <Icon
-                      className={`w-5 h-5 ${
-                        isActiveSection ? "text-white" : "text-gray-400"
-                      } transition-colors`}
-                    />
-                    <span className="text-sm font-semibold">
-                      {section.label || section.title}
-                    </span>
-                  </button>
-                );
-              }
-
-              // Collapsible menu
+            if (section.singleItem) {
               return (
-                <div key={idx}>
+                <button
+                  key={idx}
+                  onClick={() => handleNavigation(section.to)}
+                  className={`
+                    flex items-center gap-3 w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors
+                    ${
+                      isActiveSection
+                        ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+                        : "text-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
+                    }
+                  `}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span>{section.label || section.title}</span>
+                </button>
+              );
+            }
+
+            return (
+              <Collapsible
+                key={idx}
+                open={isExpanded}
+                onOpenChange={() => toggleSection(section.title)}
+              >
+                <CollapsibleTrigger asChild>
                   <button
-                    onClick={() => toggleSection(section.title)}
-                    className={`flex items-center justify-between w-full px-4 py-3 rounded-lg transition-all duration-200
-                ${
-                  isActiveSection
-                    ? "bg-gradient-to-r from-blue-800 to-sky-700 text-white shadow-md"
-                    : isExpanded
-                    ? "bg-blue-800/10 text-[#155DFC] shadow-inner"
-                    : "bg-gray-50 text-gray-700 hover:bg-gradient-to-r  hover:from-blue-800 hover:to-sky-700 hover:text-white"
-                }`}
+                    className={`
+                      flex items-center justify-between w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors
+                      ${
+                        isActiveSection
+                          ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+                          : isExpanded
+                          ? "bg-gray-50 dark:bg-gray-900/60 text-gray-900 dark:text-gray-100"
+                          : "text-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
+                      }
+                    `}
                   >
                     <div className="flex items-center gap-3">
-                      <Icon
-                        className={`w-5 h-5 ${
-                          isActiveSection ? "text-white" : "text-gray-400"
-                        } transition-colors`}
-                      />
-                      <span className="text-sm font-semibold">
-                        {section.title}
-                      </span>
+                      <Icon className="w-5 h-5" />
+                      <span>{section.title}</span>
                     </div>
                     {isExpanded ? (
-                      <ChevronDown
-                        className={`w-4 h-4 ${
-                          isActiveSection ? "text-white" : "text-[#155DFC]"
-                        } transition-transform`}
-                      />
+                      <ChevronDown className="w-4 h-4" />
                     ) : (
-                      <ChevronRight className="w-4 h-4 text-gray-400 transition-transform" />
+                      <ChevronRight className="w-4 h-4" />
                     )}
                   </button>
+                </CollapsibleTrigger>
 
-                  {/* Submenu */}
-                  <div
-                    className={`overflow-hidden transition-all duration-300 ${
-                      isExpanded ? "max-h-60 mt-2" : "max-h-0"
-                    }`}
-                  >
-                    <div className="ml-4 space-y-1 border-l-2 border-gray-200 pl-4">
-                      {section.items?.map((item, itemIdx) => {
-                        const isItemActive = isActive(item.to);
-                        return (
-                          <button
-                            key={itemIdx}
-                            onClick={() => handleNavigation(item.to)}
-                            className={`flex items-center gap-3 w-full px-4 py-2 rounded-lg text-sm transition-all duration-200
-                        ${
-                          isItemActive
-                            ? "bg-gradient-to-r from-blue-800 to-sky-700 text-white shadow-sm"
-                            : "bg-gray-50 text-gray-600 hover:bg-gradient-to-r hover:from-blue-800 hover: to-sky-700 hover:text-white hover:translate-x-1"
-                        }`}
-                          >
-                            <Circle
-                              className={`w-1.5 h-1.5 ${
-                                isItemActive ? "fill-white" : "fill-gray-300"
-                              }`}
-                            />
-                            <span className="flex-1">{item.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
+                <CollapsibleContent className="transition-all">
+                  <div className="ml-4 mt-1.5 space-y-1 border-l border-gray-200 dark:border-gray-800 pl-4">
+                    {section.items?.map((item, itemIdx) => {
+                      const isItemActive = isActive(item.to);
+                      return (
+                        <button
+                          key={itemIdx}
+                          onClick={() => handleNavigation(item.to)}
+                          className={`
+                            flex items-center gap-2.5 w-full px-3 py-2 rounded-md text-sm transition-colors
+                            ${
+                              isItemActive
+                                ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+                                : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/70 hover:text-gray-900 dark:hover:text-gray-100"
+                            }
+                          `}
+                        >
+                          <Circle
+                            className={`w-1.5 h-1.5 ${
+                              isItemActive
+                                ? "fill-gray-900 dark:fill-white"
+                                : "fill-gray-400 dark:fill-gray-600"
+                            }`}
+                          />
+                          <span>{item.label}</span>
+                        </button>
+                      );
+                    })}
                   </div>
-                </div>
-              );
-            })}
-          </nav>
-        </ScrollArea>
+                </CollapsibleContent>
+              </Collapsible>
+            );
+          })}
+        </nav>
+      </ScrollArea>
 
-        {/* Footer - fixed at bottom */}
-        <div className="p-3 border-t border-gray-200 bg-gray-50 flex flex-col gap-2">
+      {/* Footer / Profile */}
+      <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
         <div
           onClick={() => handleNavigation("/dashboard/profile")}
-          className="flex items-center gap-2 p-1.5 rounded-md hover:bg-[#155DFC]/10 cursor-pointer transition-all"
+          className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors"
         >
-          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-800 to-sky-700 flex items-center justify-center text-white font-bold text-base ring-2 ring-white">
+          <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gradient-to-br dark:from-gray-700 dark:to-gray-900 flex items-center justify-center text-gray-800 dark:text-white font-semibold ring-1 ring-gray-400 dark:ring-gray-700">
             {profile?.name?.charAt(0) || "D"}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">
+            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
               {profile?.name || "Dr. Rajneesh"}
             </p>
-            <p className="text-xs text-gray-500 truncate">
+            <p className="text-xs text-gray-600 dark:text-gray-500 truncate">
               {profile?.email || "doctor@clinic.com"}
             </p>
           </div>
-          <Settings className="w-4 h-4 text-gray-400 hover:text-[#155DFC] transition-all" />
+          <Settings className="w-4 h-4 text-gray-500 dark:text-gray-400" />
         </div>
 
-       <button
-        onClick={() => console.log("Logout clicked")}
-        className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-md
-                  bg-gradient-to-r from-blue-800 to-sky-700 text-white text-sm font-medium
-                  hover:bg-gradient-to-r hover:from-blue-800 hover:to-sky-700 transition-all duration-200"
-      >
-        <LogOut className="w-4 h-4 text-white" />
-        <span className="truncate">Logout</span>
-      </button>
-
+        <Button
+          variant="ghost"
+          onClick={() => console.log("Logout clicked")}
+          className="mt-3 w-full justify-center gap-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40"
+        >
+          <LogOut className="w-4 h-4" />
+          Logout
+        </Button>
       </div>
+    </div>
+  );
 
+  return (
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+      {/* Mobile Hamburger + Sheet */}
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetTrigger asChild className="lg:hidden fixed top-4 left-4 z-50">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-gray-700 dark:text-gray-300"
+          >
+            <Menu className="h-6 w-6" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="p-0 w-72 border-r border-gray-200 dark:border-gray-800">
+          <SheetHeader className="sr-only">
+            <SheetTitle>Navigation Menu</SheetTitle>
+          </SheetHeader>
+          <SidebarContent />
+        </SheetContent>
+      </Sheet>
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex lg:flex-col lg:w-72 lg:border-r lg:border-gray-200 dark:lg:border-gray-800 lg:fixed lg:inset-y-0 lg:left-0">
+        <SidebarContent />
       </aside>
 
-      {/* Main Content */}
-      <div className="flex flex-col flex-1 lg:ml-64 w-80">
-        {/* Desktop Header */}
-        <div className="hidden lg:block sticky top-0 z-10 bg-white border-b">
+      {/* Main Area */}
+      <div className="flex-1 lg:ml-72 min-w-0">
+        {/* Top Header (desktop) */}
+        <div className="hidden lg:block sticky top-0 z-20 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
           <DashboardHeader />
         </div>
 
-        {/* Main Routes */}
-        <main className="flex-1 bg-white p-4 md:p-6">
+        {/* Page Content */}
+        <main className="p-4 md:p-6 lg:p-8 bg-gray-50 dark:bg-gray-950 min-h-screen">
           <Routes>
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <DashboardHome />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/add-or-update-treatments"
-              element={
-                <ProtectedRoute>
-                  <AddNewTreatMents />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Sessions */}
-            <Route
-              path="/Sessions"
-              element={
-                <ProtectedRoute>
-                  <AllSessions />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/Users"
-              element={
-                <ProtectedRoute>
-                  <AllUsers />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/treatments"
-              element={
-                <ProtectedRoute>
-                  <AllServices />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/blogs-categories"
-              element={
-                <ProtectedRoute>
-                  <AllBlogCategories />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/all-blogs"
-              element={
-                <ProtectedRoute>
-                  <BlogManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <AdminProfile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/doctor"
-              element={
-                <ProtectedRoute>
-                  <AllDoctors />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/sessions/:id"
-              element={
-                <ProtectedRoute>
-                  <SessionDetails />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/notifications"
-              element={
-                <ProtectedRoute>
-                  <AllNotifications />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-
-            <Route
-                path="/web-settings"
-                element={
-                  <ProtectedRoute>
-                    <ConfigSettings />
-                  </ProtectedRoute>
-                }
-              />
-
-
-            {/* All Users */}
-            <Route path="/users" element={<AllUsers />} />
+            <Route path="/" element={<ProtectedRoute><DashboardHome /></ProtectedRoute>} />
+            <Route path="/add-or-update-treatments" element={<ProtectedRoute><AddNewTreatMents /></ProtectedRoute>} />
+            <Route path="/Sessions" element={<ProtectedRoute><AllSessions /></ProtectedRoute>} />
+            <Route path="/Users" element={<ProtectedRoute><AllUsers /></ProtectedRoute>} />
+            <Route path="/treatments" element={<ProtectedRoute><AllServices /></ProtectedRoute>} />
+            <Route path="/blogs-categories" element={<ProtectedRoute><AllBlogCategories /></ProtectedRoute>} />
+            <Route path="/all-blogs" element={<ProtectedRoute><BlogManagement /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><AdminProfile /></ProtectedRoute>} />
+            <Route path="/doctor" element={<ProtectedRoute><AllDoctors /></ProtectedRoute>} />
+            <Route path="/admin/sessions/:id" element={<ProtectedRoute><SessionDetails /></ProtectedRoute>} />
+            <Route path="/notifications" element={<ProtectedRoute><AllNotifications /></ProtectedRoute>} />
+            <Route path="/web-settings" element={<ProtectedRoute><ConfigSettings /></ProtectedRoute>} />
             <Route path="/all-clinic" element={<AllClinic />} />
+
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
       </div>
