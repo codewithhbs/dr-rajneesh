@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
 import axiosInstance from "@/lib/axios";
-import appointmentImg from '../assets/appointment-1.png';
+import appointmentImg from "../assets/appointment-1.png"; // ideally replace with B&W version
 import Cookies from "js-cookie";
 
 const SignInPage = () => {
@@ -10,113 +10,169 @@ const SignInPage = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [message, setMessage] = useState(null);
+  const [message, setMessage] = useState({ type: null, text: null });
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setMessage({ type: null, text: null });
     setIsLoading(true);
+
     try {
       const res = await axiosInstance.post("/admin/login", { email, password });
-      console.log("Drrajneesh@Admin",res.data)
-      setMessage(res.data.message);
-      // Cookies.set('')
-      // navigate("/");
+
+      if (res.data.success) {
+        Cookies.set("token", res.data.token, { expires: 7, secure: true });
+        Cookies.set("user", JSON.stringify(res.data.user), { expires: 7 });
+
+        setMessage({ type: "success", text: "Authentication successful. Redirecting..." });
+        setTimeout(() => navigate("/"), 1400);
+      } else {
+        setMessage({ type: "error", text: res.data.message || "Invalid credentials" });
+      }
     } catch (err) {
-      setMessage(err.response?.data?.message || "Login failed");
+      const errMsg = err.response?.data?.message || "Connection error. Please try again.";
+      setMessage({ type: "error", text: errMsg });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="w-full max-w-6xl bg-white rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2">
-        
-        {/* Left side - Form */}
-        <div className="p-12 md:p-16 flex flex-col justify-center">
-          <h2 className="text-3xl font-bold text-gray-800 mb-4 text-center md:text-left">
-            Empower Your Patient Care
-          </h2>
-          <p className="text-gray-500 mb-8 text-center md:text-left">
-            Access patient records, track treatments, and manage appointments effortlessly to provide exceptional care.
-          </p>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-5 sm:p-8">
+      <div className="w-full max-w-5xl bg-white border border-gray-200 rounded-xl overflow-hidden grid grid-cols-1 lg:grid-cols-2 shadow-sm">
+        {/* Left: Form */}
+        <div className="p-8 md:p-12 lg:p-16 flex flex-col justify-center">
+          <div className="mb-10 text-center lg:text-left">
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">
+              Admin Login
+            </h1>
+            <p className="mt-3 text-gray-600 text-base">
+              Secure access to patient records and scheduling
+            </p>
+          </div>
 
-          {message && (
-            <div className="mb-4 p-4 bg-red-100 text-red-700 border border-red-300 rounded">
-              {message}
+          {/* Message */}
+          {message.text && (
+            <div
+              className={`mb-8 p-4 rounded-lg border text-sm flex items-center gap-3 ${message.type === "error"
+                  ? "bg-gray-100 border-gray-300 text-gray-800"
+                  : "bg-gray-100 border-gray-300 text-gray-800"
+                }`}
+            >
+              <div className="h-5 w-5 rounded-full bg-gray-300 text-gray-800 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                {message.type === "error" ? "!" : "✓"}
+              </div>
+              <span>{message.text}</span>
             </div>
           )}
-          <form className="space-y-6" onSubmit={handleLogin}>
+
+          <form onSubmit={handleLogin} className="space-y-6">
             {/* Email */}
-            <div>
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email
+              </label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
                 <input
+                  id="email"
                   type="email"
-                  placeholder="Email Address"
+                  autoComplete="email"
+                  placeholder="admin@clinic.local"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 rounded border border-gray-300 focus:ring-2 focus:ring-[#155DFC] focus:outline-none text-gray-700"
+                  className="w-full pl-11 pr-4 py-3.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 focus:border-gray-500 focus:ring-1 focus:ring-gray-400 focus:outline-none transition-all duration-150"
                   required
                 />
               </div>
             </div>
 
             {/* Password */}
-            <div>
+            <div className="space-y-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-               <input
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
+                <input
+                  id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Password"
+                  autoComplete="current-password"
+                  placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-12 pr-12 py-3 rounded border border-gray-300 focus:ring-2 focus:ring-[#0092B8] focus:outline-none text-gray-700"
+                  className="w-full pl-11 pr-12 py-3.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder:text-gray-500 focus:border-gray-500 focus:ring-1 focus:ring-gray-400 focus:outline-none transition-all duration-150"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
                 >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
             </div>
 
-            {/* Remember & Forgot */}
-            <div className="flex items-center justify-between text-sm text-gray-500">
-              <label className="flex items-center space-x-2">
+            {/* Options */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-sm text-gray-600">
+              <label className="flex items-center gap-2.5 cursor-pointer">
                 <input
                   type="checkbox"
-                  className="w-4 h-4 text-teal-600 border-gray-300 rounded"
+                  className="h-4 w-4 rounded border-gray-400 text-gray-700 focus:ring-gray-500"
                 />
-                <span>Remember Me</span>
+                <span>Remember this device</span>
               </label>
-             
+
+              <a
+                href="#"
+                className="text-gray-700 hover:text-gray-900 font-medium transition-colors"
+              >
+                Forgot password?
+              </a>
             </div>
 
-            {/* Submit Button */}
+            {/* Submit */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full  bg-gradient-to-r from-[#155DFC] to-[#0092B8] 
-                                        border-[#155DFC]  text-white py-3 rounded font-semibold shadow-lg transition duration-200"
+              className={`
+                w-full flex items-center justify-center gap-2.5
+                bg-gray-900 hover:bg-gray-800 
+                text-white font-medium py-3.5 rounded-lg
+                disabled:opacity-60 disabled:cursor-not-allowed
+                transition-all duration-200
+              `}
             >
-              {isLoading ? "Logging in..." : "Login"}
+              {isLoading ? (
+                <>
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Verifying...
+                </>
+              ) : (
+                <>
+                  Sign In
+                  <ArrowRight size={18} />
+                </>
+              )}
             </button>
           </form>
 
-          
+          <p className="mt-10 text-center text-sm text-gray-500">
+            For support contact{" "}
+            <a href="mailto:it@clinic.local" className="text-gray-700 hover:underline">
+              it@clinic.local
+            </a>
+          </p>
         </div>
 
-        {/* Right side - Illustration */}
-        <div className="hidden md:flex items-center justify-center bg-gradient-to-br from-teal-50 to-teal-100 p-8">
+        {/* Right: Illustration (hidden on small/medium screens) */}
+        <div className="hidden lg:flex items-center justify-center bg-gray-50 p-12 xl:p-16">
           <img
             src={appointmentImg}
-            alt="Login Illustration"
-            className="w-full h-full object-cover rounded-3xl"
+            alt="Clinic administration dashboard"
+            className="w-full max-w-md xl:max-w-lg object-contain  contrast-125" // ← makes it B&W-ish even if original is colored
           />
         </div>
       </div>

@@ -1,93 +1,172 @@
-import { Bell, LogOut, Users } from "lucide-react";
-import React, { useState } from "react";
+import { Bell, LogOut, Moon, Sun, User } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import adminImg from "../assets/doctor.png";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu";
 import useAdminProfile from "@/hooks/admin";
 
 const DashboardHeader = () => {
   const { profile, handleLogout } = useAdminProfile();
 
+  const [isDark, setIsDark] = useState(true);
 
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+    if (savedTheme) {
+      const shouldBeDark = savedTheme === "dark";
+      setIsDark(shouldBeDark);
+      document.documentElement.classList.toggle("dark", shouldBeDark);
+    } else {
+      setIsDark(prefersDark);
+      document.documentElement.classList.toggle("dark", prefersDark);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newIsDark = !isDark;
+    setIsDark(newIsDark);
+    document.documentElement.classList.toggle("dark", newIsDark);
+    localStorage.setItem("theme", newIsDark ? "dark" : "light");
+  };
 
   return (
-    <header className="bg-white border-b sticky top-0 z-50 shadow-sm">
+    <header className="bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50 transition-colors">
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          {/* Left placeholder (logo or menu if needed) */}
+          {/* Left side */}
           <div className="flex items-center">
-            {/* <h1 className="text-lg font-semibold text-gray-800 hidden sm:block">
+            {/* You can uncomment if you want a title in light mode too */}
+            {/* <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100 hidden md:block">
               Dashboard
             </h1> */}
           </div>
 
           {/* Right side */}
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center gap-4 sm:gap-6">
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="
+                p-2 rounded-full 
+                bg-gray-100 dark:bg-gray-800 
+                hover:bg-gray-200 dark:hover:bg-gray-700 
+                transition-colors duration-200
+              "
+              aria-label="Toggle dark/light mode"
+            >
+              {isDark ? (
+                <Sun className="h-5 w-5 text-amber-500 dark:text-amber-400" />
+              ) : (
+                <Moon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+              )}
+            </button>
+
             {/* Notifications */}
             <button
               type="button"
-              className="relative p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200 shadow-sm flex items-center justify-center"
+              className="
+                relative p-2 rounded-full 
+                bg-gray-100 dark:bg-gray-900 
+                hover:bg-gray-200 dark:hover:bg-gray-800 
+                transition-colors duration-200
+              "
+              aria-label="Notifications"
             >
-              {/* Bell Icon */}
-              <Bell className="h-6 w-6 text-gray-700" />
-
-              {/* Unread Notification Dot */}
-              <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
+              <Bell className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+              <span className="
+                absolute top-1 right-1 
+                w-2.5 h-2.5 bg-red-500 rounded-full 
+                border-2 border-white dark:border-gray-950 
+                animate-pulse
+              " />
             </button>
 
             {/* User Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="focus:outline-none">
-                  <button className="flex items-center gap-3 group focus:outline-none transition-all">
-                    {/* Profile Image */}
-                    <div className="relative w-14 h-14  overflow-hidden  p-[2px] shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
-                      <div className="w-full h-full  bg-white overflow-hidden">
-                        <img
-                          src={adminImg}
-                          alt="User"
-                          className="w-full h-full object-cover  group-hover:scale-110 transition-transform duration-500"
-                        />
-                      </div>
-                      {/* Online Status Dot */}
-                      <span className="absolute bottom-1 right-1 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full shadow-sm"></span>
-                    </div>
+                <button className="flex items-center gap-3 group focus:outline-none transition-all duration-200">
+                  {/* Avatar */}
+                  <div className="
+                    relative w-10 h-10 sm:w-11 sm:h-11 
+                    rounded-full overflow-hidden 
+                    ring-1 ring-gray-300 dark:ring-gray-700 
+                    group-hover:ring-gray-400 dark:group-hover:ring-gray-500 
+                    transition-all
+                  ">
+                    <img
+                      src={adminImg}
+                      alt="Admin"
+                      className="w-full h-full object-cover scale-105 group-hover:scale-110 transition-transform duration-300"
+                    />
+                    <span className="
+                      absolute bottom-0 right-0 
+                      w-3 h-3 bg-green-500 
+                      border-2 border-white dark:border-gray-950 
+                      rounded-full
+                    " />
+                  </div>
 
-                    {/* Welcome Text */}
-                    <div className="text-left">
-                      <p className="text-xs text-gray-500">Welcome ,</p>
-                      <p className="font-semibold text-gray-800 text-sm group-hover:text-blue-600 transition-colors">
-                        {profile?.name || "Admin User"}
-                      </p>
-                    </div>
-                  </button>
+                  {/* Name & greeting */}
+                  <div className="hidden sm:flex sm:flex-col sm:items-start text-left">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      Welcome
+                    </span>
+                    <span className="
+                      text-sm font-medium 
+                      text-gray-900 dark:text-gray-200 
+                      group-hover:text-gray-700 dark:group-hover:text-white 
+                      transition-colors
+                    ">
+                      {profile?.name || "Admin"}
+                    </span>
+                  </div>
                 </button>
               </DropdownMenuTrigger>
+
               <DropdownMenuContent
                 align="end"
-                className="w-48 rounded-xl shadow-xl border border-gray-100 bg-white/95 backdrop-blur-sm"
+                sideOffset={8}
+                className="
+                  w-56 
+                  bg-white dark:bg-gray-900 
+                  border border-gray-200 dark:border-gray-800 
+                  text-gray-900 dark:text-gray-200 
+                  rounded-xl shadow-xl dark:shadow-2xl 
+                  backdrop-blur-sm
+                "
               >
-                {/* Profile Link */}
                 <DropdownMenuItem
-                  onClick={() => (window.location.href = "/dashboard/Profile")}
-                  className="flex items-center gap-2 text-gray-700 hover:bg-gradient-to-r hover:from-[#155DFC]/10 hover:to-[#0092B8]/10 hover:text-blue-700 rounded-md transition-all px-4 py-2"
+                  onClick={() => (window.location.href = "/dashboard/profile")}
+                  className="
+                    flex items-center gap-2.5 px-4 py-2.5 
+                    text-gray-700 dark:text-gray-300 
+                    focus:bg-gray-100 dark:focus:bg-gray-800 
+                    focus:text-gray-900 dark:focus:text-white 
+                    cursor-pointer transition-colors
+                  "
                 >
-                  <Users className="h-4 w-4 text-[#155DFC]" />
+                  <User className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                   <span>Profile</span>
                 </DropdownMenuItem>
 
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-800" />
 
-                {/* Logout */}
                 <DropdownMenuItem
                   onClick={handleLogout}
-                  className="flex items-center gap-2 text-red-600 hover:bg-red-50 rounded-md transition-all px-4 py-2"
+                  className="
+                    flex items-center gap-2.5 px-4 py-2.5 
+                    text-red-600 dark:text-red-400 
+                    focus:bg-red-50 dark:focus:bg-red-950/60 
+                    focus:text-red-700 dark:focus:text-red-300 
+                    cursor-pointer transition-colors
+                  "
                 >
                   <LogOut className="h-4 w-4" />
                   <span>Log out</span>
