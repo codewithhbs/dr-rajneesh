@@ -286,6 +286,7 @@ const AddNewTreatMents = () => {
         })
         setPreviewImages([])
       }
+      window.location.reload()
     } catch (error) {
       console.error("Submission error:", error)
       toast.error(error.response?.data?.message || "Something went wrong.")

@@ -20,7 +20,7 @@ const SignInPage = () => {
 
     try {
       const res = await axiosInstance.post("/admin/login", { email, password });
-
+      console.log(res.data)
       if (res.data.success) {
         Cookies.set("token", res.data.token, { expires: 7, secure: true });
         Cookies.set("user", JSON.stringify(res.data.user), { expires: 7 });
