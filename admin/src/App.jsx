@@ -5,7 +5,7 @@ import SignInPage from "./Pages/SignInPage";
 import DashboardPage from "./Pages/DashboardPage";
 import NotFoundPage from "./Pages/NotFoundPage";
 import Footer from "./Pages/Footer";
-
+import { Toaster as Sonner } from "sonner"
 function App() {
   return (
     <div className="flex flex-col min-h-screen">
@@ -20,6 +20,21 @@ function App() {
       </div>
 
       {/* Global Footer */}
+      <Sonner
+      theme="light"     
+      position={"top-center"}      // or "dark" / "system"
+      className="toaster group"
+      toastOptions={{
+        classNames: {
+          toast:
+            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
+          description: "group-[.toast]:text-muted-foreground",
+          actionButton: "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
+          cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
+        },
+      }}
+      
+    />
       <Footer />
     </div>
   );

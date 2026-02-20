@@ -44,9 +44,9 @@ const ProtectedRoute = ({ children }) => {
                 setIsLoading(true);
                 setError(null);
                 
-                const response = await axiosInstance.get('/admin/check-auth');
+                // const response = await axiosInstance.get('/admin/check-auth');
                 
-                console.log('✅ Authentication successful:', response.data);
+                // console.log('✅ Authentication successful:', response.data);
                 setAuth(true);
                 
             } catch (err) {
