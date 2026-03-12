@@ -140,7 +140,7 @@ const AllServices = () => {
         service.service_small_desc
           .toLowerCase()
           .includes(searchTerm.toLowerCase()) ||
-        (service.service_doctor?.doctor_name || "")
+        (service?.service_doctor??.doctor_name || "")
           .toLowerCase()
           .includes(searchTerm.toLowerCase())
     );
@@ -481,17 +481,17 @@ const AllServices = () => {
                       </TableCell>
 
                       <TableCell>
-                        {service.service_doctor ? (
+                        {service?.service_doctor? ? (
                           <div className="flex items-center gap-3">
                             <div className="min-w-0">
                               <p className="text-sm font-medium truncate">
-                                {service.service_doctor.doctor_name}
+                                {service?.service_doctor.doctor_name}
                               </p>
-                              {service.service_doctor.doctor_ratings && (
+                              {service?.service_doctor.doctor_ratings && (
                                 <div className="flex items-center gap-1">
                                   <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
                                   <span className="text-xs text-muted-foreground">
-                                    {service.service_doctor.doctor_ratings}
+                                    {service?.service_doctor.doctor_ratings}
                                   </span>
                                 </div>
                               )}
@@ -799,7 +799,7 @@ const ServiceDetails = ({ service }) => {
       </div>
 
       {/* Doctor Information */}
-      {service.service_doctor && (
+      {service?.service_doctor? && (
         <div className="bg-white shadow-md rounded-xl p-5">
           <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
             Doctor Information
@@ -808,35 +808,35 @@ const ServiceDetails = ({ service }) => {
             <Avatar className="h-14 w-14 shadow-md ring-2 ring-blue-200">
               <AvatarImage
                 src={
-                  service.service_doctor.doctor_images?.[0]?.url ||
+                  service?.service_doctor?.doctor_images?.[0]?.url ||
                   "/placeholder.svg"
                 }
-                alt={service.service_doctor.doctor_name}
+                alt={service?.service_doctor?.doctor_name}
               />
               <AvatarFallback>
-                {getDoctorInitials(service.service_doctor.doctor_name)}
+                {getDoctorInitials(service?.service_doctor?.doctor_name)}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
               <h4 className="font-semibold text-gray-800 text-base">
-                {service.service_doctor.doctor_name}
+                {service?.service_doctor?.doctor_name}
               </h4>
               <div className="flex items-center gap-2 mt-1">
                 <Badge variant="outline" className="px-2 py-0.5">
-                  {service.service_doctor.doctor_status}
+                  {service?.service_doctor?.doctor_status}
                 </Badge>
-                {service.service_doctor.doctor_ratings !== undefined && (
+                {service?.service_doctor?.doctor_ratings !== undefined && (
                   <div className="flex items-center gap-1">
                     <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
                     <span className="text-sm text-gray-700">
-                      {service.service_doctor.doctor_ratings}
+                      {service?.service_doctor?.doctor_ratings}
                     </span>
                   </div>
                 )}
               </div>
-              {service.service_doctor.any_special_note && (
+              {service?.service_doctor?.any_special_note && (
                 <p className="text-sm text-gray-500 mt-2 italic">
-                  {service.service_doctor.any_special_note}
+                  {service?.service_doctor?.any_special_note}
                 </p>
               )}
             </div>

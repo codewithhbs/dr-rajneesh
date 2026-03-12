@@ -1,308 +1,301 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useState, useEffect, useMemo } from "react";
 import axios, { AxiosError } from "axios";
 import { toast } from "sonner";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/authContext/auth";
 import Cookies from "js-cookie";
+import { Loader2, CheckCircle2 } from "lucide-react";
 
 const API_BASE_URL = "https://api.drrajneeshkant.in/api/v1/user";
 
 interface PatientDetailsStepProps {
   next: () => void;
+  formData: any;
+  setFormData: React.Dispatch<React.SetStateAction<any>>;
+  setOtpVerify: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export default function PatientDetailsStep({
   next,
-  setFormData,
   formData,
+  setFormData,
   setOtpVerify,
 }: PatientDetailsStepProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { token, setToken, loading: authLoading, user } = useAuth();
+  const { token, setToken, user } = useAuth();
 
   const [otp, setOtp] = useState("");
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userIdFromRegister, setUserIdFromRegister] = useState<string | null>(null);
+  const [bookingFor, setBookingFor] = useState<"myself" | "someone-else">("");
 
-  const [openOtpModal, setOpenOtpModal] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
+  const isLoggedIn = !!token;
 
-  const [choice, setChoice] = useState<"same" | "other">("");
+  const isFormFilledEnough = useMemo(() => {
+    return (
+      formData.name?.trim() &&
+      formData.phone?.length === 10 &&
+      /^\d{10}$/.test(formData.phone) &&
+      formData.email?.trim() &&
+      formData.aadhhar?.trim() &&
+      formData.age?.trim() &&
+      !isNaN(Number(formData.age)) &&
+      Number(formData.age) >= 1
+    );
+  }, [formData]);
 
-  const isFormComplete =
-    formData.name.trim() !== "" &&
-    formData.phone.length === 10 &&
-    formData.email.trim() !== "" &&
-    formData.aadhhar.trim() !== "" &&
-    formData.age.trim() !== "";
-
-  const shouldSendOtp = !token
-
+  // ────────────────────────────────────────────────
+  //  Pre-fill logged-in user data when choosing "myself"
+  // ────────────────────────────────────────────────
   useEffect(() => {
-    if (isFormComplete && shouldSendOtp && !openOtpModal && !userId) {
-      handleRegister();
-    }
-  }, [isFormComplete, shouldSendOtp, openOtpModal, userId]);
+    if (!isLoggedIn || bookingFor !== "myself" || !user?._id) return;
 
-  useEffect(() => {
-
-    if (!token || choice !== "same" || !user?._id) return;
-
-    setFormData((prev) => ({
-      ...prev,
+    const updated = {
       name: user.name || "",
       phone: user.phone || "",
       gender: user.gender || "male",
-      age: String(user.age || ""),
+      age: user.age ? String(user.age) : "",
       email: user.email || "",
       aadhhar: user.aadhhar || "",
-    }));
+      passport: user.passport || "",
+    };
+
+    setFormData(updated);
 
     const params = new URLSearchParams();
+    Object.entries(updated).forEach(([key, val]) => {
+      if (val) params.set(key, String(val));
+    });
+    params.set("userId", user._id);
+    params.set("gender", updated.gender);
 
-    if (user.name) params.append("name", user.name);
-    if (user.phone) params.append("phone", user.phone);
-    params.append("gender", user.gender || "Male");
-    params.append("age", String(user.age || 20));
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [bookingFor, isLoggedIn, user, pathname, router, setFormData]);
 
-    if (user.email) params.append("email", user.email);
-    if (user.aadhhar) params.append("aadhhar", user.aadhhar);
-
-    params.append("userId", user._id);
-
-    const timer = setTimeout(() => {
-      router.replace(`${pathname}?${params.toString()}`);
-      const isFormComplete =
-        formData.name &&
-        formData.phone?.length === 10 &&
-        formData.gender &&
-        Number(formData.age) > 0 &&
-        formData.email &&
-        formData.aadhhar;
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [choice, token, user, pathname, router]);
-
+  // ────────────────────────────────────────────────
+  //  Auto-advance for logged-in user choosing "someone else"
+  // ────────────────────────────────────────────────
   useEffect(() => {
-    if (token && choice === "other" && isFormComplete) {
-      const params = new URLSearchParams({
-        name: formData.name.trim(),
-        phone: formData.phone,
-        gender: formData.gender,
-        age: formData.age,
-        email: formData.email,
-        passport:formData.passport,
-        aadhhar: formData.aadhhar,
-        userId: String(user?._id),
-        guest: "true",
-      });
+    if (!isLoggedIn || bookingFor !== "someone-else" || !isFormFilledEnough) return;
 
-      const isFormComplete =
-        formData.name &&
-        formData.phone?.length === 10 &&
-        formData.gender &&
-        Number(formData.age) > 0 &&
-        formData.email &&
-        formData.aadhhar;
-    setOtpVerify(token ? true:false);
+    const params = new URLSearchParams({
+      name: formData.name.trim(),
+      phone: formData.phone,
+      gender: formData.gender || "male",
+      age: formData.age,
+      email: formData.email.trim(),
+      aadhhar: formData.aadhhar.trim(),
+      passport: formData.passport?.trim() || "",
+      userId: user?._id || "",
+      guest: "true",
+    });
 
-      router.replace(`${pathname}?${params.toString()}`);
-    }
-  }, [isFormComplete, choice, token, formData, next, pathname, router]);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    setOtpVerify(true);
+    // next(); // uncomment if you want to auto-go to next step
+  }, [isFormFilledEnough, bookingFor, isLoggedIn, formData, user, pathname, router, setOtpVerify]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-
-    if (name === "phone" || name === "age") {
-      if (value && !/^\d*$/.test(value)) return;
-    } 
-
-    
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === "phone" ? value.slice(0, 10) : value,
-    }));
-  };
-
-  const handleRegister = async () => {
-    if (!shouldSendOtp || !isFormComplete) return;
-
-    setLoading(true);
-
-    try {
-      const response = await axios.post(`${API_BASE_URL}/register-via-number`, {
-        name: formData.name.trim(),
-        phone: formData.phone,
-        email: formData.email.trim(),
-        passport:formData.passport.trim(),
-        aadhhar: formData.aadhhar.trim(),
-        age: formData.age,
-        gender: formData.gender,
-        termsAccepted: true,
-      });
-
-      if (response.data.success) {
-        setUserId(response.data.userId);
-        setOpenOtpModal(true);
-        toast.success("OTP sent to your phone!");
-      }
-    } catch (err) {
-      const message =
-        err instanceof AxiosError
-          ? err.response?.data?.message || "Failed to send OTP"
-          : "Something went wrong";
-      toast.error(message);
-      setFormData((prev) => ({ ...prev, phone: "" }));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (otp.length !== 6) {
-      toast.error("Please enter a valid 6-digit OTP");
+  // ────────────────────────────────────────────────
+  //  Auto-trigger registration + OTP when not logged in
+  // ────────────────────────────────────────────────
+  useEffect(() => {
+    if (isLoggedIn || !isFormFilledEnough || showOtpModal || userIdFromRegister || isSubmitting) {
       return;
     }
 
+    const timeout = setTimeout(() => {
+      sendRegistrationAndOtp();
+    }, 900);
+
+    return () => clearTimeout(timeout);
+  }, [isFormFilledEnough, isLoggedIn, showOtpModal, userIdFromRegister, isSubmitting]);
+
+  const updateField = (name: string, value: string) => {
+    let cleaned = value;
+
+    if (name === "phone") {
+      cleaned = value.replace(/\D/g, "").slice(0, 10);
+    } else if (name === "age") {
+      cleaned = value.replace(/\D/g, "").slice(0, 3);
+    } else if (name === "aadhhar" || name === "passport") {
+      cleaned = value.replace(/\D/g, "").slice(0, 12);
+    }
+
+    setFormData((prev: any) => ({ ...prev, [name]: cleaned }));
+  };
+
+  const sendRegistrationAndOtp = async () => {
+    if (isLoggedIn || !isFormFilledEnough || isSubmitting) return;
+
+    setIsSubmitting(true);
+
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/verify-otp-via-number`,
-        {
-          phone: formData.phone,
-          otp: otp.trim(),
-        }
-      );
+      const payload = {
+        name: formData.name.trim(),
+        phone: formData.phone,
+        email: formData.email.trim(),
+        aadhhar: formData.aadhhar.trim(),
+        passport: formData.passport?.trim() || undefined,
+        age: Number(formData.age),
+        gender: formData.gender || "male",
+        termsAccepted: true,
+      };
 
-      if (response.data.success) {
-        toast.success("Login successful!");
+      const resp = await axios.post(`${API_BASE_URL}/register-via-number`, payload);
 
-        const newToken = response.data.token;
+      if (resp.data.success) {
+        setUserIdFromRegister(resp.data.userId);
+        setShowOtpModal(true);
+        toast.success("OTP sent to your mobile number");
+      }
+    } catch (err: any) {
+      const msg = err.response?.data?.message ?? "Failed to send OTP. Please try again.";
+      toast.error(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
+  const verifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otp.length !== 6 || isSubmitting) return;
+
+    setIsSubmitting(true);
+
+    try {
+      const resp = await axios.post(`${API_BASE_URL}/verify-otp-via-number`, {
+        phone: formData.phone,
+        otp: otp.trim(),
+      });
+
+      if (resp.data.success) {
+        const newToken = resp.data.token;
         if (newToken) {
           Cookies.set("token", newToken, { expires: 7 });
           setToken(newToken);
         }
 
+        toast.success("Phone number verified successfully!");
+
         const params = new URLSearchParams({
           name: formData.name.trim(),
           phone: formData.phone,
-          gender: formData.gender,
+          gender: formData.gender || "male",
           age: formData.age,
-                  passport:formData.passport,
-
-          email: formData.email,
-          aadhhar: formData.aadhhar,
-          userId: response.data.userId || userId || "",
+          email: formData.email.trim(),
+          aadhhar: formData.aadhhar.trim(),
+          passport: formData.passport?.trim() || "",
+          userId: resp.data.userId || userIdFromRegister || "",
         });
 
-        router.replace(`${pathname}?${params.toString()}`);
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+        setOtpVerify(true);
+        setShowOtpModal(false);
+        // next(); // optional auto-next
       }
-      setOtpVerify(true);
-      setOpenOtpModal(false);
-    } catch (err) {
-      const message =
-        err instanceof AxiosError
-          ? err.response?.data?.message || "Invalid or expired OTP"
-          : "Verification failed";
-      toast.error(message);
+    } catch (err: any) {
+      const msg = err.response?.data?.message ?? "Invalid or expired OTP";
+      toast.error(msg);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleResendOtp = async () => {
-    setLoading(true);
-    await handleRegister();
-  };
+  const isFormLocked = isLoggedIn && bookingFor === "myself";
 
   return (
-    <>
-      <div className="space-y-6">
-        <h2 className="text-2xl font-semibold text-gray-800">
-          Patient Details
-        </h2>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
+      <div className="text-center mb-10">
+        <h2 className="text-3xl font-bold text-gray-900 mb-3">Patient Details</h2>
+        <p className="text-gray-600">
+          Please fill in the correct information for a smooth booking experience.
+        </p>
+      </div>
 
-        {token && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-5 mb-6">
-            <Label className="text-base font-medium mb-4 block">
-              Who are you booking for?
-            </Label>
+      {/* ─── Logged-in user choice ─── */}
+      {isLoggedIn && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8 shadow-sm">
+          <p className="font-medium text-lg mb-5 text-gray-800">
+            Who are you booking the consultation for?
+          </p>
 
-            <RadioGroup
-              value={choice}
-              onValueChange={(val) => setChoice(val as "same" | "other")}
+          <div className="grid sm:grid-cols-2 gap-4">
+            <button
+              type="button"
+              onClick={() => setBookingFor("myself")}
+              className={`p-5 rounded-xl border-2 text-left transition-all ${
+                bookingFor === "myself"
+                  ? "border-blue-600 bg-blue-50 ring-2 ring-blue-200"
+                  : "border-gray-300 hover:border-blue-400"
+              }`}
             >
-              <div className="flex items-center space-x-3 mb-4">
-                <RadioGroupItem value="other" id="same" />
-                <Label htmlFor="other" className="text-base cursor-pointer">
-                  Myself (use my existing details)
-                </Label>
-              </div>
+              <div className="font-semibold">Myself</div>
+              <div className="text-sm text-gray-600 mt-1">Use my saved profile details</div>
+            </button>
 
-              <div className="flex items-center space-x-3">
-                <RadioGroupItem value="other" id="other" />
-                <Label htmlFor="other" className="text-base cursor-pointer">
-                  Someone else (new patient)
-                </Label>
-              </div>
-            </RadioGroup>
+            <button
+              type="button"
+              onClick={() => setBookingFor("someone-else")}
+              className={`p-5 rounded-xl border-2 text-left transition-all ${
+                bookingFor === "someone-else"
+                  ? "border-blue-600 bg-blue-50 ring-2 ring-blue-200"
+                  : "border-gray-300 hover:border-blue-400"
+              }`}
+            >
+              <div className="font-semibold">Someone else</div>
+              <div className="text-sm text-gray-600 mt-1">New patient / family member</div>
+            </button>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Form Fields */}
-        <div className="grid md:grid-cols-2 gap-6">
+      {/* ─── Main Form ─── */}
+      <div className="bg-white rounded-xl border shadow-sm p-6 md:p-8 space-y-7">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Name */}
           <div>
-            <Label className="block text-sm text-gray-600">Full Name *</Label>
-            <Input
-              name="name"
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Full Name <span className="text-red-600">*</span>
+            </label>
+            <input
+              type="text"
               value={formData.name}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              onChange={(e) => updateField("name", e.target.value)}
               placeholder="Enter full name"
-              disabled={token && choice === "same"}
+              disabled={isFormLocked}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
           </div>
 
+          {/* Phone */}
           <div>
-            <Label className="block text-sm text-gray-600">
-              Mobile Number *
-            </Label>
-            <Input
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="10 digit mobile number"
-              maxLength={10}
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Mobile Number <span className="text-red-600">*</span>
+            </label>
+            <input
               type="tel"
-              disabled={(token && choice === "same") || loading}
+              inputMode="numeric"
+              maxLength={10}
+              value={formData.phone}
+              onChange={(e) => updateField("phone", e.target.value)}
+              placeholder="10-digit mobile number"
+              disabled={isFormLocked || isSubmitting}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
           </div>
 
+          {/* Gender */}
           <div>
-            <Label className="block text-sm text-gray-600">Gender</Label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Gender</label>
             <select
-              name="gender"
-              value={formData.gender}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-     
+              value={formData.gender || "male"}
+              onChange={(e) => updateField("gender", e.target.value)}
+              disabled={isFormLocked}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white disabled:bg-gray-100"
             >
               <option value="male">Male</option>
               <option value="female">Female</option>
@@ -310,119 +303,133 @@ export default function PatientDetailsStep({
             </select>
           </div>
 
+          {/* Age */}
           <div>
-            <Label className="block text-sm text-gray-600">Age *</Label>
-            <Input
-              name="age"
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Age <span className="text-red-600">*</span>
+            </label>
+            <input
+              type="tel"
+              inputMode="numeric"
+              maxLength={3}
               value={formData.age}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Enter Your Age"
-           
+              onChange={(e) => updateField("age", e.target.value)}
+              placeholder="Enter age"
+              disabled={isFormLocked}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100"
             />
           </div>
 
-          <div>
-            <Label className="block text-sm text-gray-600">Email *</Label>
-            <Input
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
+          {/* Email */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Email Address <span className="text-red-600">*</span>
+            </label>
+            <input
               type="email"
-              placeholder="Email address"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            
+              value={formData.email}
+              onChange={(e) => updateField("email", e.target.value)}
+              placeholder="yourname@example.com"
+              disabled={isFormLocked}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100"
             />
           </div>
 
+          {/* Aadhaar */}
           <div>
-            <Label className="block text-sm text-gray-600">
-              Aadhaar Number *
-            </Label>
-            <Input
-              name="aadhhar"
-              value={formData.aadhhar}
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Aadhaar Number <span className="text-red-600">*</span>
+            </label>
+            <input
               type="password"
-              onChange={handleChange}
-              placeholder="XXXX-XXXX-1234"
+              inputMode="numeric"
               maxLength={12}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            
+              value={formData.aadhhar}
+              onChange={(e) => updateField("aadhhar", e.target.value)}
+              placeholder="XXXX-XXXX-XXXX"
+              disabled={isFormLocked}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100"
             />
           </div>
+
+          {/* Passport (optional) */}
           <div>
-            <Label className="block text-sm text-gray-600">
-              Passport Number (Optional)
-            </Label>
-            <Input
-              name="passport"
-              value={formData.passport}
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Passport Number (optional)
+            </label>
+            <input
               type="password"
-              onChange={handleChange}
-              placeholder="XXXX-XXXX"
               maxLength={12}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            
+              value={formData.passport || ""}
+              onChange={(e) => updateField("passport", e.target.value)}
+              placeholder="Enter passport number if available"
+              disabled={isFormLocked}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100"
             />
           </div>
         </div>
 
-        {loading && (
-          <p className="text-center text-blue-600 text-sm animate-pulse">
-            Sending OTP to {formData.phone}...
-          </p>
+        {isSubmitting && !showOtpModal && (
+          <div className="flex items-center justify-center gap-2 text-blue-600 py-4">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span>Sending OTP to {formData.phone}...</span>
+          </div>
         )}
-
-        {/* Auto proceed message for logged-in + other (no OTP) */}
-        {/* {token && choice === "other" && isFormComplete && (
-          <p className="text-center text-green-600 text-lg font-medium">
-            Proceeding with new patient details...
-          </p>
-        )} */}
       </div>
 
-      {/* OTP Modal - Only shows when OTP flow is active */}
-      <Dialog open={openOtpModal} onOpenChange={() => setOpenOtpModal(false)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Enter OTP</DialogTitle>
-          </DialogHeader>
+      {/* ─── OTP Modal ─── */}
+      {showOtpModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div className="p-6 border-b">
+              <h3 className="text-xl font-bold text-gray-900">Verify Phone Number</h3>
+              <p className="mt-2 text-gray-600">
+                Enter the 6-digit code sent to <strong>{formData.phone}</strong>
+              </p>
+            </div>
 
-          <div className="py-4 space-y-6">
-            <p className="text-center text-sm text-gray-600">
-              We've sent a 6-digit OTP to <strong>{formData.phone}</strong>
-            </p>
-
-            <form onSubmit={handleVerifyOtp}>
-              <Input
-                value={otp}
-                onChange={(e) =>
-                  setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
-                }
-                placeholder="000000"
-                className="text-center text-2xl tracking-widest"
+            <form onSubmit={verifyOtp} className="p-6 space-y-6">
+              <input
+                type="text"
+                inputMode="numeric"
                 maxLength={6}
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                placeholder="------"
                 autoFocus
+                className="w-full text-center text-4xl tracking-[1.2em] font-mono py-4 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
               />
 
-              <Button type="submit" className="w-full mt-6">
-                Verify & Continue
-              </Button>
-            </form>
-
-            <p className="text-center text-sm text-gray-600">
-              Didn't receive OTP?{" "}
               <button
-                onClick={handleResendOtp}
-                disabled={loading}
-                className="text-blue-600 font-medium hover:underline"
+                type="submit"
+                disabled={isSubmitting || otp.length !== 6}
+                className="w-full py-3.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
               >
-                {loading ? "Sending..." : "Resend"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  "Verify & Continue"
+                )}
               </button>
-            </p>
+
+              <div className="text-center text-sm text-gray-600">
+                Didn't receive code?{" "}
+                <button
+                  type="button"
+                  onClick={sendRegistrationAndOtp}
+                  disabled={isSubmitting}
+                  className="text-blue-600 font-medium hover:underline disabled:opacity-50"
+                >
+                  Resend OTP
+                </button>
+              </div>
+            </form>
           </div>
-        </DialogContent>
-      </Dialog>
-    </>
+        </div>
+      )}
+    </div>
   );
 }

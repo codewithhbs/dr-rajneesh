@@ -310,46 +310,81 @@ const isDateAvailable = (date) => {
 
 const handleBookingSubmit = useCallback(
   async (data: BookingFormData) => {
-    console.log("Booking submission started", {
-      timestamp: new Date().toISOString(),
-      formData: data,
-      sessions,
-    });
-
     setIsProcessing(true);
+
     const cookieToken = Cookies.get("token");
-    let bookingId = null;
-    let paymentId = null;
+    let bookingId: string | null = null;
+    let paymentId: string | null = null;
+
+    const reportPaymentFailure = async (
+      bookingIdParam: string,
+      paymentIdParam: string | null,
+      errorDescription: string
+    ) => {
+      try {
+        await axios.post(
+          `${API_ENDPOINT}/user/bookings/payment-failed`,
+          {
+            booking_id: bookingIdParam,
+            payment_id: paymentIdParam,
+            error_description: errorDescription,
+            cancellation_reason: "payment_initiation_failed",
+            timestamp: new Date().toISOString(),
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${cookieToken}`,
+            },
+          }
+        );
+      } catch (_) {}
+    };
 
     try {
-      // Format date
-      const formattedDate = data?.date
+      if (!cookieToken) {
+        throw new Error("Authentication token missing");
+      }
+
+      if (!data?.patient_details?.name) {
+        throw new Error("Patient name is required");
+      }
+
+      if (!data?.patient_details?.email) {
+        throw new Error("Patient email is required");
+      }
+
+      if (!data?.patient_details?.phone) {
+        throw new Error("Patient phone is required");
+      }
+
+      if (!data?.service_id) {
+        throw new Error("Service is required");
+      }
+
+      if (!data?.clinic_id) {
+        throw new Error("Clinic is required");
+      }
+
+      if (!data?.date) {
+        throw new Error("Date is required");
+      }
+
+      if (!data?.time) {
+        throw new Error("Time is required");
+      }
+
+      const formattedDate = data.date
         ? format(new Date(data.date), "yyyy-MM-dd")
         : "";
 
-      console.log("Date formatted", {
-        originalDate: data?.date,
-        formattedDate,
-      });
-
-      // Calculate payment details
       const paymentDetails = calculatePricing(data);
-      console.log("Payment details calculated", paymentDetails);
 
-      // Prepare complete payload
       const completeData = {
         ...data,
         date: formattedDate,
         paymentDetails,
         sessions,
       };
-
-      console.log("Complete payload prepared", {
-        dataKeys: Object.keys(completeData),
-        paymentAmount: paymentDetails?.amount || "N/A",
-      });
-
-      
 
       const response = await axios.post(
         `${API_ENDPOINT}/user/bookings/sessions`,
@@ -361,250 +396,94 @@ const handleBookingSubmit = useCallback(
         }
       );
 
-      console.log("Booking API response received", {
-        status: response.status,
-        success: response.data?.success,
-        dataKeys: Object.keys(response.data?.data || {}),
-      });
-
-      const { booking, payment } = response.data?.data;
-      bookingId = booking?.id;
-      paymentId = payment?.id;
-
-      console.log("Booking and payment IDs extracted", {
-        bookingId,
-        paymentId,
-        paymentAmount: payment?.amount,
-        paymentKey: payment?.key,
-      });
-
-      if (response.data.success) {
-        // Show processing modal
-        setPaymentModal({ isOpen: true, status: "processing" });
-        console.log("Payment modal set to processing");
-
-        // Construct callback URL with enhanced logging parameters
-        const callbackUrl = `${API_ENDPOINT}/user/bookings/verify-payment?&booking_id=${bookingId}&payment_id=${paymentId}`;
-
-        console.log("Callback URL constructed", { callbackUrl });
-
-        const options: unknown = {
-          key: payment?.key || "rzp_test_demo_key",
-          amount: payment?.amount * 100,
-          currency: "INR",
-          name: "🏥 Dr. Rajneesh Kant Clinic",
-          description: `${dbService?.service_name} - ${sessions} Session(s)`,
-          order_id: payment?.orderId || undefined,
-          redirect: true,
-          callback_url: callbackUrl,
-
-          prefill: {
-            name: data.patient_details.name,
-            email: data.patient_details.email,
-            contact: data.patient_details.phone,
-          },
-          theme: {
-            color: "#3B82F6",
-          },
-          handler: function (response: unknown) {
-            console.log("Razorpay payment success handler", {
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_signature: response.razorpay_signature
-                ? "present"
-                : "missing",
-              timestamp: new Date().toISOString(),
-            });
-
-            // Log successful payment and redirect
-            console.log("Payment completed successfully, redirecting...");
-
-            // Redirect to success page or callback URL
-            window.location.href =
-              callbackUrl +
-              `&razorpay_payment_id=${response.razorpay_payment_id}&razorpay_order_id=${response.razorpay_order_id}&razorpay_signature=${response.razorpay_signature}`;
-          },
-          modal: {
-            ondismiss: async () => {
-              console.log("Payment modal dismissed by user", {
-                bookingId,
-                paymentId,
-                timestamp: new Date().toISOString(),
-              });
-
-              try {
-                console.log("📡 Reporting payment cancellation to server");
-
-                const cancellationResponse = await axios.post(
-                  `${API_ENDPOINT}/user/bookings/payment-failed`,
-                  {
-                    booking_id: bookingId,
-                    payment_id: paymentId,
-                    error_description: "Payment was cancelled by the user.",
-                    cancellation_reason: "user_dismissed_modal",
-                    timestamp: new Date().toISOString(),
-                  },
-                  {
-                    headers: {
-                      Authorization: `Bearer ${cookieToken}`,
-                    },
-                  }
-                );
-
-                console.log("✅ Payment cancellation reported successfully", {
-                  status: cancellationResponse.status,
-                  data: cancellationResponse.data,
-                });
-
-                setPaymentModal({
-                  isOpen: true,
-                  status: "failed",
-                  error: "Payment was cancelled by the user.",
-                });
-              } catch (err: unknown) {
-                console.error("🚨 Error reporting payment cancellation:", {
-                  error: err.message,
-                  status: err.response?.status,
-                  data: err.response?.data,
-                  timestamp: new Date().toISOString(),
-                });
-
-                setPaymentModal({
-                  isOpen: true,
-                  status: "failed",
-                  error: "Payment cancelled. Could not notify server.",
-                });
-              }
-            },
-            escape: false,
-            backdropclose: false,
-          },
-          retry: {
-            enabled: true,
-            max_count: 3,
-          },
-          timeout: 600, // 10 minutes timeout
-          remember_customer: false,
-        };
-
-        // Restrict to card payment if selected
-        if (data.payment_method === "card") {
-          console.log("Restricting payment to card only");
-          options.method = {
-            card: true,
-            netbanking: false,
-            upi: false,
-            wallet: false,
-            emi: false,
-            paylater: false,
-          };
-        }
-
-        console.log("🎛️ Razorpay options configured", {
-          key: options.key,
-          amount: options.amount,
-          currency: options.currency,
-          paymentMethod: data.payment_method,
-          hasOrderId: !!options.order_id,
-          callbackUrl: options.callback_url,
-        });
-
-        // Add error handling for Razorpay initialization
-        try {
-          // Check if Razorpay is loaded
-          if (!(window as unknown).Razorpay) {
-            throw new Error("Razorpay SDK not loaded");
-          }
-
-          const rzp = new (window as unknown).Razorpay(options);
-
-          // Add error handler for Razorpay
-          rzp.on("payment.failed", function (response: unknown) {
-            console.error("Razorpay payment failed", {
-              error: response.error,
-              timestamp: new Date().toISOString(),
-            });
-
-            // Report payment failure
-            reportPaymentFailure(
-              bookingId,
-              paymentId,
-              response.error.description || "Payment failed",
-              cookieToken
-            );
-          });
-
-          console.log("🚀 Opening Razorpay checkout");
-          rzp.open();
-        } catch (razorpayError: unknown) {
-          console.error("Razorpay initialization failed:", {
-            error: razorpayError.message,
-            timestamp: new Date().toISOString(),
-          });
-
-          await reportPaymentFailure(
-            bookingId,
-            paymentId,
-            "Razorpay initialization failed",
-            cookieToken
-          );
-
-          setPaymentModal({
-            isOpen: true,
-            status: "failed",
-            error: "Payment gateway failed to initialize. Please try again.",
-          });
-        }
-      } else {
-        console.error(
-          "Booking API returned unsuccessful response",
-          response.data
-        );
+      if (!response?.data?.success) {
         throw new Error(
-          response.data?.message || "Booking request was not successful"
+          response?.data?.message || "Booking request was not successful"
         );
       }
-    } catch (error: unknown) {
-      console.error("Booking submission error:", {
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data,
-        bookingId,
-        paymentId,
-        timestamp: new Date().toISOString(),
-        stack: error.stack,
+
+      console.log(response.data)
+      //  const { booking, payuFormHtml } = response.data?.data || {};
+      const { booking, payment, payuFormHtml } = response.data?.data || {};
+
+      bookingId = booking?.id || null;
+      paymentId = payment?.id || null;
+
+      if (!bookingId) {
+        throw new Error("Booking ID not received from server");
+      }
+
+      if (!payuFormHtml) {
+        throw new Error("PayU form not received from server");
+      }
+
+      setPaymentModal({
+        isOpen: true,
+        status: "processing",
+        error: "",
       });
 
-      // Attempt to report payment failure to backend
+       const container = document.createElement("div");
+      container.style.display = "none";
+      container.innerHTML = payuFormHtml;
+
+    document.body.appendChild(container);
+      const form = container.querySelector("form") as HTMLFormElement | null;
+
+  
+      if (!form) {
+        throw new Error("PayU form not found in server response");
+      }
+
+    if (data.payment_method !== "card") {
+        // Remove card payment option
+        const enforce = document.createElement("input");
+        enforce.type = "hidden";
+        enforce.name = "drop_category";
+        enforce.value = "creditcard,debitcard";
+
+        form.appendChild(enforce);
+      }
+
+      // Restrict to credit card only
+      if (data.payment_method === "card") {
+        const pg = document.createElement("input");
+        pg.type = "hidden";
+        pg.name = "pg";
+        pg.value = "CC";
+
+        const enforce = document.createElement("input");
+        enforce.type = "hidden";
+        enforce.name = "enforce_paymethod";
+        enforce.value = "creditcard";
+
+        form.appendChild(pg);
+        form.appendChild(enforce);
+      }
+
+      form.submit();
+
+
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Something went wrong.";
+
       if (bookingId) {
-        await reportPaymentFailure(
-          bookingId,
-          paymentId,
-          error?.response?.data?.message ||
-            error.message ||
-            "Booking API failed.",
-          cookieToken
-        );
+        await reportPaymentFailure(bookingId, paymentId, errorMessage);
       }
 
       setPaymentModal({
         isOpen: true,
         status: "failed",
-        error:
-          error?.response?.data?.message ||
-          error.message ||
-          "Something went wrong.",
+        error: errorMessage,
       });
     } finally {
       setIsProcessing(false);
-      console.log("🏁 Booking submission process completed", {
-        timestamp: new Date().toISOString(),
-        bookingId,
-        paymentId,
-      });
     }
   },
-  [dbService, sessions, calculatePricing]
+  [sessions, calculatePricing]
 );
 
 const reportPaymentFailure = async (
@@ -952,12 +831,12 @@ if (typeof window !== "undefined") {
                       <Avatar className="w-24 h-24 border-4 border-white shadow-lg">
                         <AvatarImage
                           src={
-                            dbService.service_doctor.doctor_images?.[0]?.url ||
+                            dbService?.service_doctor?.doctor_images?.[0]?.url ||
                             drImageurl
                           }
                         />
                         <AvatarFallback className="bg-purple-200 text-purple-800 text-xl font-bold">
-                          {dbService.service_doctor.doctor_name
+                          {dbService?.service_doctor?.doctor_name
                             .split(" ")
                             .map((n) => n[0])
                             .join("")}
@@ -967,7 +846,7 @@ if (typeof window !== "undefined") {
                       {/* Doctor Info */}
                       <div className="flex-1">
                         <h3 className="text-2xl font-bold text-gray-900">
-                          {dbService.service_doctor.doctor_name}
+                          {dbService?.service_doctor?.doctor_name}
                         </h3>
 
                         {/* Specializations */}
@@ -995,7 +874,7 @@ if (typeof window !== "undefined") {
                           <div className="flex items-center gap-1">
                             {Array.from({ length: 5 }).map((_, i) => {
                               const rating =
-                                dbService.service_doctor.doctor_ratings;
+                                dbService?.service_doctor?.doctor_ratings;
                               const fillPercent = Math.min(
                                 Math.max(rating - i, 0),
                                 1
@@ -1020,7 +899,7 @@ if (typeof window !== "undefined") {
                             })}
 
                             <span className="ml-2 font-semibold text-lg text-gray-900">
-                              {dbService.service_doctor.doctor_ratings.toFixed(
+                              {dbService?.service_doctor?.doctor_ratings.toFixed(
                                 1
                               )}
                               /5
@@ -1033,9 +912,9 @@ if (typeof window !== "undefined") {
                         </div>
 
                         {/* Special Note */}
-                        {dbService.service_doctor.unknown_special_note && (
+                        {dbService?.service_doctor?.unknown_special_note && (
                           <p className="text-gray-600 mt-3 italic bg-gray-50 p-3 rounded-lg shadow-sm">
-                            💡 {dbService.service_doctor.unknown_special_note}
+                            💡 {dbService?.service_doctor?.unknown_special_note}
                           </p>
                         )}
                       </div>

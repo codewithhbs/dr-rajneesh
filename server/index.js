@@ -95,7 +95,7 @@ app.use(express.json({ limit: '500kb' }));
 app.use(express.urlencoded({ extended: true, limit: '500kb' }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
 
-setupBullBoard(app);
+// setupBullBoard(app);
 if (NODE_ENV === 'production') {
   app.set('trust proxy', 1);
 }

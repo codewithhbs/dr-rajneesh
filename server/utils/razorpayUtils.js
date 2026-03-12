@@ -55,54 +55,6 @@ class RazorpayUtils {
     }
   }
 
-  // old code
-
-  // async verifyPayment(paymentData) {
-  //   try {
-  //     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = paymentData;
-      
-  //     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-  //       throw new Error('Missing required payment verification parameters');
-  //     }
-
-  //     // Creating a signature for verification
-  //     const hmac = crypto.createHmac('sha256', this.instance.key_secret);
-  //     hmac.update(`${razorpay_order_id}|${razorpay_payment_id}`);
-  //     const generatedSignature = hmac.digest('hex');
-      
-  //     // Comparing signatures
-  //     const isValid = generatedSignature === razorpay_signature;
-      
-  //     if (isValid) {
-  //       // Fetch payment details from Razorpay
-  //       const payment = await this.instance.payments.fetch(razorpay_payment_id);
-        
-  //       return {
-  //         success: true,
-  //         verified: true,
-  //         payment,
-  //       };
-  //     } else {
-  //       return {
-  //         success: false,
-  //         verified: false,
-  //         error: 'Payment signature verification failed',
-  //       };
-  //     }
-  //   } catch (error) {
-  //     return {
-  //       success: false,
-  //       verified: false,
-  //       error: error.message || 'Payment verification failed',
-  //     };
-  //   }
-  // }
-
-
-
-
-
-
 
   async verifyPayment(paymentData, bookingDetails) {
   try {
