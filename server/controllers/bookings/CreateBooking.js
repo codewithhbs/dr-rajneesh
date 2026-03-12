@@ -29,7 +29,7 @@ const razorpay = new RazorpayUtils(
 const payu = new PayUUtils(
     process.env.PAYU_KEY,
     process.env.PAYU_KEY,
-    "LIVE" // or "LIVE"
+    "PROD" // or "LIVE"
 );
 
 exports.createAorderForSession = async (req, res) => {
