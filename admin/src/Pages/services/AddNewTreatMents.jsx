@@ -149,7 +149,7 @@ const AddNewTreatMents = () => {
         service_per_session_discount_price: service.service_per_session_discount_price || 0,
         service_per_session_discount_percentage: service.service_per_session_discount_percentage || 0,
         service_tag: service.service_tag || "",
-        service_doctor: service.service_doctor?._id || "",
+        service_doctor: service?.service_doctor??._id || "",
         service_available_at_clinics: service.service_available_at_clinics?.map((c) => c._id) || [],
         position: service.position || 0,
         images: [],

@@ -494,7 +494,7 @@ const Treatments: React.FC<{ slug: string }> = ({ slug }) => {
                       Treated By Expert
                     </p>
                     <p className="text-sm text-gray-600">
-                      Dr. {service.service_doctor.doctor_name}
+                      Dr. {service?.service_doctor?.doctor_name}
                     </p>
                   </div>
                 </div>
@@ -539,13 +539,13 @@ const Treatments: React.FC<{ slug: string }> = ({ slug }) => {
                   <Avatar className="w-24 h-24 md:w-28 md:h-28 border-4 border-blue-300 shadow-xl mx-auto">
                     <AvatarImage
                       src={
-                        service.service_doctor.doctor_images[0] || drImageurl
+                        service?.service_doctor?.doctor_images[0] || drImageurl
                       }
-                      alt={service.service_doctor.doctor_name}
+                      alt={service?.service_doctor?.doctor_name}
                       className="object-cover"
                     />
                     <AvatarFallback className="text-xl md:text-2xl font-bold bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-700">
-                      {service.service_doctor.doctor_name
+                      {service?.service_doctor?.doctor_name
                         .split(" ")
                         .map((n) => n[0])
                         .join("")}
@@ -559,10 +559,10 @@ const Treatments: React.FC<{ slug: string }> = ({ slug }) => {
                 </div>
 
                 <h3 className="text-xl font-bold text-gray-900 mt-4">
-                  Dr. {service.service_doctor.doctor_name}
+                  Dr. {service?.service_doctor?.doctor_name}
                 </h3>
                 <p className="py-4">
-                  {service.service_doctor.specialization.map((spec, index) => {
+                  {service?.service_doctor?.specialization.map((spec, index) => {
                     // Clean unwanted quotes/brackets
                     const cleanedSpec = spec.replace(/['"\[\]\n]/g, "").trim();
                     return (
@@ -579,24 +579,24 @@ const Treatments: React.FC<{ slug: string }> = ({ slug }) => {
                 <div className="flex items-center justify-center gap-2 mb-3">
                   <div className="flex items-center gap-1 text-yellow-400">
                     {renderStars(
-                      Math.floor(service.service_doctor.doctor_ratings)
+                      Math.floor(service?.service_doctor?.doctor_ratings)
                     )}
                   </div>
                   <span className="font-semibold text-[#1B68FF]">
-                    {service.service_doctor.doctor_ratings}/5
+                    {service?.service_doctor?.doctor_ratings}/5
                   </span>
                 </div>
 
                 {/* Status */}
                 <div className="flex justify-center mt-3">
                   <Badge
-                    className={`px-4 py-1 text-xs font-semibold rounded-lg shadow-md flex items-center gap-1 transition-all duration-300 ${service.service_doctor.doctor_status === "Booking takes"
+                    className={`px-4 py-1 text-xs font-semibold rounded-lg shadow-md flex items-center gap-1 transition-all duration-300 ${service?.service_doctor?.doctor_status === "Booking takes"
                       ? "bg-gradient-to-r from-green-400 to-green-500 text-white"
                       : "bg-gray-200 text-gray-800"
                       }`}
                   >
                     <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                    {service.service_doctor.doctor_status}
+                    {service?.service_doctor?.doctor_status}
                   </Badge>
                 </div>
               </div>
@@ -608,7 +608,7 @@ const Treatments: React.FC<{ slug: string }> = ({ slug }) => {
                   <span className="text-dark">Specializations</span>
                 </h4>
                 <div className="flex flex-wrap gap-2">
-                  {service.service_doctor.specialization.map((spec, index) => {
+                  {service?.service_doctor?.specialization.map((spec, index) => {
                     // Clean unwanted quotes/brackets
                     const cleanedSpec = spec.replace(/['"\[\]\n]/g, "").trim();
                     return (
@@ -630,7 +630,7 @@ const Treatments: React.FC<{ slug: string }> = ({ slug }) => {
                   <span className="text-gray-900">Languages</span>
                 </h4>
                 <div className="flex flex-wrap gap-2">
-                  {service.service_doctor.languagesSpoken.map((lang, index) => {
+                  {service?.service_doctor?.languagesSpoken.map((lang, index) => {
                     // Clean any unwanted quotes or brackets
                     const cleanedLang = lang.replace(/['"\[\]\n]/g, "").trim();
                     return (
