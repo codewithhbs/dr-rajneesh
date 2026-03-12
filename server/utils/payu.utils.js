@@ -11,7 +11,7 @@ class PayUUtils {
 
     this.key = key;
     this.salt = salt;
-    this.env = env.toUpperCase() === "LIVE" ? "LIVE" : "TEST";
+    this.env = env.toUpperCase() === "PROD" ? "PROD" : "TEST";
 
     this.client = new PayU(
       {
