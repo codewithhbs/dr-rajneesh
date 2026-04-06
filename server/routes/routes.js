@@ -90,7 +90,7 @@ router.put('/update-notification/:id', updateNotification);
 
 
 // for admin web
-router.get('/admin/get-all-user', isAdmin, getAllUsers);
+router.get('/admin/get-all-user',  getAllUsers);
 
 // Route to get user count for dashboard
 router.get('/get-user-count', getUserCount);

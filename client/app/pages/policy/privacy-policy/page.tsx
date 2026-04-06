@@ -9,11 +9,12 @@ const Page = () => {
             <section className="max-w-4xl mx-auto px-4 py-8 text-gray-800">
                 <h1 className="text-3xl font-bold text-teal-600 mb-4">Privacy Policy</h1>
                 <p className="mb-4">
-                    At <strong>Dr. Rajneesh Kant Clinic</strong>, your privacy is our priority. Located in Mumbai, we are a top-rated establishment in the field of Orthopedic care, servicing patients both locally and from other parts of the city.
+                    At <strong>Dr. Rajneesh Kant Clinic</strong>, your privacy is our priority.Located in Mumbai and Patna. 
+we are a renowned establishment serving all the patients national and internationally. 
                 </p>
 
                 <p className="mb-4">
-                    We offer comprehensive medical services including appointment booking, patient profile creation, medical record management, and secure online payment integration — all through our website. Our goal is to ensure a seamless and secure user experience.
+                  We offer comprehensive chiropractic and physiotherapy treatments, appointment booking, patients profile creation, medical records and secure online payment integration. All through our web and app. Our goal is to ensure a seamless and secure user freindly experience.
                 </p>
 
                 <h2 className="text-2xl font-semibold text-gray-700 mt-6 mb-3">Why Patients Trust Us</h2>

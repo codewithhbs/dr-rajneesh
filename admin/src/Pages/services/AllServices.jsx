@@ -140,7 +140,7 @@ const AllServices = () => {
         service.service_small_desc
           .toLowerCase()
           .includes(searchTerm.toLowerCase()) ||
-        (service?.service_doctor??.doctor_name || "")
+        (service?.service_doctor?.doctor_name || "")
           .toLowerCase()
           .includes(searchTerm.toLowerCase())
     );
@@ -480,29 +480,30 @@ const AllServices = () => {
                         </div>
                       </TableCell>
 
-                      <TableCell>
-                        {service?.service_doctor? ? (
-                          <div className="flex items-center gap-3">
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium truncate">
-                                {service?.service_doctor.doctor_name}
-                              </p>
-                              {service?.service_doctor.doctor_ratings && (
-                                <div className="flex items-center gap-1">
-                                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                                  <span className="text-xs text-muted-foreground">
-                                    {service?.service_doctor.doctor_ratings}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">
-                            No doctor assigned
-                          </span>
-                        )}
-                      </TableCell>
+        <TableCell>
+  {service?.service_doctor ? (
+    <div className="flex items-center gap-3">
+      <div className="min-w-0">
+        <p className="text-sm font-medium truncate">
+          {service.service_doctor?.doctor_name || "Unknown Doctor"}
+        </p>
+
+        {service.service_doctor?.doctor_ratings ? (
+          <div className="flex items-center gap-1">
+            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+            <span className="text-xs text-muted-foreground">
+              {service.service_doctor.doctor_ratings}
+            </span>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  ) : (
+    <span className="text-muted-foreground">
+      No doctor assigned
+    </span>
+  )}
+</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4 text-muted-foreground" />
@@ -799,7 +800,7 @@ const ServiceDetails = ({ service }) => {
       </div>
 
       {/* Doctor Information */}
-      {service?.service_doctor? && (
+      {service?.service_doctor && (
         <div className="bg-white shadow-md rounded-xl p-5">
           <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
             Doctor Information
