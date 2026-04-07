@@ -19,7 +19,7 @@ we are a renowned establishment serving all the patients national and internatio
 
                 <h2 className="text-2xl font-semibold text-gray-700 mt-6 mb-3">Why Patients Trust Us</h2>
                 <ul className="list-disc list-inside space-y-2">
-                    <li>Experienced orthopedic and osteopathic doctors</li>
+                    <li>Experienced chiropractic doctors</li>
                     <li>Advanced physiotherapy and manual therapy equipment</li>
                     <li>Certified professional therapists</li>
                     <li>Friendly and compassionate staff</li>

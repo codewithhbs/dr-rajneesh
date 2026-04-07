@@ -26,8 +26,8 @@ const AboutUs = () => {
   const services = [
     {
       icon: <Stethoscope className="w-6 h-6" />,
-      title: "Orthopedic Care",
-      description: "Comprehensive orthopedic treatments for bone and joint disorders",
+      title: "chiropractic Care",
+      description: "Comprehensive chiropractic treatments for bone and joint disorders",
       gradient: "from-blue-400 to-cyan-400",
     },
     {
@@ -36,12 +36,7 @@ const AboutUs = () => {
       description: "Expert spinal adjustments and alignment therapy",
       gradient: "from-purple-400 to-pink-400",
     },
-    {
-      icon: <Heart className="w-6 h-6" />,
-      title: "Osteopathic Medicine",
-      description: "Holistic approach to musculoskeletal health",
-      gradient: "from-green-400 to-emerald-400",
-    },
+ 
     {
       icon: <Zap className="w-6 h-6" />,
       title: "Physiotherapy",
@@ -133,7 +128,7 @@ const AboutUs = () => {
                   </Badge>
                   <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-6">Back To Nature Spine Clinic</h2>
                   <p className="text-gray-600 text-lg leading-relaxed mb-6">
-                    Dr. Rajneesh Kant is a top player in the category of Orthopedic Doctors. This well-known
+                    Dr. Rajneesh Kant is a top player in the category of chiropractic Doctors. This well-known
                     establishment acts as a one-stop destination servicing customers both locally and from other
                     regions.
                   </p>
@@ -184,7 +179,7 @@ const AboutUs = () => {
                   👨‍⚕️ Meet Our Expert
                 </Badge>
                 <h2 className="text-2xl sm:text-4xl font-bold text-gray-800 mb-4">Dr. Rajneesh Kant</h2>
-                <p className="text-xl text-gray-600">Leading Orthopedic Doctor, Osteopath & Chiropractor</p>
+                <p className="text-xl text-gray-600">Leading chiropractic Doctor, Osteopath & Chiropractor</p>
               </div>
               <div className="grid md:grid-cols-2 text-center md:text-start gap-8 lg:gap-12">
                 <div>
