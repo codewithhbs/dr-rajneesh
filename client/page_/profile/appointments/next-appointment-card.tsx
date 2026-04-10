@@ -169,14 +169,14 @@ const NextAppointmentCard: React.FC<NextAppointmentCardProps> = ({
                 </Link>
 
                 {/* Reschedule Booking */}
-                <Link  href={`/pages/reschedule-booking/${nextAppointment?.treatment_id?.service_slug}/${nextAppointment?.booking?._id}`} className="w-full sm:w-auto">
+                {/* <Link  href={`/pages/reschedule-booking/${nextAppointment?.treatment_id?.service_slug}/${nextAppointment?.booking?._id}`} className="w-full sm:w-auto">
                   <Button
                     variant="outline"
                     className="w-full sm:w-auto border-blue-300 text-blue-700 hover:bg-blue-50"
                   >
                     Reschedule
                   </Button>
-                </Link>
+                </Link> */}
               </div>
             </div>
           </div>
