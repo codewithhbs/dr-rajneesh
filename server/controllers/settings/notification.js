@@ -108,13 +108,12 @@ exports.getAllValidNotifications = async (req, res) => {
 
         // Fetch from MongoDB if cache not available
         const notifications = await Notification.find({
-     
             expiredThis: { $gt: new Date() }
         }).sort({ position: 1 });
 
         if (notifications.length === 0) {
-            return res.status(404).json({
-                success: false,
+            return res.status(200).json({
+                success: true,
                 message: "No valid notifications found",
                 data: null
             });

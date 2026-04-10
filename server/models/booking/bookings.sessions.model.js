@@ -157,7 +157,6 @@ const BookingSessionSchema = new mongoose.Schema({
     // Payment information
     payment_id: {
         type: mongoose.Schema.Types.ObjectId,
-        required: true,
         ref: 'Payment'
     },
 

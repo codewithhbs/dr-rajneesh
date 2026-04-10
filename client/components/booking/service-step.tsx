@@ -1,7 +1,9 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useService } from '@/hooks/use-service';
-import { CheckCircle2 } from 'lucide-react'; // nicer icon than plain Check
+import { CheckCircle2, ArrowRight } from 'lucide-react';
 
 const ServiceStep = () => {
   const { services } = useService();
@@ -20,7 +22,6 @@ const ServiceStep = () => {
 
   const handleSelect = (serviceId: string) => {
     setSelectedService(serviceId);
-
     const params = new URLSearchParams(searchParams.toString());
     params.set('service', serviceId);
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
@@ -32,80 +33,189 @@ const ServiceStep = () => {
     return div.textContent || div.innerText || '';
   };
 
-  // Only show services that are meant to be displayed
   const visibleServices = services.filter(
     (service) => service.appointment_status === 'Show'
   );
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
-      <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2 text-center">
-        Our Clinical Services
-      </h2>
-      <p className="text-lg text-gray-600 mb-10 text-center max-w-3xl mx-auto">
-        Select the service that best matches your symptoms or treatment needs. We're here to help restore your mobility and comfort.
-      </p>
-
-      {visibleServices.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
-          No services available at the moment. Please check back soon.
+    <div style={{ 
+      minHeight: "100vh", 
+      background: "#F8F7F4", 
+      padding: "40px 16px", 
+      fontFamily: "system-ui, -apple-system, sans-serif" 
+    }}>
+      <div style={{ maxWidth: 1020, margin: "0 auto" }}>
+        
+        {/* Header */}
+        <div style={{ marginBottom: 40, textAlign: "center" }}>
+          <div style={{ 
+            display: "inline-block", 
+            background: "#E6F1FB", 
+            color: "#185FA5", 
+            fontSize: 12, 
+            fontWeight: 500, 
+            borderRadius: 20, 
+            padding: "4px 14px", 
+            marginBottom: 12, 
+            border: "0.5px solid #85B7EB" 
+          }}>
+            Clinical Services
+          </div>
+          
+          <h2 style={{ 
+            fontSize: 28, 
+            fontWeight: 700, 
+            color: "#2C2C2A", 
+            margin: "0 0 12px 0",
+            lineHeight: 1.2
+          }}>
+            Choose Your Treatment
+          </h2>
+          
+          <p style={{ 
+            color: "#5F5E5A", 
+            fontSize: 15, 
+            maxWidth: 520, 
+            margin: "0 auto" 
+          }}>
+            Select the service that best addresses your condition. 
+            Expert care by Dr. Rajneesh Kant.
+          </p>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-          {visibleServices.map((service) => {
-            const isSelected = selectedService === service._id;
-            const cleanDesc = stripHtml(service.service_desc).trim();
 
-            return (
-              <div
-                key={service._id}
-                onClick={() => handleSelect(service._id)}
-                className={`
-                  group relative bg-white rounded-2xl shadow-md overflow-hidden 
-                  border-2 transition-all duration-300 ease-out
-                  hover:shadow-xl hover:-translate-y-1 cursor-pointer
-                  ${isSelected 
-                    ? 'border-green-500 bg-green-50/40 shadow-green-100' 
-                    : 'border-transparent hover:border-blue-200'
-                  }
-                `}
-              >
-                {/* Selected indicator */}
-                {isSelected && (
-                  <div className="absolute top-4 right-4 z-10">
-                    <CheckCircle2 className="w-8 h-8 text-green-600 fill-white stroke-[3]" />
-                  </div>
-                )}
+        {visibleServices.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "80px 20px" }}>
+            <p style={{ color: "#B4B2A9", fontSize: 16 }}>
+              No services available at the moment.
+            </p>
+          </div>
+        ) : (
+          <div style={{ 
+            display: "grid", 
+            gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", 
+            gap: 24 
+          }}>
+            {visibleServices.map((service) => {
+              const isSelected = selectedService === service._id;
+              const cleanDesc = stripHtml(service.service_desc || service.service_small_desc || '').trim();
 
-                <div className="p-6 md:p-8">
-                  <h3 className="text-xl md:text-2xl font-bold text-blue-900 mb-4 group-hover:text-blue-700 transition-colors">
-                    {service.service_name}
-                  </h3>
+              return (
+                <div
+                  key={service._id}
+                  onClick={() => handleSelect(service._id)}
+                  style={{
+                    background: "#fff",
+                    borderRadius: 16,
+                    border: isSelected ? "2px solid #185FA5" : "0.5px solid #D3D1C7",
+                    padding: "28px 32px",
+                    cursor: "pointer",
+                    transition: "all 0.3s ease",
+                    position: "relative",
+                    height: "100%",
+                  }}
+                  className="hover:shadow-md group"
+                >
+                  {/* Selected Indicator */}
+                  {isSelected && (
+                    <div style={{ 
+                      position: "absolute", 
+                      top: 20, 
+                      right: 20 
+                    }}>
+                      <CheckCircle2 size={28} style={{ color: "#185FA5" }} />
+                    </div>
+                  )}
 
-                  <p className="text-gray-700 leading-relaxed text-base">
-                    {cleanDesc.length > 220
-                      ? cleanDesc.substring(0, 217) + '...'
-                      : cleanDesc}
-                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 20 }}>
+                    {/* Service Name */}
+                    <h3 style={{ 
+                      fontSize: 22, 
+                      fontWeight: 700, 
+                      color: isSelected ? "#185FA5" : "#2C2C2A",
+                      margin: 0,
+                      lineHeight: 1.3
+                    }}>
+                      {service.service_name}
+                    </h3>
 
-                  {/* Optional: subtle "Learn more" or selected label */}
-                  <div className="mt-6">
-                    {isSelected ? (
-                      <span className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-full">
-                        Selected ✓
-                      </span>
-                    ) : (
-                      <span className="text-blue-600 text-sm font-medium group-hover:underline">
-                        Select this service →
-                      </span>
+                    {/* Description */}
+                    <p style={{ 
+                      color: "#5F5E5A", 
+                      lineHeight: 1.6, 
+                      fontSize: 15,
+                      flex: 1,
+                      margin: 0
+                    }}>
+                      {cleanDesc.length > 180 
+                        ? cleanDesc.substring(0, 177) + '...' 
+                        : cleanDesc || service.service_small_desc}
+                    </p>
+
+                    {/* Price Section */}
+                    {service.service_per_session_discount_price && (
+                      <div>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                          <span style={{ 
+                            fontSize: 26, 
+                            fontWeight: 700, 
+                            color: "#185FA5" 
+                          }}>
+                            ₹{service.service_per_session_discount_price.toLocaleString('en-IN')}
+                          </span>
+                          {service.service_per_session_price > service.service_per_session_discount_price && (
+                            <span style={{ 
+                              fontSize: 15, 
+                              color: "#B4B2A9", 
+                              textDecoration: "line-through" 
+                            }}>
+                              ₹{service.service_per_session_price.toLocaleString('en-IN')}
+                            </span>
+                          )}
+                        </div>
+                        <p style={{ fontSize: 12, color: "#B4B2A9", marginTop: 2 }}>
+                          per session
+                        </p>
+                      </div>
                     )}
+
+                    {/* Action */}
+                    <div style={{ 
+                      marginTop: "auto", 
+                      paddingTop: 12,
+                      display: "flex", 
+                      alignItems: "center", 
+                      justifyContent: "space-between",
+                      borderTop: "0.5px solid #EAF3DE"
+                    }}>
+                      <span style={{ 
+                        fontSize: 14, 
+                        fontWeight: 600, 
+                        color: isSelected ? "#185FA5" : "#185FA5" 
+                      }}>
+                        {isSelected ? "✓ Selected" : "Select this service"}
+                      </span>
+                      
+                      {!isSelected && (
+                        <ArrowRight size={20} style={{ color: "#185FA5" }} />
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+        )}
+
+        {/* Bottom Note */}
+        <div style={{ 
+          textAlign: "center", 
+          marginTop: 40, 
+          fontSize: 13, 
+          color: "#B4B2A9" 
+        }}>
+          All treatments are performed by Dr. Rajneesh Kant at our Patna & Mumbai clinics.
         </div>
-      )}
+      </div>
     </div>
   );
 };

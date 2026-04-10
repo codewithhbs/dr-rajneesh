@@ -5,473 +5,1056 @@ const {
     cleanRedisDataFlush,
     flushAllData,
 } = require("../../utils/redis.utils");
-const RazorpayUtils = require("../../utils/razorpayUtils");
 const Bookings = require("../../models/booking/bookings.sessions.model");
+const Clinic = require("../../models/clinic/clinic.model");
+
 const Settings = require("../../models/settings/settings.model");
 const Payment = require("../../models/booking/payment.model"); // Assuming you have a payment model
 const { getBookingsByDateAndTimePeriodOnB } = require("./BookingService");
 const { uploadSingleFile, deleteFileCloud } = require("../../utils/upload");
 const { deleteFile } = require("../../middleware/multer");
 const AddOn = require("../../models/services/addon.model");
-const userModel = require("../../models/users/user.model");
-const PayUUtils = require("../../utils/payu.utils");
 
-const razorpay = new RazorpayUtils(
-    process.env.RAZORPAY_KEY_ID,
-    process.env.RAZORPAY_KEY_SECRET
-);
+const crypto = require("crypto");
 
-// const payu = new PayUUtils(
-//     process.env.PAYU_TEST_KEY,
-//     process.env.PAYU_TEST_SALT,
-//     "TEST" // or "LIVE"
-// );
-const payu = new PayUUtils(
-    process.env.PAYU_KEY,
-    process.env.PAYU_KEY,
-    "PROD" // or "LIVE"
-);
+const { createRazarpayPayment, verifyRazarpayPayment } = require("../../gateways/razorpay");
+const { createPhonePePayment, verifyPhonePePayment } = require("../../gateways/phonepe");
+const PDFDocument = require("pdfkit");
+const path = require("path");
+const fs = require("fs");
+const { sendWhatsApp } = require("../../utils/sendWhatsappMessages");
+const PHONEPE_SALT_KEY = process.env.PHONEPE_SALT_KEY;
 
-exports.createAorderForSession = async (req, res) => {
-  const session = await mongoose.startSession();
+const generateInvoicePDF = async (bookingData) => {
+    return new Promise((resolve, reject) => {
+        try {
+            const {
+                bookingNumber,
+                patient_details,
+                treatment_id,
+                session_booking_for_clinic,
+                SessionDates,
+                totalAmount,
+                amountPerSession,
+                addOns = [],
+                createdAt
+            } = bookingData;
 
-  try {
-    session.startTransaction();
+            const fs = require('fs');
+            const path = require('path');
+            const PDFDocument = require('pdfkit');
 
-    const userId = req.user?._id;
+            // Create invoices directory
+            const invoiceDir = path.join(process.cwd(), "invoices");
+            if (!fs.existsSync(invoiceDir)) {
+                fs.mkdirSync(invoiceDir, { recursive: true });
+            }
 
-    const {
-      payment_method,
-      patient_details,
-      service_id,
-      clinic_id,
-      sessions,
-      date,
-      time,
-      addons = [],
-    } = req.body;
+            const fileName = `invoice_${bookingNumber}_${Date.now()}.pdf`;
+            const filePath = path.join(invoiceDir, fileName);
 
-    console.log("========== BOOKING REQUEST START ==========");
-    console.log("Request body:", req.body);
-    console.log("User ID:", userId);
+            const doc = new PDFDocument({
+                margin: 50,
+                size: 'A4'
+            });
 
-    if (!userId) {
-      console.log("❌ Unauthorized: user not found in request");
-      await session.abortTransaction();
-      return res.status(401).json({
-        success: false,
-        message: "Please login to book a session",
-      });
-    }
+            const stream = fs.createWriteStream(filePath);
+            doc.pipe(stream);
 
-    const redisClient = getRedisClient(req);
+            // ====================== HEADER ======================
+            doc.fontSize(22)
+                .font("Helvetica-Bold")
+                .fillColor('#1e40af')
+                .text("BACK TO NATURE SPINE CLINIC", 50, 40);
 
-    // ─────────────────────────────────────────
-    // Required field validation
-    // ─────────────────────────────────────────
-    const requiredFields = {
-      payment_method,
-      patient_details,
-      clinic_id,
-      sessions,
-      date,
-      time,
-    };
+            doc.fontSize(10)
+                .font("Helvetica")
+                .fillColor('#374151')
+                .text("Dr. Rajneesh Kant", 50, 70)
+                .text("Spine & Pain Management Specialist", 50, 85);
 
-    const missingFields = Object.entries(requiredFields)
-      .filter(([_, value]) => value === undefined || value === null || value === "")
-      .map(([key]) => key);
+            // Clinic Contact
+            doc.fontSize(9)
+                .text("📍 Address: [Clinic Full Address]", 50, 105)
+                .text("📞 Phone: [Clinic Phone Number]", 50, 120)
+                .text("✉️ Email: [clinic@email.com]", 50, 135);
 
-    if (missingFields.length > 0) {
-      console.log("❌ Missing required fields:", missingFields);
-      await session.abortTransaction();
-      return res.status(400).json({
-        success: false,
-        message: `Missing required field(s): ${missingFields.join(", ")}`,
-      });
-    }
+            // Invoice Title & Details (Right Side)
+            doc.fontSize(20)
+                .font("Helvetica-Bold")
+                .fillColor('#1e40af')
+                .text("INVOICE", 400, 45, { align: "right" });
 
-    if (!patient_details?.name || !patient_details?.email || !patient_details?.phone) {
-      console.log("❌ Missing patient details fields");
-      await session.abortTransaction();
-      return res.status(400).json({
-        success: false,
-        message: "Patient name, email and phone are required",
-      });
-    }
+            doc.fontSize(10)
+                .font("Helvetica")
+                .fillColor('#6b7280')
+                .text(`Invoice No: ${bookingNumber}`, 400, 80, { align: "right" })
+                .text(`Date: ${new Date(createdAt).toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric'
+                })}`, 400, 95, { align: "right" });
 
-    // ─────────────────────────────────────────
-    // Fetch service
-    // ─────────────────────────────────────────
-    let findService = null;
+            // Horizontal Line
+            doc.moveTo(50, 160).lineTo(545, 160).lineWidth(1).stroke('#e5e7eb');
 
-    if (service_id) {
-      console.log("🔍 Fetching service:", service_id);
+            // ====================== PATIENT INFO ======================
+            doc.fontSize(11)
+                .font("Helvetica-Bold")
+                .fillColor('#1f2937')
+                .text("Patient Details", 50, 180);
 
-      findService = await Service.findById(service_id).session(session);
+            doc.fontSize(10)
+                .font("Helvetica")
+                .fillColor('#374151')
+                .text(`Name: ${patient_details.name}`, 50, 200)
+                .text(`Email: ${patient_details.email}`, 50, 215)
+                .text(`Phone: ${patient_details.phone}`, 50, 230);
 
-      if (!findService) {
-        console.log("❌ Service not found");
-        await session.abortTransaction();
-        return res.status(404).json({
-          success: false,
-          message: "Service not found",
-        });
-      }
+            // ====================== TREATMENT INFO ======================
+            doc.fontSize(11)
+                .font("Helvetica-Bold")
+                .text("Treatment Details", 300, 180);
 
-      if (findService.service_status !== "Booking Open") {
-        console.log("❌ Service booking is closed");
-        await session.abortTransaction();
-        return res.status(400).json({
-          success: false,
-          message: "Booking is not open for this treatment",
-        });
-      }
-    }
+            doc.fontSize(10)
+                .font("Helvetica")
+                .text(`Service: ${treatment_id.service_name}`, 300, 200)
+                .text(`Sessions Booked: ${bookingData.no_of_session_book || 1}`, 300, 215);
 
-    // ─────────────────────────────────────────
-    // Fetch and validate add-ons
-    // ─────────────────────────────────────────
-    let addOnsData = [];
-    let addOnsTotal = 0;
+            if (SessionDates && SessionDates.length > 0) {
+                const session = SessionDates[0];
+                doc.text(`Date: ${new Date(session.date).toLocaleDateString('en-IN', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                })}`, 300, 230);
+            }
 
-    if (Array.isArray(addons) && addons.length > 0) {
-      console.log("🔍 Fetching addons:", addons);
+            // Horizontal Line
+            doc.moveTo(50, 255).lineTo(545, 255).stroke('#e5e7eb');
 
-      const fetchedAddOns = await AddOn.find({
-        _id: { $in: addons },
-        is_active: true,
-      }).session(session);
+            // ====================== PAYMENT SUMMARY ======================
+            const tableTop = 275;
+            let y = tableTop;
 
-      if (fetchedAddOns.length !== addons.length) {
-        console.log("❌ One or more addons are invalid/inactive");
-        await session.abortTransaction();
-        return res.status(400).json({
-          success: false,
-          message: "One or more selected add-ons are not available",
-        });
-      }
+            doc.fontSize(11)
+                .font("Helvetica-Bold")
+                .fillColor('#1f2937')
+                .text("Payment Summary", 50, y);
 
-      addOnsData = fetchedAddOns.map((addon) => ({
-        addOnId: addon._id,
-        title: addon.title,
-        price: addon.price,
-      }));
+            y += 25;
 
-      addOnsTotal = fetchedAddOns.reduce((sum, addon) => sum + addon.price, 0);
-    }
+            // Table Header
+            doc.fontSize(10)
+                .font("Helvetica-Bold")
+                .text("Description", 50, y)
+                .text("Qty", 320, y)
+                .text("Rate", 380, y)
+                .text("Amount", 480, y, { align: "right" });
 
-    console.log("✅ Addons processed:", {
-      addOnsCount: addOnsData.length,
-      addOnsTotal,
+            doc.moveTo(50, y + 15).lineTo(545, y + 15).stroke('#d1d5db');
+            y += 30;
+
+            // Main Service
+            doc.fontSize(10)
+                .font("Helvetica")
+                .text(treatment_id.service_name, 50, y)
+                .text(bookingData.no_of_session_book?.toString() || "1", 320, y)
+                .text(`₹ ${amountPerSession.toLocaleString('en-IN')}`, 380, y)
+                .text(`₹ ${(amountPerSession * (bookingData.no_of_session_book || 1)).toLocaleString('en-IN')}`, 480, y, { align: "right" });
+
+            y += 25;
+
+            // Add-ons
+            if (addOns && addOns.length > 0) {
+                addOns.forEach((addon) => {
+                    doc.fontSize(9.5)
+                        .text(`• ${addon.title}`, 50, y)
+                        .text("1", 320, y)
+                        .text(`₹ ${addon.price.toLocaleString('en-IN')}`, 380, y)
+                        .text(`₹ ${addon.price.toLocaleString('en-IN')}`, 480, y, { align: "right" });
+                    y += 20;
+                });
+            }
+
+            y += 15;
+
+            // Total Line
+            doc.moveTo(50, y).lineTo(545, y).stroke('#1e40af');
+            y += 20;
+
+            doc.fontSize(12)
+                .font("Helvetica-Bold")
+                .fillColor('#1e40af')
+                .text("TOTAL AMOUNT", 50, y)
+                .text(`₹ ${totalAmount.toLocaleString('en-IN')}`, 480, y, { align: "right" });
+
+            y += 40;
+
+            // ====================== PAYMENT STATUS ======================
+            doc.fontSize(10)
+                .font("Helvetica-Bold")
+                .fillColor('#166534')
+                .text("Payment Status: PAY AT CLINIC", 50, y);
+
+            y += 35;
+
+            // ====================== NOTES ======================
+            doc.fontSize(9)
+                .font("Helvetica")
+                .fillColor('#4b5563')
+                .text("Important Notes:", 50, y);
+
+            y += 15;
+            doc.fontSize(8.5)
+                .text("• Please arrive 10 minutes early for your appointment.", 60, y)
+                .text("• Bring this invoice or booking number on the day of visit.", 60, y + 12)
+                .text("• Cancellation/Rescheduling must be done 24 hours in advance.", 60, y + 24)
+                .text("• This is a computer-generated receipt and does not require signature.", 60, y + 36);
+
+            y += 70;
+
+            // ====================== FOOTER ======================
+            doc.fontSize(8)
+                .font("Helvetica")
+                .fillColor('#6b7280')
+                .text("Thank you for choosing Back to Nature Spine Clinic", 50, y, { align: "center" })
+                .text("Dr. Rajneesh Kant | Spine & Pain Management Specialist", 50, y + 15, { align: "center" })
+                .text("© 2026 Back to Nature Spine Clinic. All Rights Reserved.", 50, y + 30, { align: "center" });
+
+            doc.end();
+
+            stream.on("finish", () => resolve(filePath));
+            stream.on("error", (err) => reject(err));
+
+        } catch (error) {
+            reject(error);
+        }
     });
-
-    // ─────────────────────────────────────────
-    // Fetch settings
-    // ─────────────────────────────────────────
-    console.log("🔍 Fetching settings...");
-
-    const findSettings = await Settings.findOne({ is_active: true }).session(session);
-
-    if (!findSettings) {
-      console.log("❌ Settings not found");
-      await session.abortTransaction();
-      return res.status(500).json({
-        success: false,
-        message: "Settings not configured",
-      });
-    }
-
-    // ─────────────────────────────────────────
-    // Check slot availability
-    // ─────────────────────────────────────────
-    console.log("🔍 Checking slot availability...");
-
-    const checkBookings = await getBookingsByDateAndTimePeriodOnB({
-      date,
-      time,
-      clinic_id,
-      req,
-    });
-
-    console.log("Slot availability response:", checkBookings?.data);
-
-    if (!checkBookings?.data?.available) {
-      console.log("❌ Slot not available");
-      await session.abortTransaction();
-      return res.status(400).json({
-        success: false,
-        message: `Booking for ${checkBookings?.data?.date} at ${checkBookings?.data?.time} is full. Please choose another time.`,
-      });
-    }
-
-    // ─────────────────────────────────────────
-    // Calculate pricing
-    // ─────────────────────────────────────────
-    const basePrice =
-      findService?.service_per_session_discount_price ??
-      findService?.service_per_session_price ??
-      10000;
-
-    const subtotal = basePrice * Number(sessions);
-    const subtotalWithAddOns = subtotal + addOnsTotal;
-
-    const taxPercentage = findSettings?.payment_config?.tax_percentage || 0;
-    const creditCardFeePercentage = findSettings?.payment_config?.credit_card_fee || 0;
-
-    const taxAmount = (subtotalWithAddOns * taxPercentage) / 100;
-    const creditCardAmount =
-      payment_method === "card"
-        ? (subtotalWithAddOns * creditCardFeePercentage) / 100
-        : 0;
-
-    const total = subtotalWithAddOns + taxAmount + creditCardAmount;
-
-    console.log("💰 Pricing calculated:", {
-      basePrice,
-      subtotal,
-      addOnsTotal,
-      subtotalWithAddOns,
-      taxPercentage,
-      taxAmount,
-      creditCardFeePercentage,
-      creditCardAmount,
-      total,
-    });
-
-    if (!subtotal || !total) {
-      console.log("❌ Pricing calculation failed");
-      await session.abortTransaction();
-      return res.status(500).json({
-        success: false,
-        message: "Error calculating pricing. Please try again.",
-      });
-    }
-
-    // ─────────────────────────────────────────
-    // Final slot availability re-check
-    // ─────────────────────────────────────────
-    console.log("🔁 Final slot availability check...");
-
-    const finalAvailabilityCheck = await getBookingsByDateAndTimePeriodOnB({
-      date,
-      time,
-      clinic_id,
-      req,
-    });
-
-    console.log("Final slot availability:", finalAvailabilityCheck?.data);
-
-    if (!finalAvailabilityCheck?.data?.available) {
-      console.log("❌ Slot became unavailable during booking");
-      await session.abortTransaction();
-      return res.status(400).json({
-        success: false,
-        message: `Booking for ${finalAvailabilityCheck?.data?.date} at ${finalAvailabilityCheck?.data?.time} is no longer available.`,
-      });
-    }
-
-    // ─────────────────────────────────────────
-    // Generate session dates
-    // ─────────────────────────────────────────
-    const sessionDates = [
-      {
-        sessionNumber: 1,
-        date: new Date(date),
-        time,
-        status: "Pending",
-      },
-    ];
-
-    console.log("📅 Session dates generated:", sessionDates);
-
-    // ─────────────────────────────────────────
-    // Step 1: Create payment record first
-    // ─────────────────────────────────────────
-    console.log("💳 Creating initial payment record...");
-
-    const paymentRecord = new Payment({
-      user_id: userId,
-      amount: total,
-      paymentMethod: payment_method,
-      status: "pending",
-      payment_details: {
-        subtotal,
-        addOnsTotal,
-        tax: taxAmount,
-        creditCardFee: creditCardAmount,
-        total,
-      },
-    });
-
-    const savedPayment = await paymentRecord.save({ session });
-
-    console.log("✅ Payment record created:", {
-      paymentId: savedPayment._id,
-      status: savedPayment.status,
-    });
-
-    // ─────────────────────────────────────────
-    // Step 2: Create booking with payment_id
-    // ─────────────────────────────────────────
-    console.log("📝 Creating booking...");
-
-    const newBooking = new Bookings({
-      treatment_id: service_id,
-      no_of_session_book: sessions,
-      patient_details,
-      SessionDates: sessionDates,
-      session_booking_user: userId,
-      session_booking_for_clinic: clinic_id,
-      session_booking_for_doctor: "68526dc0730bac32941b587c",
-      session_status: "Payment Not Completed",
-      payment_id: savedPayment._id,
-      totalAmount: total,
-      amountPerSession: basePrice,
-      addOns: addOnsData,
-      addOnsTotal,
-      bookingSource: "web",
-    });
-
-    const savedBooking = await newBooking.save({ session });
-
-    console.log("✅ Booking created successfully:", {
-      bookingId: savedBooking._id,
-      bookingNumber: savedBooking.bookingNumber,
-    });
-
-    // ─────────────────────────────────────────
-    // Step 3: Create PayU payment with bookingId in udf1
-    // ─────────────────────────────────────────
-    const patientName = patient_details?.name || "Patient";
-    const patientEmail = patient_details?.email || "patient@example.com";
-    const patientPhone = patient_details?.phone || "9999999999";
-
-    console.log("🏦 Creating PayU payment...");
-
-    const createPaymentData = await payu.createPayment({
-      amount: total,
-      firstname: patientName,
-      email: patientEmail,
-      phone: patientPhone,
-      productinfo: `Booking for ${sessions} session${Number(sessions) > 1 ? "s" : ""} - ${findService?.name || "Treatment"}`,
-
-      udf1: savedBooking._id.toString(), // bookingId
-      udf2: userId.toString(), // userId
-      udf3: service_id ? service_id.toString() : "", // serviceId
-      udf4: clinic_id ? clinic_id.toString() : "", // clinicId
-    });
-
-    console.log("PayU createPayment response:", createPaymentData);
-
-    if (!createPaymentData?.success) {
-      console.log("❌ PayU payment creation failed");
-
-      await session.abortTransaction();
-
-      return res.status(500).json({
-        success: false,
-        message: "Payment gateway error. Please try again.",
-        error: createPaymentData?.error || "PayU create payment failed",
-      });
-    }
-
-    // ─────────────────────────────────────────
-    // Step 4: Update payment with PayU txnid + bookingId
-    // ─────────────────────────────────────────
-    console.log("🔄 Updating payment record with PayU txnid and bookingId...");
-
-    savedPayment.payu_txn_id = createPaymentData.txnid;
-    savedPayment.bookingId = savedBooking._id;
-
-    await savedPayment.save({ session });
-
-    console.log("✅ Payment updated:", {
-      paymentId: savedPayment._id,
-      payu_txn_id: savedPayment.payu_txn_id,
-      bookingId: savedPayment.bookingId,
-    });
-
-    // Optional: keep reverse reference too if schema supports it
-    // If your booking schema has payment_id only, this is already set.
-    // If needed:
-    // savedBooking.payment_id = savedPayment._id;
-    // await savedBooking.save({ session });
-
-    // ─────────────────────────────────────────
-    // Commit transaction
-    // ─────────────────────────────────────────
-    await session.commitTransaction();
-    console.log("✅ Transaction committed successfully");
-
-    // ─────────────────────────────────────────
-    // Clear cache
-    // ─────────────────────────────────────────
-    try {
-      console.log("🧹 Clearing booking availability cache...");
-      await cleanRedisDataFlush(redisClient, "booking_availability*");
-      console.log("✅ Cache cleared");
-    } catch (cacheError) {
-      console.error("⚠️ Cache clear failed:", cacheError);
-    }
-
-    const responsePayload = {
-      success: true,
-      message: "Booking created successfully. Please complete payment on PayU.",
-      data: {
-        booking: {
-          id: savedBooking._id,
-          bookingNumber: savedBooking.bookingNumber,
-          sessionDates: savedBooking.SessionDates,
-          totalAmount: savedBooking.totalAmount,
-          addOns: savedBooking.addOns,
-          addOnsTotal: savedBooking.addOnsTotal,
-          status: savedBooking.session_status,
-        },
-        payment: {
-          txnid: createPaymentData.txnid,
-          amount: total,
-          currency: "INR",
-          key: process.env.PAYU_TEST_KEY,
-          breakdown: {
-            subtotal,
-            addOnsTotal,
-            tax: taxAmount,
-            creditCardFee: creditCardAmount,
-            total,
-          },
-        },
-        paymentParams:createPaymentData?.paymentParams,
-        payuFormHtml: createPaymentData.formHtml,
-      },
-    };
-
-    console.log("✅ Final response payload:", responsePayload);
-    console.log("========== BOOKING REQUEST END ==========");
-
-    return res.status(201).json(responsePayload);
-  } catch (error) {
-    console.error("❌ Error creating booking with PayU:", error);
-
-    try {
-      await session.abortTransaction();
-      console.log("🛑 Transaction aborted");
-    } catch (abortError) {
-      console.error("❌ Error aborting transaction:", abortError);
-    }
-
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error. Please try again.",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
-  } finally {
-    session.endSession();
-    console.log("🔚 Mongo session ended");
-  }
 };
 
 
+/**
+ * Helper function to format time
+ */
+const formatTime = (timeString) => {
+    if (!timeString) return "";
+    const [hours, minutes] = timeString.split(":");
+    const hour24 = parseInt(hours);
+    const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+    const ampm = hour24 >= 12 ? "PM" : "AM";
+    return `${hour12}:${minutes} ${ampm}`;
+};
+
+
+/**
+ * Create Booking for Session with Invoice & WhatsApp
+ */
+exports.createBookingForSession = async (req, res) => {
+    const session = await mongoose.startSession();
+    const redis = getRedisClient(req);
+
+    try {
+        session.startTransaction();
+
+        const userId = req.user?._id;
+
+        const {
+            payment_method,
+            patient_details,
+            service_id,
+            clinic_id,
+            sessions,
+            date,
+            time,
+            addons = []
+        } = req.body;
+
+        // ==================== VALIDATION ====================
+
+        if (!userId) {
+            throw new Error("Unauthorized user");
+        }
+
+        const allowedMethods = ["razorpay", "phonepe", "pay_at_clinic"];
+
+        if (!allowedMethods.includes(payment_method)) {
+            throw new Error("Invalid payment method");
+        }
+
+        if (!patient_details?.name || !patient_details?.email || !patient_details?.phone) {
+            throw new Error("Incomplete patient details");
+        }
+
+        // ==================== SLOT LOCK (REDIS) ====================
+
+        const slotKey = `slot_lock:${clinic_id}:${date}:${time}`;
+
+        const slotLocked = await redis.set(slotKey, "locked", {
+            NX: true,
+            EX: 120
+        });
+
+        if (!slotLocked) {
+            throw new Error("This slot is being booked by another user.");
+        }
+
+        // ==================== SERVICE VALIDATION ====================
+
+        const service = await Service.findById(service_id).session(session);
+
+        if (!service) {
+            throw new Error("Service not found");
+        }
+
+        if (service.service_status !== "Booking Open") {
+            throw new Error("Booking closed for this service");
+        }
+
+        // ==================== RACE CONDITION CHECK ====================
+
+        const existingBooking = await Bookings.findOne({
+            session_booking_for_clinic: clinic_id,
+            "SessionDates.date": new Date(date),
+            "SessionDates.time": time,
+            session_status: { $in: ["Pending", "Confirmed"] }
+        }).session(session);
+
+        if (existingBooking) {
+            throw new Error("Selected slot already booked");
+        }
+
+        // ==================== ADDONS ====================
+
+        let addOnsData = [];
+        let addOnsTotal = 0;
+
+        if (addons.length) {
+            const addOnDocs = await AddOn.find({
+                _id: { $in: addons },
+                is_active: true
+            }).session(session);
+
+            addOnsData = addOnDocs.map(a => ({
+                addOnId: a._id,
+                title: a.title,
+                price: a.price
+            }));
+
+            addOnsTotal = addOnDocs.reduce((sum, a) => sum + a.price, 0);
+        }
+
+        // ==================== SETTINGS ====================
+
+        const settings = await Settings.findOne({ is_active: true }).session(session);
+
+        if (!settings) {
+            throw new Error("System settings not configured");
+        }
+
+        // ==================== PRICE CALCULATION ====================
+
+        const basePrice =
+            service.service_per_session_discount_price ||
+            service.service_per_session_price ||
+            0;
+
+        const subtotal = basePrice * sessions;
+
+        const subtotalWithAddOns = subtotal + addOnsTotal;
+
+        const taxPercent = settings?.payment_config?.tax_percentage || 0;
+
+        const taxAmount = (subtotalWithAddOns * taxPercent) / 100;
+
+        const total =
+            payment_method === "pay_at_clinic"
+                ? subtotalWithAddOns
+                : subtotalWithAddOns + taxAmount;
+
+        // ==================== SESSION STRUCTURE ====================
+
+        const sessionDates = [{
+            sessionNumber: 1,
+            date: new Date(date),
+            time,
+            status: "Pending"
+        }];
+
+        // ==================== CREATE BOOKING ====================
+
+        const clinic = await Clinic.findById(clinic_id).session(session);
+
+        const booking = new Bookings({
+            treatment_id: service_id,
+            no_of_session_book: sessions,
+            patient_details,
+            SessionDates: sessionDates,
+            session_booking_user: userId,
+            session_booking_for_clinic: clinic_id,
+            session_booking_for_doctor: service?.service_doctor,
+            session_status:
+                payment_method === "pay_at_clinic"
+                    ? "Confirmed"
+                    : "Payment Not Completed",
+            totalAmount: total,
+            amountPerSession: basePrice,
+            addOns: addOnsData,
+            addOnsTotal,
+            bookingSource: "web"
+        });
+
+        const savedBooking = await booking.save({ session });
+
+        // ==================== CREATE PAYMENT ====================
+
+        const payment = new Payment({
+            userId,
+            bookingId: savedBooking._id,
+            amount: total,
+            paymentMethod: payment_method,
+            status: payment_method === "pay_at_clinic" ? "completed" : "pending",
+            paymentDetails: {
+                subtotal,
+                addOnsTotal,
+                tax: taxAmount,
+                total
+            }
+        });
+
+        const savedPayment = await payment.save({ session });
+
+        savedBooking.payment_id = savedPayment._id;
+
+        await savedBooking.save({ session });
+
+        // ==================== PAY AT CLINIC ====================
+
+        if (payment_method === "pay_at_clinic") {
+            try {
+                // Get full booking details for invoice
+                const bookingWithDetails = await Bookings.findById(savedBooking._id)
+                    .populate("treatment_id")
+                    .populate("session_booking_for_clinic")
+                    .session(session);
+
+                // Generate invoice PDF
+                console.log("Generating invoice PDF...");
+                const invoicePath = await generateInvoicePDF(bookingWithDetails);
+
+                console.log("Invoice generated at:", invoicePath);
+
+                // Commit transaction before sending WhatsApp (to avoid holding locks)
+                await session.commitTransaction();
+                await redis.del(slotKey);
+
+                // Prepare WhatsApp message
+                const sessionDate = new Date(bookingWithDetails.SessionDates[0].date);
+                const formattedDate = sessionDate.toLocaleDateString("en-US", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric"
+                });
+
+                const whatsappMessage = `
+✅ *Booking Confirmed!*
+ 
+Booking Number: ${bookingWithDetails.bookingNumber}
+Patient Name: ${patient_details.name}
+ 
+📋 *Treatment Details*
+Service: ${bookingWithDetails.treatment_id.service_name}
+ 
+🏥 *Clinic Details*
+${clinic.clinic_name}
+${clinic.clinic_contact_details.clinic_address}
+ 
+📅 *Appointment*
+Date: ${formattedDate}
+Time: ${formatTime(bookingWithDetails.SessionDates[0].time)}
+ 
+💰 *Payment Details*
+Amount: Rs ${total.toLocaleString("en-IN")}
+Payment Method: Pay at Clinic
+ 
+⏳ *Important*
+• Arrive 10 minutes early
+• Payment due at clinic
+• Reschedule up to 24 hours before
+ 
+Thank you for booking with us! 🙏
+                `.trim();
+
+                // Send WhatsApp message with invoice PDF
+                console.log("Sending WhatsApp message with invoice...");
+                const invoiceUrl = `https://ascogonial-jimena-sugarlike.ngrok-free.dev/invoices/${path.basename(invoicePath)}`;
+                const whatsappResponse = await sendWhatsApp({
+                    mobile: patient_details.phone,
+                    msg: whatsappMessage,
+                    pdf: invoiceUrl // Path to the generated PDF
+                });
+
+                console.log("WhatsApp response:", whatsappResponse);
+
+                // Clean up local PDF file after sending (optional)
+                // setTimeout(() => {
+                //     fs.unlink(invoicePath, (err) => {
+                //         if (err) console.error("Error deleting file:", err);
+                //     });
+                // }, 5000);
+
+                return res.status(201).json({
+                    success: true,
+                    message: "Booking confirmed and invoice sent via WhatsApp",
+                    data: {
+                        booking: {
+                            id: savedBooking._id,
+                            bookingNumber: savedBooking.bookingNumber
+                        },
+                        gatewayData: {
+                            method: "pay_at_clinic"
+                        },
+                        whatsappStatus: whatsappResponse?.status || "sent"
+                    }
+                });
+
+            } catch (whatsappError) {
+                console.error("WhatsApp sending error:", whatsappError);
+
+                // Even if WhatsApp fails, booking is confirmed
+                return res.status(201).json({
+                    success: true,
+                    message: "Booking confirmed (WhatsApp delivery pending)",
+                    data: {
+                        booking: {
+                            id: savedBooking._id,
+                            bookingNumber: savedBooking.bookingNumber
+                        },
+                        gatewayData: {
+                            method: "pay_at_clinic"
+                        },
+                        warning: "Invoice could not be sent via WhatsApp"
+                    }
+                });
+            }
+        }
+
+        // ==================== RAZORPAY ====================
+
+        if (payment_method === "razorpay") {
+            const razorpayOrder = await createRazarpayPayment({
+                amount: total,
+                bookingId: savedBooking._id,
+                userId
+            });
+
+            savedPayment.gateway = {
+                provider: "razorpay",
+                orderId: razorpayOrder.orderId
+            };
+
+            await savedPayment.save({ session });
+
+            await session.commitTransaction();
+            await redis.del(slotKey);
+
+            return res.status(201).json({
+                success: true,
+                message: "Razorpay order created",
+                data: {
+                    booking: {
+                        id: savedBooking._id,
+                        bookingNumber: savedBooking.bookingNumber
+                    },
+                    gatewayData: {
+                        method: "razorpay",
+                        key: process.env.RAZORPAY_KEY_ID,
+                        order_id: razorpayOrder.orderId,
+                        amount: razorpayOrder.amount,
+                        currency: razorpayOrder.currency
+                    }
+                }
+            });
+        }
+
+        // ==================== PHONEPE ====================
+
+        if (payment_method === "phonepe") {
+            const phonepe = await createPhonePePayment({
+                amount: total,
+                bookingId: savedBooking._id,
+                userId,
+                patient_details
+            });
+
+            savedPayment.gateway = {
+                provider: "phonepe",
+                transactionId: phonepe.merchantOrderId
+            };
+
+            await savedPayment.save({ session });
+
+            await session.commitTransaction();
+            await redis.del(slotKey);
+
+            return res.status(201).json({
+                success: true,
+                message: "PhonePe payment initiated",
+                data: {
+                    booking: {
+                        id: savedBooking._id,
+                        bookingNumber: savedBooking.bookingNumber
+                    },
+                    gatewayData: {
+                        method: "phonepe",
+                        redirect_url: phonepe.redirectUrl
+                    }
+                }
+            });
+        }
+
+    } catch (error) {
+        await session.abortTransaction();
+
+        console.error("Create booking error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+
+    } finally {
+        session.endSession();
+    }
+};
+exports.verifyRazorpayPayment = async (req, res) => {
+    const session = await mongoose.startSession();
+    let committed = false;
+
+    const baseFrontendUrl = (process.env.FRONTEND_URL || "https://drrajneeshkant.in").replace(/\/+$/, "");
+
+    try {
+        session.startTransaction();
+
+        const {
+            razorpay_order_id,
+            razorpay_payment_id,
+            razorpay_signature,
+            booking_id
+        } = req.body;
+
+        if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !booking_id) {
+            await session.abortTransaction();
+            return res.redirect(`${baseFrontendUrl}/booking-failed?reason=missing-fields&booking_id=${booking_id}`);
+        }
+
+        // Verify signature
+        const verification = verifyRazarpayPayment({
+            orderId: razorpay_order_id,
+            paymentId: razorpay_payment_id,
+            signature: razorpay_signature
+        });
+
+        if (!verification) {
+            await session.abortTransaction();
+            return res.redirect(`${baseFrontendUrl}/booking-failed?reason=signature-invalid&booking_id=${booking_id}`);
+        }
+
+        // Find booking
+        const booking = await Bookings.findById(booking_id).session(session);
+
+        if (!booking) {
+            await session.abortTransaction();
+            return res.redirect(`${baseFrontendUrl}/booking-failed?reason=booking-not-found&booking_id=${booking_id}`);
+        }
+
+        // Find payment by booking
+        const payment = await Payment.findOne({
+            bookingId: booking._id
+        }).session(session);
+
+        if (!payment) {
+            await session.abortTransaction();
+            return res.redirect(`${baseFrontendUrl}/booking-failed?reason=payment-not-found&booking_id=${booking_id}`);
+        }
+
+        // Duplicate protection
+        if (payment.status === "completed") {
+            await session.abortTransaction();
+            return res.redirect(`${baseFrontendUrl}/booking-success?bookingId=${booking._id}&status=already-paid`);
+        }
+
+        // Verify orderId matches
+        if (payment.gateway?.orderId !== razorpay_order_id) {
+            await session.abortTransaction();
+            return res.redirect(`${baseFrontendUrl}/booking-failed?reason=order-mismatch&booking_id=${booking_id}`);
+        }
+
+        // Update payment
+        payment.status = "completed";
+
+        payment.gateway = {
+            ...payment.gateway,
+            provider: "razorpay",
+            orderId: razorpay_order_id,
+            paymentId: razorpay_payment_id,
+            signature: razorpay_signature
+        };
+
+        payment.gatewayResponse = req.body;
+
+        payment.paidAt = new Date();
+        payment.completedAt = new Date();
+
+        await payment.save({ session });
+
+        // Update booking
+        booking.session_status = "Confirmed";
+        booking.payment_verified_at = new Date();
+
+        await booking.save({ session });
+
+        await session.commitTransaction();
+        committed = true;
+
+        try { await flushAllData(getRedisClient(req)); } catch (_) { }
+
+        return res.redirect(`${baseFrontendUrl}/booking-success?bookingId=${booking._id}`);
+
+    } catch (error) {
+
+        if (!committed) {
+            try { await session.abortTransaction(); } catch (_) { }
+        }
+
+        console.error("❌ Razorpay verify error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Payment verification failed"
+        });
+
+    } finally {
+        session.endSession();
+    }
+};
+
+exports.verifyPhonePeCallback = async (req, res) => {
+
+    const session = await mongoose.startSession();
+    let committed = false;
+
+    try {
+
+        session.startTransaction();
+
+        const { bookingId } = req.params;
+
+        if (!bookingId) {
+            await session.abortTransaction();
+            return res.status(400).json({
+                success: false,
+                message: "bookingId is required"
+            });
+        }
+
+        // ---------------------------
+        // Find Payment
+        // ---------------------------
+        const payment = await Payment.findOne({ bookingId }).session(session);
+
+        if (!payment) {
+            await session.abortTransaction();
+            return res.status(404).json({
+                success: false,
+                message: "Payment not found"
+            });
+        }
+
+        // Duplicate protection
+        if (payment.status === "completed") {
+            await session.abortTransaction();
+            return res.status(200).json({
+                success: true,
+                message: "Payment already verified"
+            });
+        }
+
+        const merchantOrderId = payment.gateway?.transactionId;
+
+        if (!merchantOrderId) {
+            await session.abortTransaction();
+            return res.status(400).json({
+                success: false,
+                message: "PhonePe order id missing"
+            });
+        }
+
+        // ---------------------------
+        // Verify PhonePe Payment
+        // ---------------------------
+        const status = await verifyPhonePePayment(merchantOrderId);
+
+        if (!status.success) {
+            await session.abortTransaction();
+            return res.status(500).json({
+                success: false,
+                message: "Unable to verify payment"
+            });
+        }
+
+        // ---------------------------
+        // Find Booking
+        // ---------------------------
+        const booking = await Bookings.findById(payment.bookingId).session(session);
+
+        if (!booking) {
+            await session.abortTransaction();
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found"
+            });
+        }
+
+        // ---------------------------
+        // Handle Status
+        // ---------------------------
+
+        if (status.state === "COMPLETED") {
+
+            payment.status = "completed";
+
+            payment.gateway = {
+                ...payment.gateway,
+                provider: "phonepe",
+                transactionId: merchantOrderId,
+                paymentId: status.transactionId
+            };
+
+            payment.gatewayResponse = status;
+
+            payment.paidAt = new Date();
+            payment.completedAt = new Date();
+
+            await payment.save({ session });
+
+            booking.session_status = "Confirmed";
+            booking.payment_verified_at = new Date();
+
+            await booking.save({ session });
+
+        }
+        else if (status.state === "FAILED") {
+
+            payment.status = "failed";
+            payment.failureReason = "PhonePe payment failed";
+            payment.gatewayResponse = status;
+
+            await payment.save({ session });
+
+            booking.session_status = "Payment Failed";
+
+            await booking.save({ session });
+
+        }
+        else {
+
+            // PENDING
+            await session.abortTransaction();
+
+            return res.status(200).json({
+                success: true,
+                status: "pending"
+            });
+
+        }
+
+        // ---------------------------
+        // Commit Transaction
+        // ---------------------------
+        await session.commitTransaction();
+        committed = true;
+
+        // Flush Redis Cache
+        try {
+            await flushAllData(getRedisClient(req));
+        } catch (_) { }
+
+        return res.status(200).json({
+            success: true,
+            status: payment.status
+        });
+
+    } catch (error) {
+
+        if (!committed) {
+            try { await session.abortTransaction(); } catch (_) { }
+        }
+
+        console.error("❌ PhonePe callback error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "PhonePe callback failed"
+        });
+
+    } finally {
+
+        session.endSession();
+
+    }
+};
+
+exports.checkPhonePeStatus = async (req, res) => {
+
+    const session = await mongoose.startSession();
+
+    try {
+
+        session.startTransaction();
+
+        const { bookingId } = req.params;
+
+        const payment = await Payment.findOne({ bookingId }).session(session);
+
+        if (!payment) {
+            await session.abortTransaction();
+            return res.status(404).json({
+                success: false,
+                message: "Payment not found"
+            });
+        }
+
+        const booking = await Bookings.findById(bookingId).session(session);
+
+        if (!booking) {
+            await session.abortTransaction();
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found"
+            });
+        }
+
+        // If already resolved via callback
+        if (payment.status === "completed" || payment.status === "failed") {
+
+            await session.abortTransaction();
+
+            return res.json({
+                success: true,
+                status: payment.status,
+                bookingId
+            });
+        }
+
+        const transactionId = payment.gateway?.transactionId;
+
+        if (!transactionId) {
+
+            await session.abortTransaction();
+
+            return res.status(400).json({
+                success: false,
+                message: "PhonePe transaction ID not found"
+            });
+        }
+
+        // Call PhonePe status API
+        const phonePeStatus = await verifyPhonePePayment(transactionId);
+
+        if (!phonePeStatus.success) {
+
+            await session.abortTransaction();
+
+            return res.json({
+                success: false,
+                status: "pending",
+                bookingId
+            });
+        }
+
+        // If payment success
+        if (phonePeStatus.state === "COMPLETED") {
+
+            payment.status = "completed";
+
+            payment.gateway = {
+                ...payment.gateway,
+                provider: "phonepe",
+                transactionId: transactionId,
+                paymentId: phonePeStatus.transactionId
+            };
+
+            payment.paidAt = new Date();
+            payment.completedAt = new Date();
+
+            payment.gatewayResponse = phonePeStatus;
+
+            await payment.save({ session });
+
+            booking.session_status = "Confirmed";
+            booking.payment_verified_at = new Date();
+
+            await booking.save({ session });
+
+            await session.commitTransaction();
+
+            return res.json({
+                success: true,
+                status: "completed",
+                bookingId
+            });
+
+        }
+
+        // If payment failed
+        if (phonePeStatus.state === "FAILED") {
+
+            payment.status = "failed";
+            payment.failureReason = phonePeStatus.code;
+
+            await payment.save({ session });
+
+            booking.session_status = "Payment Failed";
+
+            await booking.save({ session });
+
+            await session.commitTransaction();
+
+            return res.json({
+                success: false,
+                status: "failed",
+                bookingId
+            });
+
+        }
+
+        await session.abortTransaction();
+
+        return res.json({
+            success: true,
+            status: "pending",
+            bookingId
+        });
+
+    } catch (error) {
+
+        try { await session.abortTransaction(); } catch (_) { }
+
+        console.error("❌ PhonePe status check error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Status check failed"
+        });
+
+    } finally {
+
+        session.endSession();
+
+    }
+};
 
 // Verify payment and update booking status
 // exports.verifyPayment = async (req, res) => {
@@ -792,227 +1375,227 @@ exports.createAorderForSession = async (req, res) => {
 
 
 
-exports.verifyPayment = async (req, res) => {
+// exports.verifyPayment = async (req, res) => {
 
-  const session = await mongoose.startSession();
+//     const session = await mongoose.startSession();
 
-  let committed = false;
-  let bookingId = null;
-  let paymentId = null;
-  let via = "web";
+//     let committed = false;
+//     let bookingId = null;
+//     let paymentId = null;
+//     let via = "web";
 
-  const baseFrontendUrl =
-    (process.env.FRONTEND_URL || "https://drrajneeshkant.in").replace(/\/+$/, "");
+//     const baseFrontendUrl =
+//         (process.env.FRONTEND_URL || "https://drrajneeshkant.in").replace(/\/+$/, "");
 
-  const redirectFailure = (reason, extra = {}) => {
-    const query = new URLSearchParams({
-      reason,
-      booking_id: bookingId || "unknown",
-      ...extra,
-    }).toString();
+//     const redirectFailure = (reason, extra = {}) => {
+//         const query = new URLSearchParams({
+//             reason,
+//             booking_id: bookingId || "unknown",
+//             ...extra,
+//         }).toString();
 
-    return res.redirect(`${baseFrontendUrl}/booking-failed?${query}`);
-  };
+//         return res.redirect(`${baseFrontendUrl}/booking-failed?${query}`);
+//     };
 
-  const redirectSuccess = (booking) => {
-    const query = new URLSearchParams({
-      bookingId: booking._id,
-      status: "success",
-    }).toString();
+//     const redirectSuccess = (booking) => {
+//         const query = new URLSearchParams({
+//             bookingId: booking._id,
+//             status: "success",
+//         }).toString();
 
-    return res.redirect(`${baseFrontendUrl}/booking-success?${query}`);
-  };
+//         return res.redirect(`${baseFrontendUrl}/booking-success?${query}`);
+//     };
 
-  try {
+//     try {
 
-    session.startTransaction();
+//         session.startTransaction();
 
-    const redisClient = getRedisClient(req, res);
+//         const redisClient = getRedisClient(req, res);
 
-    const params =
-      req.method === "GET"
-        ? { ...req.query }
-        : { ...req.query, ...req.body };
+//         const params =
+//             req.method === "GET"
+//                 ? { ...req.query }
+//                 : { ...req.query, ...req.body };
 
-    const {
-      platform,
-      txnid,
-      status,
-      mihpayid,
-      hash,
-      udf1,
-    } = params;
+//         const {
+//             platform,
+//             txnid,
+//             status,
+//             mihpayid,
+//             hash,
+//             udf1,
+//         } = params;
 
-    bookingId = udf1 || params.booking_id || null;
+//         bookingId = udf1 || params.booking_id || null;
 
-    if (platform && ["web", "app", "admin"].includes(platform)) {
-      via = platform;
-    }
+//         if (platform && ["web", "app", "admin"].includes(platform)) {
+//             via = platform;
+//         }
 
-    // Required params validation
-    if (!bookingId || !txnid || !status || !hash) {
-      await session.abortTransaction();
-      return redirectFailure("missing-parameters");
-    }
+//         // Required params validation
+//         if (!bookingId || !txnid || !status || !hash) {
+//             await session.abortTransaction();
+//             return redirectFailure("missing-parameters");
+//         }
 
-    // Find booking
-    const booking = await Bookings.findById(bookingId)
-      .populate("treatment_id")
-      .populate("session_booking_user")
-      .session(session);
+//         // Find booking
+//         const booking = await Bookings.findById(bookingId)
+//             .populate("treatment_id")
+//             .populate("session_booking_user")
+//             .session(session);
 
-    if (!booking) {
-      await session.abortTransaction();
-      return redirectFailure("booking-not-found");
-    }
+//         if (!booking) {
+//             await session.abortTransaction();
+//             return redirectFailure("booking-not-found");
+//         }
 
-    if (!booking.payment_id) {
-      await session.abortTransaction();
-      return redirectFailure("payment-id-missing");
-    }
+//         if (!booking.payment_id) {
+//             await session.abortTransaction();
+//             return redirectFailure("payment-id-missing");
+//         }
 
-    // Find payment
-    const payment = await Payment.findById(booking.payment_id).session(session);
+//         // Find payment
+//         const payment = await Payment.findById(booking.payment_id).session(session);
 
-    if (!payment) {
-      await session.abortTransaction();
-      return redirectFailure("payment-not-found");
-    }
+//         if (!payment) {
+//             await session.abortTransaction();
+//             return redirectFailure("payment-not-found");
+//         }
 
-    paymentId = payment._id;
+//         paymentId = payment._id;
 
-    // Prevent duplicate processing
-    if (payment.status === "completed" && payment.payu_mihpayid) {
+//         // Prevent duplicate processing
+//         if (payment.status === "completed" && payment.payu_mihpayid) {
 
-      await session.abortTransaction();
+//             await session.abortTransaction();
 
-      if (via === "web") {
-        return res.redirect(
-          `${baseFrontendUrl}/booking-success?bookingId=${booking._id}&status=already-processed`
-        );
-      }
+//             if (via === "web") {
+//                 return res.redirect(
+//                     `${baseFrontendUrl}/booking-success?bookingId=${booking._id}&status=already-processed`
+//                 );
+//             }
 
-      return res.json({
-        success: true,
-        message: "Payment already processed",
-      });
-    }
+//             return res.json({
+//                 success: true,
+//                 message: "Payment already processed",
+//             });
+//         }
 
-    // Validate txnid
-    if (payment.payu_txn_id !== txnid) {
-      await session.abortTransaction();
-      return redirectFailure("txnid-mismatch");
-    }
+//         // Validate txnid
+//         if (payment.payu_txn_id !== txnid) {
+//             await session.abortTransaction();
+//             return redirectFailure("txnid-mismatch");
+//         }
 
-    // Verify payment with PayU
-    const verification = await payu.verifyPayment(params);
+//         // Verify payment with PayU
+//         const verification = await payu.verifyPayment(params);
 
-    if (!verification.success || !verification.verified) {
+//         if (!verification.success || !verification.verified) {
 
-      payment.status = "failed";
-      payment.failure_reason = verification.error || "verification-failed";
-      payment.payu_mihpayid = mihpayid;
-      payment.payu_response_hash = hash;
-      payment.gateway_response = params;
-      payment.verification_timestamp = new Date();
+//             payment.status = "failed";
+//             payment.failure_reason = verification.error || "verification-failed";
+//             payment.payu_mihpayid = mihpayid;
+//             payment.payu_response_hash = hash;
+//             payment.gateway_response = params;
+//             payment.verification_timestamp = new Date();
 
-      await payment.save({ session });
+//             await payment.save({ session });
 
-      booking.session_status = "Payment Failed";
-      booking.last_updated = new Date();
+//             booking.session_status = "Payment Failed";
+//             booking.last_updated = new Date();
 
-      await booking.save({ session });
+//             await booking.save({ session });
 
-      await session.commitTransaction();
-      committed = true;
+//             await session.commitTransaction();
+//             committed = true;
 
-      return redirectFailure("verification-failed");
-    }
+//             return redirectFailure("verification-failed");
+//         }
 
-    if (status.toLowerCase() !== "success") {
+//         if (status.toLowerCase() !== "success") {
 
-      payment.status = "failed";
-      payment.failure_reason = status;
-      payment.payu_mihpayid = mihpayid;
-      payment.gateway_response = params;
+//             payment.status = "failed";
+//             payment.failure_reason = status;
+//             payment.payu_mihpayid = mihpayid;
+//             payment.gateway_response = params;
 
-      await payment.save({ session });
+//             await payment.save({ session });
 
-      booking.session_status = "Payment Failed";
-      booking.last_updated = new Date();
+//             booking.session_status = "Payment Failed";
+//             booking.last_updated = new Date();
 
-      await booking.save({ session });
+//             await booking.save({ session });
 
-      await session.commitTransaction();
-      committed = true;
+//             await session.commitTransaction();
+//             committed = true;
 
-      return redirectFailure("payment-failed");
-    }
+//             return redirectFailure("payment-failed");
+//         }
 
-    // Payment success
-    payment.status = "completed";
-    payment.payu_mihpayid = mihpayid;
-    payment.payu_response_hash = hash;
-    payment.gateway_response = params;
-    payment.completed_at = new Date();
-    payment.paidAt = new Date();
-    payment.verification_timestamp = new Date();
+//         // Payment success
+//         payment.status = "completed";
+//         payment.payu_mihpayid = mihpayid;
+//         payment.payu_response_hash = hash;
+//         payment.gateway_response = params;
+//         payment.completed_at = new Date();
+//         payment.paidAt = new Date();
+//         payment.verification_timestamp = new Date();
 
-    await payment.save({ session });
+//         await payment.save({ session });
 
-    booking.session_status = "Confirmed";
-    booking.payment_verified_at = new Date();
-    booking.last_updated = new Date();
-    booking.bookingSource = via;
+//         booking.session_status = "Confirmed";
+//         booking.payment_verified_at = new Date();
+//         booking.last_updated = new Date();
+//         booking.bookingSource = via;
 
-    await booking.save({ session });
+//         await booking.save({ session });
 
-    await session.commitTransaction();
-    committed = true;
+//         await session.commitTransaction();
+//         committed = true;
 
-    // Clear cache
-    try {
-      await flushAllData(redisClient);
-    } catch (e) {}
+//         // Clear cache
+//         try {
+//             await flushAllData(redisClient);
+//         } catch (e) { }
 
-    if (via === "web") {
-      return redirectSuccess(booking);
-    }
+//         if (via === "web") {
+//             return redirectSuccess(booking);
+//         }
 
-    return res.json({
-      success: true,
-      booking_id: booking._id,
-      payment_id: payment._id,
-    });
+//         return res.json({
+//             success: true,
+//             booking_id: booking._id,
+//             payment_id: payment._id,
+//         });
 
-  } catch (error) {
+//     } catch (error) {
 
-    if (!committed) {
-      await session.abortTransaction();
-    }
+//         if (!committed) {
+//             await session.abortTransaction();
+//         }
 
-    console.error("Payment verification error:", error);
+//         console.error("Payment verification error:", error);
 
-    if (via === "web") {
-      return redirectFailure("verification-error", {
-        error: error.message,
-      });
-    }
+//         if (via === "web") {
+//             return redirectFailure("verification-error", {
+//                 error: error.message,
+//             });
+//         }
 
-    return res.status(500).json({
-      success: false,
-      message: "Payment verification failed",
-      error: error.message,
-      booking_id: bookingId,
-      payment_id: paymentId,
-    });
+//         return res.status(500).json({
+//             success: false,
+//             message: "Payment verification failed",
+//             error: error.message,
+//             booking_id: bookingId,
+//             payment_id: paymentId,
+//         });
 
-  } finally {
+//     } finally {
 
-    await session.endSession();
+//         await session.endSession();
 
-  }
-};
+//     }
+// };
 
 exports.handlePaymentFailure = async (req, res) => {
     try {
@@ -1420,37 +2003,43 @@ exports.getAdminChangeSessionInformation = async (req, res) => {
 };
 
 exports.addAndUpdateSessionPrescriptions = async (req, res) => {
+
     const file = req.file || {};
     const session = await mongoose.startSession();
 
     try {
-        session.startTransaction();
-        const { _id, prescriptionType, sessionNumber } = req.body;
-        console.log("req.body", req.body)
 
-        // Validate required fields
+        session.startTransaction();
+
+        const { _id, prescriptionType, sessionNumber } = req.body;
+
         if (!_id || !sessionNumber || !prescriptionType) {
+
             if (file.path) deleteFile(file.path);
+
             return res.status(400).json({
                 success: false,
                 message: "Booking ID (_id), sessionNumber, and prescriptionType are required."
             });
         }
 
-        const bookings = await Bookings.findById(_id).session(session)
+        const bookings = await Bookings.findById(_id)
+            .session(session)
             .populate([
-                'session_booking_for_clinic',
-                'session_booking_for_doctor',
-                'session_booking_user',
-                'payment_id'
+                "session_booking_for_clinic",
+                "session_booking_for_doctor",
+                "session_booking_user",
+                "payment_id"
             ])
             .populate(
-                'treatment_id',
-                '-service_desc -service_available_at_clinics -service_reviews -service_session_allowed_limit -service_tag -service_doctor -createdAt -updatedAt'
+                "treatment_id",
+                "-service_desc -service_available_at_clinics -service_reviews -service_session_allowed_limit -service_tag -service_doctor -createdAt -updatedAt"
             );
 
         if (!bookings) {
+
             if (file.path) deleteFile(file.path);
+
             return res.status(404).json({
                 success: false,
                 message: "Booking not found."
@@ -1458,19 +2047,23 @@ exports.addAndUpdateSessionPrescriptions = async (req, res) => {
         }
 
         const matchedSession = bookings.SessionDates.find(
-            session => session.sessionNumber === Number(sessionNumber)
+            s => s.sessionNumber === Number(sessionNumber)
         );
 
         if (!matchedSession) {
+
             if (file.path) deleteFile(file.path);
+
             return res.status(404).json({
                 success: false,
                 message: "Session number not found in the booking."
             });
         }
 
-        if (matchedSession.status !== 'Completed') {
+        if (matchedSession.status !== "Completed") {
+
             if (file.path) deleteFile(file.path);
+
             return res.status(400).json({
                 success: false,
                 message: "Cannot add prescription. This session has not been completed."
@@ -1480,84 +2073,162 @@ exports.addAndUpdateSessionPrescriptions = async (req, res) => {
         const no_of_session_book = bookings.no_of_session_book || 0;
 
         if (bookings.session_prescriptions.length >= no_of_session_book) {
+
             if (file.path) deleteFile(file.path);
+
             return res.status(400).json({
                 success: false,
                 message: "Cannot add more session prescriptions than the allowed limit."
             });
         }
 
-        // Check if a prescription already exists for this sessionNumber
-        const existingPrescriptionIndex = bookings.session_prescriptions.findIndex(
-            p => p.sessionNumber === Number(sessionNumber)
-        );
+        const existingPrescriptionIndex =
+            bookings.session_prescriptions.findIndex(
+                p => p.sessionNumber === Number(sessionNumber)
+            );
 
         let uploadedResult = null;
 
-        // Upload new file
         if (file.path) {
             uploadedResult = await uploadSingleFile(file);
         }
 
-        // If prescription already exists, update it
         if (existingPrescriptionIndex !== -1) {
-            const existing = bookings.session_prescriptions[existingPrescriptionIndex];
 
-            // Delete previous file from cloud if it exists
+            const existing =
+                bookings.session_prescriptions[existingPrescriptionIndex];
+
             if (existing.public_id) {
                 await deleteFileCloud(existing.public_id);
             }
 
-            // Update the entry
             bookings.session_prescriptions[existingPrescriptionIndex] = {
                 sessionNumber: Number(sessionNumber),
                 date: new Date(),
                 prescriptionType,
-                url: uploadedResult?.url || '',
-                public_id: uploadedResult?.public_id || '',
+                url: uploadedResult?.url || existing.url,
+                public_id: uploadedResult?.public_id || existing.public_id,
                 uploadedAt: new Date()
             };
+
         } else {
-            // Add new prescription
+
             bookings.session_prescriptions.push({
                 sessionNumber: Number(sessionNumber),
                 date: new Date(),
                 prescriptionType,
-                url: uploadedResult?.url || '',
-                public_id: uploadedResult?.public_id || '',
+                url: uploadedResult?.url || "",
+                public_id: uploadedResult?.public_id || "",
                 uploadedAt: new Date()
             });
+
         }
 
         await bookings.save({ session });
+
         await session.commitTransaction();
+
         session.endSession();
+
+        // =========================
+        // SEND WHATSAPP MESSAGE
+        // =========================
+
+        try {
+
+            const user = bookings.session_booking_user;
+            const phone = user?.phone;
+
+            if (phone) {
+
+                const prescription =
+                    bookings.session_prescriptions.find(
+                        p => p.sessionNumber === Number(sessionNumber)
+                    );
+
+                let message = "";
+
+                if (existingPrescriptionIndex !== -1) {
+
+                    message = `Dear ${user.name},
+
+Your prescription for session ${sessionNumber} has been updated.
+
+Doctor: Dr. Rajneesh Kant
+Clinic: Back to Nature Spine Clinic
+
+Please review the updated prescription carefully and follow the medical advice provided.
+
+Stay healthy.`;
+
+                } else {
+
+                    message = `Dear ${user.name},
+
+Your prescription for session ${sessionNumber} is now available.
+
+Doctor: Dr. Rajneesh Kant
+Clinic: Back to Nature Spine Clinic
+
+Please check the prescription and follow the instructions carefully for better recovery.
+
+Take care.`;
+
+                }
+
+                await sendWhatsApp({
+                    mobile: phone,
+                    msg: message,
+                    img1: prescription?.url || ""
+                });
+
+            }
+
+        } catch (whatsappError) {
+
+            console.error(
+                "WhatsApp notification failed:",
+                whatsappError.message
+            );
+
+        }
+
+        const responsePrescription =
+            bookings.session_prescriptions.find(
+                p => p.sessionNumber === Number(sessionNumber)
+            );
 
         return res.status(200).json({
             success: true,
             message: "Prescription added/updated successfully.",
-            data: bookings.session_prescriptions.find(p => p.sessionNumber === Number(sessionNumber))
+            data: responsePrescription
         });
 
     } catch (error) {
+
         await session.abortTransaction();
+
         session.endSession();
 
-        console.error("Error adding/updating session prescription:", error);
+        console.error(
+            "Error adding/updating session prescription:",
+            error
+        );
 
-        if (file.path) {
-            deleteFile(file.path);
-        }
+        if (file.path) deleteFile(file.path);
 
         return res.status(500).json({
             success: false,
             message: "An error occurred while updating the prescription.",
             error: error.message
         });
+
     }
 };
+
 exports.addNextSessionDate = async (req, res) => {
     try {
+
         const { bookingId, new_date, new_time } = req.body;
 
         if (!bookingId || !new_date || !new_time) {
@@ -1567,7 +2238,9 @@ exports.addNextSessionDate = async (req, res) => {
             });
         }
 
-        const booking = await Bookings.findById(bookingId);
+        const booking = await Bookings.findById(bookingId)
+            .populate("session_booking_user");
+
         if (!booking) {
             return res.status(404).json({
                 success: false,
@@ -1575,10 +2248,9 @@ exports.addNextSessionDate = async (req, res) => {
             });
         }
 
-        // Get the last session in the booking
+        // Last session
         const lastSession = booking.SessionDates[booking.SessionDates.length - 1];
 
-        // Check if the last session is completed OR cancelled
         if (lastSession && !["Completed", "Cancelled"].includes(lastSession.status)) {
             return res.status(400).json({
                 success: false,
@@ -1586,8 +2258,7 @@ exports.addNextSessionDate = async (req, res) => {
             });
         }
 
-
-        // Check if session limit is reached
+        // Check session limit
         if (booking.SessionDates.length >= booking.no_of_session_book) {
             return res.status(400).json({
                 success: false,
@@ -1595,16 +2266,50 @@ exports.addNextSessionDate = async (req, res) => {
             });
         }
 
-        // Add the next session
+        // Add session
         const nextSessionNumber = booking.SessionDates.length + 1;
+
         booking.SessionDates.push({
             sessionNumber: nextSessionNumber,
             date: new Date(new_date),
             time: new_time,
-            status: 'Pending'
+            status: "Pending"
         });
 
         await booking.save();
+
+        // ===== SEND WHATSAPP =====
+        try {
+
+            const phone = booking.session_booking_user?.phone;
+
+            if (phone) {
+
+                const message = `Dear ${booking.session_booking_user.name},
+
+Your next therapy session has been scheduled successfully.
+
+Session Number: ${nextSessionNumber}
+Date: ${new_date}
+Time: ${new_time}
+
+Clinic: Back to Nature Spine Clinic
+Doctor: Dr. Rajneesh Kant
+
+Please arrive 10 minutes before your appointment.
+
+Thank you.`;
+
+                await sendWhatsApp({
+                    mobile: phone,
+                    msg: message
+                });
+
+            }
+
+        } catch (err) {
+            console.log("WhatsApp error:", err.message);
+        }
 
         return res.status(200).json({
             success: true,
@@ -1613,19 +2318,25 @@ exports.addNextSessionDate = async (req, res) => {
         });
 
     } catch (error) {
+
         console.error("Error adding next session date:", error);
+
         return res.status(500).json({
             success: false,
             message: "Unable to add next session date. Please try again later.",
             error: error.message
         });
+
     }
 };
+
 // Change session status
 exports.changeSessionStatus = async (req, res) => {
     const sessionDb = await mongoose.startSession();
     sessionDb.startTransaction();
+
     try {
+
         const { bookingId, sessionNumber, newStatus, reason } = req.body;
 
         if (!bookingId || !sessionNumber || !newStatus) {
@@ -1635,9 +2346,15 @@ exports.changeSessionStatus = async (req, res) => {
             });
         }
 
-        const booking = await Bookings.findById(bookingId).session(sessionDb);
+        const booking = await Bookings.findById(bookingId)
+            .populate("session_booking_user")
+            .session(sessionDb);
+
         if (!booking) {
-            return res.status(404).json({ success: false, message: "Booking not found." });
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found."
+            });
         }
 
         const sessionToUpdate = booking.SessionDates.find(
@@ -1645,7 +2362,10 @@ exports.changeSessionStatus = async (req, res) => {
         );
 
         if (!sessionToUpdate) {
-            return res.status(404).json({ success: false, message: "Session not found." });
+            return res.status(404).json({
+                success: false,
+                message: "Session not found."
+            });
         }
 
         // Update status
@@ -1655,6 +2375,96 @@ exports.changeSessionStatus = async (req, res) => {
         await booking.save({ session: sessionDb });
         await sessionDb.commitTransaction();
 
+        // ===== WHATSAPP MESSAGE =====
+        try {
+
+            const user = booking.session_booking_user;
+            const phone = user?.phone;
+
+            if (phone) {
+
+                let message = "";
+
+                if (newStatus === "Completed") {
+
+                    message = `Dear ${user.name},
+
+Your therapy session ${sessionNumber} has been successfully completed.
+
+Doctor: Dr. Rajneesh Kant
+Clinic: Back to Nature Spine Clinic
+
+We hope you are feeling better. Follow your prescribed care plan and stay healthy.
+
+Thank you for trusting us.`;
+
+                }
+
+                else if (newStatus === "Cancelled") {
+
+                    message = `Dear ${user.name},
+
+Your therapy session ${sessionNumber} has been cancelled.
+
+Reason: ${reason || "Not specified"}
+
+If you would like to reschedule your appointment, please contact the clinic.
+
+Back to Nature Spine Clinic`;
+
+                }
+
+                else if (newStatus === "Rescheduled") {
+
+                    message = `Dear ${user.name},
+
+Your therapy session ${sessionNumber} has been rescheduled.
+
+Please check your updated appointment details.
+
+Clinic: Back to Nature Spine Clinic
+Doctor: Dr. Rajneesh Kant
+
+Thank you.`;
+
+                }
+
+                else if (newStatus === "Pending") {
+
+                    message = `Dear ${user.name},
+
+Your therapy session ${sessionNumber} is currently scheduled and pending.
+
+We look forward to seeing you at Back to Nature Spine Clinic.
+
+Doctor: Dr. Rajneesh Kant`;
+
+                }
+
+                else if (newStatus === "In Progress") {
+
+                    message = `Dear ${user.name},
+
+Your therapy session ${sessionNumber} is currently in progress at the clinic.
+
+Doctor: Dr. Rajneesh Kant
+Back to Nature Spine Clinic`;
+
+                }
+
+                if (message) {
+                    await sendWhatsApp({
+                        mobile: phone,
+                        msg: message
+                    });
+                }
+
+            }
+
+        } catch (err) {
+            console.log("WhatsApp error:", err.message);
+        }
+
         return res.status(200).json({
             success: true,
             message: "Session status updated successfully.",
@@ -1662,13 +2472,17 @@ exports.changeSessionStatus = async (req, res) => {
         });
 
     } catch (error) {
+
         await sessionDb.abortTransaction();
+
         console.error("Error updating session status:", error);
+
         return res.status(500).json({
             success: false,
             message: "Failed to update session status.",
             error: error.message
         });
+
     } finally {
         sessionDb.endSession();
     }

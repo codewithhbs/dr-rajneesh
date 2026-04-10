@@ -6,6 +6,7 @@ const { sendToken } = require("../../utils/sendToken");
 const axios = require("axios");
 const Bookings = require("../../models/booking/bookings.sessions.model");
 const { OAuth2Client } = require("google-auth-library");
+const { sendWhatsApp } = require("../../utils/sendWhatsappMessages");
 const createOtpExpiry = (minutes = 10) => {
     return new Date(Date.now() + minutes * 60 * 1000);
 };
@@ -13,7 +14,6 @@ const createOtpExpiry = (minutes = 10) => {
 exports.registerNormalUser = async (req, res, next) => {
     try {
         const { name, email, phone, password, termsAccepted } = req.body;
-        console.log('registration data', req.body);
         if (!name || !email || !phone || !password) {
             return res.status(400).json({
                 success: false,
@@ -97,6 +97,11 @@ exports.registerNormalUser = async (req, res, next) => {
                     console.error("❌ Error adding job to queue:", error);
                 });
 
+            await sendWhatsApp({
+                mobile: existingUser.phone,
+                msg: `Please Verify Your Account  OTP is ${otp}. It will expire in 5 minutes.`
+            });
+
             return res.status(200).json({
                 success: true,
                 message:
@@ -140,6 +145,10 @@ exports.registerNormalUser = async (req, res, next) => {
       </div>
     `;
 
+            await sendWhatsApp({
+                mobile: existingUser.phone,
+                msg: `Thank you for registering. Please verify your Phone Number using the OTP :- ${otp}.`
+            });
         emailQueue
             .add({
                 type: "register",
@@ -161,112 +170,142 @@ exports.registerNormalUser = async (req, res, next) => {
             userId: newUser._id,
         });
     } catch (error) {
+        console.log(error)
         next(error);
     }
 };
 
 
 exports.registerNormal = async (req, res, next) => {
-    try {
-        const { name, phone, termsAccepted = true, email, aadhhar, age, gender } = req.body;
+  try {
 
-        if (!name || !phone) {
-            return res.status(400).json({
-                success: false,
-                message: "Name and phone are required",
-            });
-        }
+    const { name, phone, termsAccepted = true, email, aadhhar, age, gender } = req.body;
 
-        // Normalize phone
-        const trimmedPhone = phone.trim();
-
-        let user = await userModel.findOne({ phone: trimmedPhone });
-
-        const otp = 123456; // In production, use random 6-digit
-        const otpExpiry = createOtpExpiry(30);
-
-        if (user) {
-            // User exists
-
-            if (user.status === "active" && user.phoneNumber?.isVerified) {
-                // Fully verified user → Treat as LOGIN flow: send OTP for login
-                user.phoneNumber = {
-                    isVerified: true, // remains verified
-                    otp,
-                    otpExpiry,
-                };
-                await user.save();
-
-                return res.status(200).json({
-                    success: true,
-                    message: "OTP sent for login",
-                    userId: user._id,
-                    otp: otp, // remove in production
-                });
-            }
-
-            // User exists but not fully verified → Update details & send OTP for verification
-            user.name = name.trim();
-            user.phone = trimmedPhone;
-            user.age = age;
-            user.gender = gender;
-            user.email = email ? email.toLowerCase().trim() : user.email || "";
-            user.aadhhar = aadhhar ? aadhhar.trim() : user.aadhhar || "";
-            user.termsAccepted = termsAccepted;
-            user.profileImage = {
-                url: `https://api.dicebear.com/9.x/initials/svg?seed=${name.trim()}`,
-                publicId: "",
-            };
-            user.phoneNumber = {
-                isVerified: false,
-                otp,
-                otpExpiry,
-            };
-            user.status = "un-verified";
-
-            await user.save();
-
-            return res.status(200).json({
-                success: true,
-                message: "OTP sent for verification",
-                userId: user._id,
-                otp: otp, // remove in production
-            });
-        }
-
-        // New user registration
-        const newUser = new userModel({
-            name: name.trim(),
-            phone: trimmedPhone,
-            email: email ? email.toLowerCase().trim() : "",
-            aadhhar: aadhhar ? aadhhar.trim() : "",
-            termsAccepted,
-            profileImage: {
-                url: `https://api.dicebear.com/9.x/initials/svg?seed=${name.trim()}`,
-                publicId: "",
-            },
-            phoneNumber: {
-                isVerified: false,
-                otp,
-                otpExpiry,
-            },
-            age,
-            gender,
-            status: "un-verified",
-        });
-
-        await newUser.save();
-
-        return res.status(201).json({
-            success: true,
-            message: "Registration successful! OTP sent for verification.",
-            userId: newUser._id,
-            otp: otp, // remove in production
-        });
-    } catch (error) {
-        next(error);
+    if (!name || !phone) {
+      return res.status(400).json({
+        success: false,
+        message: "Name and phone are required",
+      });
     }
+
+    // Normalize phone
+    const trimmedPhone = phone.trim();
+
+    let user = await userModel.findOne({ phone: trimmedPhone });
+
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000);
+    const otpExpiry = createOtpExpiry(30);
+
+    // MESSAGE
+    const message = `Your verification OTP is ${otp}. It will expire in 30 minutes.`;
+
+    if (user) {
+
+      // If already verified user → LOGIN FLOW
+      if (user.status === "active" && user.phoneNumber?.isVerified) {
+
+        user.phoneNumber = {
+          isVerified: true,
+          otp,
+          otpExpiry,
+        };
+
+        await user.save();
+
+        // Send OTP via WhatsApp
+        await sendWhatsApp({
+          mobile: trimmedPhone,
+          msg: message,
+        });
+
+        return res.status(200).json({
+          success: true,
+          message: "OTP sent for login",
+          userId: user._id,
+        });
+      }
+
+      // USER EXISTS BUT NOT VERIFIED → UPDATE DATA
+
+      user.name = name.trim();
+      user.phone = trimmedPhone;
+      user.age = age;
+      user.gender = gender;
+      user.email = email ? email.toLowerCase().trim() : user.email || "";
+      user.aadhhar = aadhhar ? aadhhar.trim() : user.aadhhar || "";
+      user.termsAccepted = termsAccepted;
+
+      user.profileImage = {
+        url: `https://api.dicebear.com/9.x/initials/svg?seed=${name.trim()}`,
+        publicId: "",
+      };
+
+      user.phoneNumber = {
+        isVerified: false,
+        otp,
+        otpExpiry,
+      };
+
+      user.status = "un-verified";
+
+      await user.save();
+
+      // Send OTP
+      await sendWhatsApp({
+        mobile: trimmedPhone,
+        msg: message,
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: "OTP sent for verification",
+        userId: user._id,
+      });
+    }
+
+    // NEW USER REGISTRATION
+
+    const newUser = new userModel({
+      name: name.trim(),
+      phone: trimmedPhone,
+      email: email ? email.toLowerCase().trim() : "",
+      aadhhar: aadhhar ? aadhhar.trim() : "",
+      termsAccepted,
+      age,
+      gender,
+      profileImage: {
+        url: `https://api.dicebear.com/9.x/initials/svg?seed=${name.trim()}`,
+        publicId: "",
+      },
+      phoneNumber: {
+        isVerified: false,
+        otp,
+        otpExpiry,
+      },
+      status: "un-verified",
+    });
+
+    await newUser.save();
+
+    // Send OTP
+    await sendWhatsApp({
+      mobile: trimmedPhone,
+      msg: message,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Registration successful! OTP sent for verification.",
+      userId: newUser._id,
+    });
+
+  } catch (error) {
+    next(error);
+  }
 };
+
+
 exports.verifyOtpViaNumber = async (req, res, next) => {
     try {
         const { phone, otp } = req.body;
@@ -899,6 +938,185 @@ exports.verifyEmailOtp = async (req, res, next) => {
     }
 };
 
+//login via number
+// Login via mobile number
+exports.sendLoginOtp = async (req, res) => {
+    try {
+
+        const { phone } = req.body;
+
+        const user = await userModel.findOne({ phone });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        // Check if account locked
+        if (user.isLocked) {
+            return res.status(423).json({
+                success: false,
+                message: "Account temporarily locked due to too many failed login attempts"
+            });
+        }
+
+        // Check account status
+        if (user.status !== "active") {
+            return res.status(403).json({
+                success: false,
+                message: "Account is suspended or deactivated"
+            });
+        }
+
+        const otp = Math.floor(100000 + Math.random() * 900000);
+
+        user.phoneNumber.otp = otp;
+        user.phoneNumber.otpExpiry = Date.now() + 5 * 60 * 1000;
+
+        await user.save();
+
+        await sendWhatsApp({
+            mobile: phone,
+            msg: `Your login OTP is ${otp}. It will expire in 5 minutes.`
+        });
+        console.log("Login via phone", otp)
+
+        res.json({
+            success: true,
+            message: "OTP sent successfully"
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+
+exports.verifyLoginOtp = async (req, res) => {
+    try {
+
+        const { phone, otp } = req.body;
+
+        const user = await userModel.findOne({ phone });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        if (user.isLocked) {
+            return res.status(423).json({
+                success: false,
+                message: "Account temporarily locked due to too many failed login attempts"
+            });
+        }
+
+        if (user.status !== "active") {
+            return res.status(403).json({
+                success: false,
+                message: "Account is suspended or deactivated"
+            });
+        }
+
+        // Check OTP
+        if (
+            user.phoneNumber.otp !== otp ||
+            user.phoneNumber.otpExpiry < Date.now()
+        ) {
+
+            await user.incLoginAttempts();
+
+            return res.status(400).json({
+                success: false,
+                message: "Invalid or expired OTP"
+            });
+        }
+
+        // OTP correct
+        user.phoneNumber.otp = null;
+        user.phoneNumber.otpExpiry = null;
+
+        await user.save();
+
+        await user.resetLoginAttempts();
+
+        await sendToken(
+            user,
+            200,
+            res,
+            "Verification successful",
+            true
+        );
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+
+exports.resendLoginOtp = async (req, res) => {
+    try {
+
+        const { phone } = req.body;
+
+        const user = await userModel.findOne({ phone });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        if (user.isLocked) {
+            return res.status(423).json({
+                success: false,
+                message: "Account temporarily locked due to too many failed login attempts"
+            });
+        }
+
+        if (user.status !== "active") {
+            return res.status(403).json({
+                success: false,
+                message: "Account is suspended or deactivated"
+            });
+        }
+
+        const otp = Math.floor(100000 + Math.random() * 900000);
+
+        user.phoneNumber.otp = otp;
+        user.phoneNumber.otpExpiry = Date.now() + 5 * 60 * 1000;
+
+        await user.save();
+
+        await sendWhatsApp({
+            mobile: phone,
+            msg: `Your new login OTP is ${otp}.`
+        });
+
+        res.json({
+            success: true,
+            message: "OTP resent successfully"
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+
 // Login User
 exports.loginUser = async (req, res, next) => {
     try {
@@ -914,7 +1132,7 @@ exports.loginUser = async (req, res, next) => {
         }
 
         const user = await userModel.findOne({ email });
-        console.log(user)
+
         if (!user) {
             return res.status(401).json({
                 success: false,

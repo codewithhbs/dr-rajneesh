@@ -130,7 +130,7 @@ export function RegisterForm({
           {isLoading ? "Creating Account..." : "Create Account"}
         </Button>
       </form>
-
+{/* 
       <div className="relative mt-5">
         <div className="absolute inset-0 flex items-center">
           <Separator className="w-full" />
@@ -162,7 +162,7 @@ export function RegisterForm({
           </svg>
           Google
         </Button>
-      </div>
+      </div> */}
 
       <p className="mt-8 text-center text-sm text-gray-600">
         Already have an account?{" "}

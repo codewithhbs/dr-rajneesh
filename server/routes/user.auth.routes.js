@@ -1,9 +1,9 @@
 const express = require('express');
-const { registerNormalUser, verifyEmailOtp, googleAuthRegisterAndLogin, getUserProfile, getBookingHistory, registerNormal, resendVerificationEmail, loginUser, requestPasswordReset, verifyPasswordResetOtp, googleVerifyRegisterAndLogin, updateUserProfile, verifyOtpWhileUpdating, verifyOtpViaNumber } = require('../controllers/auth/user.controller');
+const { registerNormalUser, verifyEmailOtp, googleAuthRegisterAndLogin, getUserProfile, getBookingHistory, registerNormal, resendVerificationEmail, loginUser, requestPasswordReset, verifyPasswordResetOtp, googleVerifyRegisterAndLogin, updateUserProfile, verifyOtpWhileUpdating, verifyOtpViaNumber, sendLoginOtp, verifyLoginOtp, resendLoginOtp } = require('../controllers/auth/user.controller');
 const { createReview } = require('../controllers/service/review.controller');
 const { isAuthenticated } = require('../middleware/protect');
 const { getBookingsByDateAndTimePeriod } = require('../controllers/bookings/BookingService');
-const { createAorderForSession, verifyPayment, handlePaymentFailure, foundBookingViaId } = require('../controllers/bookings/CreateBooking');
+const { createBookingForSession, verifyPayment, handlePaymentFailure, foundBookingViaId, verifyRazorpayPayment, verifyPhonePeCallback, checkPhonePeStatus } = require('../controllers/bookings/CreateBooking');
 const { getAllUser, getSingleUser, updateUser, deleteUser } = require('../controllers/admin/userRealated');
 const user_auth_router = express.Router()
 const { CLIENT_ID, REDIRECT_URI } = process.env;
@@ -16,6 +16,13 @@ user_auth_router.post('/request-password-reset', requestPasswordReset)
 user_auth_router.post('/update-profile', isAuthenticated, updateUserProfile)
 user_auth_router.post('/verify-otp-update', isAuthenticated, verifyOtpWhileUpdating)
 user_auth_router.post('/verify-password-reset', verifyPasswordResetOtp)
+
+// New logins
+user_auth_router.post("/login/send-otp", sendLoginOtp);
+
+user_auth_router.post("/login/verify-otp", verifyLoginOtp);
+
+user_auth_router.post("/login/resend-otp", resendLoginOtp);
 
 
 
@@ -40,9 +47,14 @@ user_auth_router.get('/google/callback', googleAuthRegisterAndLogin);
 
 
 user_auth_router.post('/bookings/availability', isAuthenticated, getBookingsByDateAndTimePeriod);
-user_auth_router.post('/bookings/sessions', isAuthenticated, createAorderForSession);
+user_auth_router.post('/bookings/sessions', isAuthenticated, createBookingForSession);
 
-user_auth_router.post('/bookings/verify-payment', verifyPayment);
+user_auth_router.post('/bookings/razarpay/verify-payment', verifyRazorpayPayment);
+user_auth_router.post('/bookings/phonepe/verify-payment/:bookingId', verifyPhonePeCallback);
+user_auth_router.post('/bookings/phonepe/check-status', checkPhonePeStatus);
+
+
+
 user_auth_router.post('/bookings/payment-failed', isAuthenticated, handlePaymentFailure);
 user_auth_router.get('/found-booking/:id', foundBookingViaId);
 

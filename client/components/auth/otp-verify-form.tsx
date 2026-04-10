@@ -28,6 +28,7 @@ export function OTPVerifyForm({
   onResendOTP,
   onBackToPhone,
 }: OTPVerifyFormProps) {
+  console.log("formData",formData )
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="text-center mb-8">
@@ -38,7 +39,7 @@ export function OTPVerifyForm({
         <p className="text-gray-600">
          {` We've sent a 6-digit code to`}
           <br />
-          <span className="font-medium">{formData.email}</span>
+          <span className="font-medium">{formData.email} & {formData?.phone || "N/A"}</span>
         </p>
       </div>
 

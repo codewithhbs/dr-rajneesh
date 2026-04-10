@@ -82,7 +82,7 @@ const Notification = ({ onClose }) => {
         return () => clearTimeout(timer)
     }, [])
 
-    if (!isVisible) return null
+    if (!isVisible || notificationData.length > 0) return null
 
     return (
         <div className="relative w-full bg-gradient-to-r from-blue-400 via-blue-700 to-blue-400 text-white shadow-lg overflow-hidden border-b-2 border-blue-400/30">

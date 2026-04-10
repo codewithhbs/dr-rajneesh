@@ -101,6 +101,8 @@ if (NODE_ENV === 'production') {
 }
 
 // Routes
+app.use("/upload", express.static("uploads"));
+app.use("/invoices", express.static("invoices"));
 app.get('/', (req, res) => res.send('API Running'));
 app.use('/api/v1', router)
 app.use('/api/v1/user', user_auth_router)

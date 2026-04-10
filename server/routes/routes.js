@@ -147,7 +147,7 @@ router.get("/get-blogs-count", getBlogsCount);
 router.get("/get-blog/:id", getSingleBlog);
 router.get("/get-blog/slug/:slug", getSingleBlogBySlug);
 router.put("/update-blog/:id", isAdmin, upload.single("image"), updateBlog);
-router.delete("/delete-blog/:id", isAdmin, deleteBlog)
+router.delete("/delete-blog/:id",  deleteBlog)
 
 router.get("/get-config-settings", getSettings);
 router.put("/update-config-settings/:id", (req, res, next) => {

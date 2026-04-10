@@ -1,138 +1,152 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import axios, { AxiosError } from "axios";
-import { toast } from "sonner";
-import { usePathname, useRouter } from "next/navigation";
-import { useAuth } from "@/context/authContext/auth";
-import Cookies from "js-cookie";
-import { Loader2, CheckCircle2 } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
 const API_BASE_URL = "https://api.drrajneeshkant.in/api/v1/user";
 
-interface PatientDetailsStepProps {
-  next: () => void;
-  formData: any;
-  setFormData: React.Dispatch<React.SetStateAction<any>>;
-  setOtpVerify: React.Dispatch<React.SetStateAction<boolean>>;
+/* ─── tiny icon helpers ─── */
+const CheckIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M2.5 7L5.5 10L11.5 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const SpinnerIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ animation: "spin 0.8s linear infinite" }}>
+    <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" strokeOpacity="0.3" />
+    <path d="M14 8a6 6 0 00-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+  </svg>
+);
+
+/* ─── validation helpers ─── */
+function getFieldStatus(name, value) {
+  switch (name) {
+    case "name":    return value.trim().length > 2;
+    case "phone":   return /^\d{10}$/.test(value);
+    case "email":   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+    case "age":     return value !== "" && !isNaN(Number(value)) && Number(value) >= 1;
+    case "aadhhar": return /^\d{12}$/.test(value);
+    default:        return true;
+  }
+}
+
+/* ─── Field wrapper ─── */
+function Field({ label, required, hint, error, children }) {
+  return (
+    <div style={styles.field}>
+      <label style={styles.label}>
+        {label}
+        {required && <span style={styles.req}> *</span>}
+      </label>
+      {children}
+      {(hint || error) && (
+        <span style={{ ...styles.hint, color: error ? "#A32D2D" : "#5F5E5A" }}>
+          {error || hint}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/* ─── Checklist item ─── */
+function CheckItem({ done, label }) {
+  return (
+    <div style={{ ...styles.checkItem, color: done ? "#27500A" : "#888780" }}>
+      <span style={{ ...styles.checkDot, background: done ? "#639922" : "transparent", borderColor: done ? "#639922" : "#B4B2A9", color: "#fff" }}>
+        {done && <CheckIcon />}
+      </span>
+      <span style={{ fontSize: 13 }}>{label}</span>
+    </div>
+  );
 }
 
 export default function PatientDetailsStep({
-  next,
   formData,
   setFormData,
+  otpVerify,
   setOtpVerify,
-}: PatientDetailsStepProps) {
+  onNext,
+}) {
   const router = useRouter();
   const pathname = usePathname();
-  const { token, setToken, user } = useAuth();
+  const searchParams = useSearchParams();
 
   const [otp, setOtp] = useState("");
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [userIdFromRegister, setUserIdFromRegister] = useState<string | null>(null);
-  const [bookingFor, setBookingFor] = useState<"myself" | "someone-else">("");
+  const [touched, setTouched] = useState({});
+  const [userIdFromRegister, setUserIdFromRegister] = useState(null);
+  const [otpError, setOtpError] = useState("");
 
-  const isLoggedIn = !!token;
+  const requiredFields = ["name", "phone", "email", "age", "aadhhar"];
 
-  const isFormFilledEnough = useMemo(() => {
-    return (
-      formData.name?.trim() &&
-      formData.phone?.length === 10 &&
-      /^\d{10}$/.test(formData.phone) &&
-      formData.email?.trim() &&
-      formData.aadhhar?.trim() &&
-      formData.age?.trim() &&
-      !isNaN(Number(formData.age)) &&
-      Number(formData.age) >= 1
-    );
+  const fieldValid = useMemo(() => {
+    const result = {};
+    requiredFields.forEach((f) => {
+      result[f] = getFieldStatus(f, formData[f] ?? "");
+    });
+    return result;
   }, [formData]);
 
+  const allFieldsValid = requiredFields.every((f) => fieldValid[f]);
+  const isStep1Valid = allFieldsValid && otpVerify;
+
   // ────────────────────────────────────────────────
-  //  Pre-fill logged-in user data when choosing "myself"
+  //  Load data from URL query params on mount
   // ────────────────────────────────────────────────
   useEffect(() => {
-    if (!isLoggedIn || bookingFor !== "myself" || !user?._id) return;
-
-    const updated = {
-      name: user.name || "",
-      phone: user.phone || "",
-      gender: user.gender || "male",
-      age: user.age ? String(user.age) : "",
-      email: user.email || "",
-      aadhhar: user.aadhhar || "",
-      passport: user.passport || "",
+    const params = {
+      name: searchParams.get("name") || "",
+      phone: searchParams.get("phone") || "",
+      email: searchParams.get("email") || "",
+      aadhhar: searchParams.get("aadhhar") || "",
+      passport: searchParams.get("passport") || "",
+      age: searchParams.get("age") || "",
+      gender: searchParams.get("gender") || "male",
     };
 
-    setFormData(updated);
+    setFormData((prev) => ({ ...prev, ...params }));
+  }, [searchParams, setFormData]);
 
-    const params = new URLSearchParams();
-    Object.entries(updated).forEach(([key, val]) => {
-      if (val) params.set(key, String(val));
-    });
-    params.set("userId", user._id);
-    params.set("gender", updated.gender);
-
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [bookingFor, isLoggedIn, user, pathname, router, setFormData]);
-
-  // ────────────────────────────────────────────────
-  //  Auto-advance for logged-in user choosing "someone else"
-  // ────────────────────────────────────────────────
+  /* auto-send OTP when form is complete (guest flow) */
   useEffect(() => {
-    if (!isLoggedIn || bookingFor !== "someone-else" || !isFormFilledEnough) return;
+    if (!allFieldsValid || showOtpModal || otpVerify || isSubmitting || userIdFromRegister) return;
+    const t = setTimeout(sendRegistrationAndOtp, 800);
+    return () => clearTimeout(t);
+  }, [allFieldsValid, showOtpModal, otpVerify, isSubmitting, userIdFromRegister]);
 
-    const params = new URLSearchParams({
-      name: formData.name.trim(),
-      phone: formData.phone,
-      gender: formData.gender || "male",
-      age: formData.age,
-      email: formData.email.trim(),
-      aadhhar: formData.aadhhar.trim(),
-      passport: formData.passport?.trim() || "",
-      userId: user?._id || "",
-      guest: "true",
-    });
+  const updateField = (name, value) => {
+    let v = value;
+    if (name === "phone")   v = value.replace(/\D/g, "").slice(0, 10);
+    if (name === "age")     v = value.replace(/\D/g, "").slice(0, 3);
+    if (name === "aadhhar") v = value.replace(/\D/g, "").slice(0, 12);
 
+    setFormData((prev) => ({ ...prev, [name]: v }));
+    setTouched((prev) => ({ ...prev, [name]: true }));
+
+    // Update URL params
+    const params = new URLSearchParams(searchParams.toString());
+    params.set(name, v);
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-    setOtpVerify(true);
-    // next(); // uncomment if you want to auto-go to next step
-  }, [isFormFilledEnough, bookingFor, isLoggedIn, formData, user, pathname, router, setOtpVerify]);
-
-  // ────────────────────────────────────────────────
-  //  Auto-trigger registration + OTP when not logged in
-  // ────────────────────────────────────────────────
-  useEffect(() => {
-    if (isLoggedIn || !isFormFilledEnough || showOtpModal || userIdFromRegister || isSubmitting) {
-      return;
-    }
-
-    const timeout = setTimeout(() => {
-      sendRegistrationAndOtp();
-    }, 900);
-
-    return () => clearTimeout(timeout);
-  }, [isFormFilledEnough, isLoggedIn, showOtpModal, userIdFromRegister, isSubmitting]);
-
-  const updateField = (name: string, value: string) => {
-    let cleaned = value;
-
-    if (name === "phone") {
-      cleaned = value.replace(/\D/g, "").slice(0, 10);
-    } else if (name === "age") {
-      cleaned = value.replace(/\D/g, "").slice(0, 3);
-    } else if (name === "aadhhar" || name === "passport") {
-      cleaned = value.replace(/\D/g, "").slice(0, 12);
-    }
-
-    setFormData((prev: any) => ({ ...prev, [name]: cleaned }));
   };
 
-  const sendRegistrationAndOtp = async () => {
-    if (isLoggedIn || !isFormFilledEnough || isSubmitting) return;
+  const fieldError = (name) => {
+    if (!touched[name] || fieldValid[name]) return "";
+    const msgs = {
+      name:    "Enter at least 3 characters",
+      phone:   "Enter a valid 10-digit mobile number",
+      email:   "Enter a valid email address",
+      age:     "Enter a valid age (1 or above)",
+      aadhhar: "Enter a valid 12-digit Aadhaar number",
+    };
+    return msgs[name] || "";
+  };
 
+  async function sendRegistrationAndOtp() {
+    if (!allFieldsValid || isSubmitting) return;
     setIsSubmitting(true);
-
     try {
       const payload = {
         name: formData.name.trim(),
@@ -145,291 +159,274 @@ export default function PatientDetailsStep({
         termsAccepted: true,
       };
 
-      const resp = await axios.post(`${API_BASE_URL}/register-via-number`, payload);
+      const res = await fetch(`${API_BASE_URL}/register-via-number`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-      if (resp.data.success) {
-        setUserIdFromRegister(resp.data.userId);
+      const data = await res.json();
+
+      if (data.success) {
+        setUserIdFromRegister(data.userId);
         setShowOtpModal(true);
-        toast.success("OTP sent to your mobile number");
+      } else {
+        alert(data.message || "Failed to send OTP");
       }
-    } catch (err: any) {
-      const msg = err.response?.data?.message ?? "Failed to send OTP. Please try again.";
-      toast.error(msg);
+    } catch {
+      alert("Network error. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }
 
-  const verifyOtp = async (e: React.FormEvent) => {
+  async function verifyOtp(e) {
     e.preventDefault();
     if (otp.length !== 6 || isSubmitting) return;
 
     setIsSubmitting(true);
+    setOtpError("");
 
     try {
-      const resp = await axios.post(`${API_BASE_URL}/verify-otp-via-number`, {
-        phone: formData.phone,
-        otp: otp.trim(),
+      const res = await fetch(`${API_BASE_URL}/verify-otp-via-number`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: formData.phone, otp: otp.trim() }),
       });
 
-      if (resp.data.success) {
-        const newToken = resp.data.token;
-        if (newToken) {
-          Cookies.set("token", newToken, { expires: 7 });
-          setToken(newToken);
-        }
+      const data = await res.json();
 
-        toast.success("Phone number verified successfully!");
-
-        const params = new URLSearchParams({
-          name: formData.name.trim(),
-          phone: formData.phone,
-          gender: formData.gender || "male",
-          age: formData.age,
-          email: formData.email.trim(),
-          aadhhar: formData.aadhhar.trim(),
-          passport: formData.passport?.trim() || "",
-          userId: resp.data.userId || userIdFromRegister || "",
-        });
-
-        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      if (data.success) {
         setOtpVerify(true);
         setShowOtpModal(false);
-        // next(); // optional auto-next
+      } else {
+        setOtpError(data.message || "Invalid or expired OTP");
       }
-    } catch (err: any) {
-      const msg = err.response?.data?.message ?? "Invalid or expired OTP";
-      toast.error(msg);
+    } catch {
+      setOtpError("Network error. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const isFormLocked = isLoggedIn && bookingFor === "myself";
+  }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
-      <div className="text-center mb-10">
-        <h2 className="text-3xl font-bold text-gray-900 mb-3">Patient Details</h2>
-        <p className="text-gray-600">
-          Please fill in the correct information for a smooth booking experience.
-        </p>
+    <div style={styles.page}>
+      {/* Header */}
+      <div style={styles.header}>
+        <div style={styles.avatar}>RK</div>
+        <div>
+          <h2 style={styles.title}>Patient details</h2>
+          <p style={styles.subtitle}>Dr. Rajneesh Kant · Back to Nature Spine Clinic</p>
+        </div>
       </div>
 
-      {/* ─── Logged-in user choice ─── */}
-      {isLoggedIn && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8 shadow-sm">
-          <p className="font-medium text-lg mb-5 text-gray-800">
-            Who are you booking the consultation for?
-          </p>
-
-          <div className="grid sm:grid-cols-2 gap-4">
-            <button
-              type="button"
-              onClick={() => setBookingFor("myself")}
-              className={`p-5 rounded-xl border-2 text-left transition-all ${
-                bookingFor === "myself"
-                  ? "border-blue-600 bg-blue-50 ring-2 ring-blue-200"
-                  : "border-gray-300 hover:border-blue-400"
-              }`}
-            >
-              <div className="font-semibold">Myself</div>
-              <div className="text-sm text-gray-600 mt-1">Use my saved profile details</div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setBookingFor("someone-else")}
-              className={`p-5 rounded-xl border-2 text-left transition-all ${
-                bookingFor === "someone-else"
-                  ? "border-blue-600 bg-blue-50 ring-2 ring-blue-200"
-                  : "border-gray-300 hover:border-blue-400"
-              }`}
-            >
-              <div className="font-semibold">Someone else</div>
-              <div className="text-sm text-gray-600 mt-1">New patient / family member</div>
-            </button>
-          </div>
+      {/* Progress checklist */}
+      <div style={styles.checklist}>
+        <p style={styles.checklistTitle}>Complete to continue</p>
+        <div style={styles.checkGrid}>
+          <CheckItem done={fieldValid.name}    label="Full name" />
+          <CheckItem done={fieldValid.phone}   label="Mobile number" />
+          <CheckItem done={fieldValid.email}   label="Email address" />
+          <CheckItem done={fieldValid.age}     label="Age" />
+          <CheckItem done={fieldValid.aadhhar} label="Aadhaar number" />
+          <CheckItem done={otpVerify}          label="OTP verified" />
         </div>
-      )}
+      </div>
 
-      {/* ─── Main Form ─── */}
-      <div className="bg-white rounded-xl border shadow-sm p-6 md:p-8 space-y-7">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Full Name <span className="text-red-600">*</span>
-            </label>
+      {/* Form */}
+      <div style={styles.form}>
+        <div style={{ gridColumn: "1 / -1" }}>
+          <Field label="Full name" required hint="As per government ID" error={fieldError("name")}>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => updateField("name", e.target.value)}
-              placeholder="Enter full name"
-              disabled={isFormLocked}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+              placeholder="Patient's full name"
+              style={inputStyle(fieldError("name"), touched.name && fieldValid.name)}
             />
-          </div>
-
-          {/* Phone */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Mobile Number <span className="text-red-600">*</span>
-            </label>
-            <input
-              type="tel"
-              inputMode="numeric"
-              maxLength={10}
-              value={formData.phone}
-              onChange={(e) => updateField("phone", e.target.value)}
-              placeholder="10-digit mobile number"
-              disabled={isFormLocked || isSubmitting}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-            />
-          </div>
-
-          {/* Gender */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Gender</label>
-            <select
-              value={formData.gender || "male"}
-              onChange={(e) => updateField("gender", e.target.value)}
-              disabled={isFormLocked}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white disabled:bg-gray-100"
-            >
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-
-          {/* Age */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Age <span className="text-red-600">*</span>
-            </label>
-            <input
-              type="tel"
-              inputMode="numeric"
-              maxLength={3}
-              value={formData.age}
-              onChange={(e) => updateField("age", e.target.value)}
-              placeholder="Enter age"
-              disabled={isFormLocked}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100"
-            />
-          </div>
-
-          {/* Email */}
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Email Address <span className="text-red-600">*</span>
-            </label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => updateField("email", e.target.value)}
-              placeholder="yourname@example.com"
-              disabled={isFormLocked}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100"
-            />
-          </div>
-
-          {/* Aadhaar */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Aadhaar Number <span className="text-red-600">*</span>
-            </label>
-            <input
-              type="password"
-              inputMode="numeric"
-              maxLength={12}
-              value={formData.aadhhar}
-              onChange={(e) => updateField("aadhhar", e.target.value)}
-              placeholder="XXXX-XXXX-XXXX"
-              disabled={isFormLocked}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100"
-            />
-          </div>
-
-          {/* Passport (optional) */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Passport Number (optional)
-            </label>
-            <input
-              type="password"
-              maxLength={12}
-              value={formData.passport || ""}
-              onChange={(e) => updateField("passport", e.target.value)}
-              placeholder="Enter passport number if available"
-              disabled={isFormLocked}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100"
-            />
-          </div>
+          </Field>
         </div>
 
-        {isSubmitting && !showOtpModal && (
-          <div className="flex items-center justify-center gap-2 text-blue-600 py-4">
-            <Loader2 className="h-5 w-5 animate-spin" />
-            <span>Sending OTP to {formData.phone}...</span>
-          </div>
-        )}
+        <Field label="Mobile number" required hint="10 digits, for OTP" error={fieldError("phone")}>
+          <input
+            type="tel"
+            inputMode="numeric"
+            value={formData.phone}
+            onChange={(e) => updateField("phone", e.target.value)}
+            placeholder="9876543210"
+            maxLength={10}
+            style={inputStyle(fieldError("phone"), touched.phone && fieldValid.phone)}
+          />
+        </Field>
+
+        <Field label="Gender">
+          <select
+            value={formData.gender || "male"}
+            onChange={(e) => updateField("gender", e.target.value)}
+            style={styles.input}
+          >
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
+        </Field>
+
+        <Field label="Age" required hint="In years" error={fieldError("age")}>
+          <input
+            type="tel"
+            inputMode="numeric"
+            value={formData.age}
+            onChange={(e) => updateField("age", e.target.value)}
+            placeholder="e.g. 35"
+            maxLength={3}
+            style={inputStyle(fieldError("age"), touched.age && fieldValid.age)}
+          />
+        </Field>
+
+        <Field label="Email address" required hint="For appointment confirmation" error={fieldError("email")}>
+          <input
+            type="email"
+            value={formData.email}
+            onChange={(e) => updateField("email", e.target.value)}
+            placeholder="patient@example.com"
+            style={inputStyle(fieldError("email"), touched.email && fieldValid.email)}
+          />
+        </Field>
+
+        <Field label="Aadhaar number" required hint="12-digit number" error={fieldError("aadhhar")}>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={formData.aadhhar}
+            onChange={(e) => updateField("aadhhar", e.target.value)}
+            placeholder="1234 5678 9012"
+            maxLength={12}
+            style={inputStyle(fieldError("aadhhar"), touched.aadhhar && fieldValid.aadhhar)}
+          />
+        </Field>
+
+        <Field label="Passport number" hint="Optional — for international patients">
+          <input
+            type="text"
+            value={formData.passport || ""}
+            onChange={(e) => updateField("passport", e.target.value)}
+            placeholder="If applicable"
+            maxLength={12}
+            style={styles.input}
+          />
+        </Field>
       </div>
 
-      {/* ─── OTP Modal ─── */}
-      {showOtpModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
-            <div className="p-6 border-b">
-              <h3 className="text-xl font-bold text-gray-900">Verify Phone Number</h3>
-              <p className="mt-2 text-gray-600">
-                Enter the 6-digit code sent to <strong>{formData.phone}</strong>
-              </p>
-            </div>
+      {/* OTP Status */}
+      {isSubmitting && !showOtpModal && (
+        <div style={styles.otpSending}>
+          <SpinnerIcon />
+          <span>Sending OTP to +91 {formData.phone}…</span>
+        </div>
+      )}
 
-            <form onSubmit={verifyOtp} className="p-6 space-y-6">
+      {otpVerify && (
+        <div style={styles.verifiedBadge}>
+          <CheckIcon />
+          Phone number verified
+        </div>
+      )}
+
+      {/* OTP Modal */}
+      {showOtpModal && (
+        <div style={styles.modalBackdrop}>
+          <div style={styles.modal}>
+            <h3 style={styles.modalTitle}>Verify your phone</h3>
+            <p style={styles.modalSub}>
+              Enter the 6-digit OTP sent to <strong>+91 {formData.phone}</strong>
+            </p>
+
+            <form onSubmit={verifyOtp}>
               <input
-                type="text"
+                type="tel"
                 inputMode="numeric"
-                maxLength={6}
                 value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                placeholder="------"
+                onChange={(e) => {
+                  setOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
+                  setOtpError("");
+                }}
+                placeholder="······"
+                maxLength={6}
                 autoFocus
-                className="w-full text-center text-4xl tracking-[1.2em] font-mono py-4 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                style={styles.otpInput}
               />
+
+              {otpError && <p style={styles.otpError}>{otpError}</p>}
 
               <button
                 type="submit"
-                disabled={isSubmitting || otp.length !== 6}
-                className="w-full py-3.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                disabled={otp.length !== 6 || isSubmitting}
+                style={{ ...styles.primaryBtn, opacity: otp.length !== 6 || isSubmitting ? 0.5 : 1 }}
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    Verifying...
+                    <SpinnerIcon /> Verifying…
                   </>
                 ) : (
-                  "Verify & Continue"
+                  "Verify & continue"
                 )}
               </button>
-
-              <div className="text-center text-sm text-gray-600">
-                Didn't receive code?{" "}
-                <button
-                  type="button"
-                  onClick={sendRegistrationAndOtp}
-                  disabled={isSubmitting}
-                  className="text-blue-600 font-medium hover:underline disabled:opacity-50"
-                >
-                  Resend OTP
-                </button>
-              </div>
             </form>
+
+            <button onClick={sendRegistrationAndOtp} disabled={isSubmitting} style={styles.ghostBtn}>
+              Resend OTP
+            </button>
           </div>
         </div>
       )}
     </div>
   );
 }
+
+/* ─── dynamic input style ─── */
+function inputStyle(error, valid) {
+  return {
+    ...styles.input,
+    borderColor: error ? "#E24B4A" : valid ? "#639922" : "#D3D1C7",
+  };
+}
+
+/* ─── styles ─── */
+const styles = {
+  page: { fontFamily: "system-ui, -apple-system, sans-serif", maxWidth: 940, margin: "0 auto", padding: "32px 20px", color: "#2C2C2A" },
+  header: { display: "flex", alignItems: "center", gap: 14, marginBottom: 28 },
+  avatar: { width: 48, height: 48, borderRadius: "50%", background: "#E6F1FB", color: "#185FA5", fontWeight: 600, fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  title: { fontSize: 22, fontWeight: 600, margin: 0, color: "#2C2C2A" },
+  subtitle: { fontSize: 13, color: "#888780", margin: "3px 0 0" },
+
+  checklist: { background: "#F1EFE8", borderRadius: 12, padding: "14px 18px", marginBottom: 28, border: "0.5px solid #D3D1C7" },
+  checklistTitle: { fontSize: 12, fontWeight: 600, color: "#5F5E5A", letterSpacing: "0.06em", textTransform: "uppercase", margin: "0 0 10px" },
+  checkGrid: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "6px 0" },
+  checkItem: { display: "flex", alignItems: "center", gap: 7, transition: "color 0.2s" },
+  checkDot: { width: 20, height: 20, borderRadius: "50%", border: "1.5px solid", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s" },
+
+  form: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px 20px", marginBottom: 24 },
+  field: { display: "flex", flexDirection: "column", gap: 5 },
+  label: { fontSize: 13, fontWeight: 500, color: "#444441" },
+  req: { color: "#A32D2D" },
+  hint: { fontSize: 12, color: "#888780", minHeight: 16 },
+  input: {
+    height: 44, padding: "0 12px", fontSize: 14,
+    border: "1.5px solid #D3D1C7", borderRadius: 8,
+    outline: "none", background: "#fff", color: "#2C2C2A",
+    fontFamily: "inherit", width: "100%", boxSizing: "border-box",
+    transition: "border-color 0.15s",
+  },
+
+  otpSending: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#185FA5", marginBottom: 16 },
+  verifiedBadge: { display: "inline-flex", alignItems: "center", gap: 6, background: "#EAF3DE", color: "#27500A", borderRadius: 20, padding: "6px 14px", fontSize: 13, fontWeight: 500, marginBottom: 16, border: "0.5px solid #97C459" },
+
+  modalBackdrop: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999, padding: 20 },
+  modal: { background: "#fff", borderRadius: 16, padding: "32px 28px", width: "100%", maxWidth: 400, boxShadow: "0 4px 32px rgba(0,0,0,0.18)" },
+  modalTitle: { fontSize: 20, fontWeight: 600, margin: "0 0 6px", color: "#2C2C2A" },
+  modalSub: { fontSize: 14, color: "#5F5E5A", margin: "0 0 22px" },
+  otpInput: { width: "100%", height: 60, fontSize: 28, textAlign: "center", letterSpacing: 10, border: "2px solid #D3D1C7", borderRadius: 10, outline: "none", fontFamily: "monospace", marginBottom: 6, boxSizing: "border-box" },
+  otpError: { fontSize: 13, color: "#A32D2D", marginBottom: 12 },
+  primaryBtn: { width: "100%", height: 48, background: "#185FA5", color: "#fff", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12, fontFamily: "inherit" },
+  ghostBtn: { width: "100%", background: "none", border: "none", color: "#185FA5", fontSize: 13, cursor: "pointer", padding: "8px 0", fontFamily: "inherit" },
+};
