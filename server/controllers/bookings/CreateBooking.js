@@ -83,8 +83,8 @@ const generateInvoicePDF = async (bookingData) => {
                 : clinicDetails?.phone_numbers || "N/A";
 
             doc.fontSize(9)
-                .text(`Address: ${address}`, 50, 105)
-                .text(`Phone: ${phoneNumbers}`, 50, 120);
+                .text(`Address: ${address}`, 50, 105, { width: 300 })
+                .text(`Phone: ${phoneNumbers}`, 50, 130, { width: 300 });
 
             // Invoice Title & Details (Right Side)
             doc.fontSize(18)
@@ -123,9 +123,9 @@ const generateInvoicePDF = async (bookingData) => {
                 .font("Helvetica-Bold")
                 .text("Treatment Details", 300, 180);
 
-            doc.fontSize(10)
+            doc.fontSize(9)
                 .font("Helvetica")
-                .text(`Service: ${treatment_id.service_name}`, 300, 200)
+                .text(`Service: ${treatment_id.service_name}`, 300, 200, { width: 300 })
                 .text(`Sessions Booked: ${bookingData.no_of_session_book || 1}`, 300, 215);
 
             if (SessionDates && SessionDates.length > 0) {
