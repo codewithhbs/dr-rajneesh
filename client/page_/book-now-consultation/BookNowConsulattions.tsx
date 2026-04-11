@@ -162,7 +162,7 @@ export default function BookNowConsultations() {
             {currentStep < TOTAL_STEPS ? (
               <button
                 onClick={next}
-                disabled={currentStep === 1 ? !isStep1Valid : false}
+          
                 style={{ 
                   background: "#185FA5", 
                   color: "#fff", 
