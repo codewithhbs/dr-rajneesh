@@ -62,7 +62,7 @@ const generateInvoicePDF = async (bookingData) => {
             doc.pipe(stream);
 
             // ====================== HEADER ======================
-            doc.fontSize(22)
+            doc.fontSize(18)
                 .font("Helvetica-Bold")
                 .fillColor('#1e40af')
                 .text("BACK TO NATURE SPINE CLINIC", 50, 40);
@@ -74,13 +74,20 @@ const generateInvoicePDF = async (bookingData) => {
                 .text("Spine & Pain Management Specialist", 50, 85);
 
             // Clinic Contact
+            const clinicDetails = session_booking_for_clinic?.clinic_contact_details || {};
+
+            const address = clinicDetails?.clinic_address || "N/A";
+
+            const phoneNumbers = Array.isArray(clinicDetails?.phone_numbers)
+                ? clinicDetails.phone_numbers.join(", ")
+                : clinicDetails?.phone_numbers || "N/A";
+
             doc.fontSize(9)
-                .text("📍 Address: [Clinic Full Address]", 50, 105)
-                .text("📞 Phone: [Clinic Phone Number]", 50, 120)
-                .text("✉️ Email: [clinic@email.com]", 50, 135);
+                .text(`Address: ${address}`, 50, 105)
+                .text(`Phone: ${phoneNumbers}`, 50, 120);
 
             // Invoice Title & Details (Right Side)
-            doc.fontSize(20)
+            doc.fontSize(18)
                 .font("Helvetica-Bold")
                 .fillColor('#1e40af')
                 .text("INVOICE", 400, 45, { align: "right" });
@@ -93,7 +100,7 @@ const generateInvoicePDF = async (bookingData) => {
                     day: '2-digit',
                     month: 'short',
                     year: 'numeric'
-                })}`, 400, 95, { align: "right" });
+                })}`, 400, 105, { align: "right" });
 
             // Horizontal Line
             doc.moveTo(50, 160).lineTo(545, 160).lineWidth(1).stroke('#e5e7eb');
@@ -161,8 +168,8 @@ const generateInvoicePDF = async (bookingData) => {
                 .font("Helvetica")
                 .text(treatment_id.service_name, 50, y)
                 .text(bookingData.no_of_session_book?.toString() || "1", 320, y)
-                .text(`₹ ${amountPerSession.toLocaleString('en-IN')}`, 380, y)
-                .text(`₹ ${(amountPerSession * (bookingData.no_of_session_book || 1)).toLocaleString('en-IN')}`, 480, y, { align: "right" });
+                .text(`Rs ${amountPerSession.toLocaleString('en-IN')}`, 380, y)
+                .text(`Rs ${(amountPerSession * (bookingData.no_of_session_book || 1)).toLocaleString('en-IN')}`, 480, y, { align: "right" });
 
             y += 25;
 
@@ -172,8 +179,8 @@ const generateInvoicePDF = async (bookingData) => {
                     doc.fontSize(9.5)
                         .text(`• ${addon.title}`, 50, y)
                         .text("1", 320, y)
-                        .text(`₹ ${addon.price.toLocaleString('en-IN')}`, 380, y)
-                        .text(`₹ ${addon.price.toLocaleString('en-IN')}`, 480, y, { align: "right" });
+                        .text(`Rs ${addon.price.toLocaleString('en-IN')}`, 380, y)
+                        .text(`Rs ${addon.price.toLocaleString('en-IN')}`, 480, y, { align: "right" });
                     y += 20;
                 });
             }
@@ -188,7 +195,7 @@ const generateInvoicePDF = async (bookingData) => {
                 .font("Helvetica-Bold")
                 .fillColor('#1e40af')
                 .text("TOTAL AMOUNT", 50, y)
-                .text(`₹ ${totalAmount.toLocaleString('en-IN')}`, 480, y, { align: "right" });
+                .text(`Rs ${totalAmount.toLocaleString('en-IN')}`, 480, y, { align: "right" });
 
             y += 40;
 
