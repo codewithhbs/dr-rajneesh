@@ -488,7 +488,7 @@ Thank you for booking with us! 🙏
 
                 // Send WhatsApp message with invoice PDF
                 console.log("Sending WhatsApp message with invoice...");
-                const invoiceUrl = `https://ascogonial-jimena-sugarlike.ngrok-free.dev/invoices/${path.basename(invoicePath)}`;
+                const invoiceUrl = `https://api.drrajneeshkant.in/invoices/${path.basename(invoicePath)}`;
                 const whatsappResponse = await sendWhatsApp({
                     mobile: patient_details.phone,
                     msg: whatsappMessage,
