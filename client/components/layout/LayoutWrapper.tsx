@@ -11,7 +11,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
 
   return (
     <>
-      {!hideHeader && <Header />}
+       <Header />
       {children}
       <Footer />
     </>

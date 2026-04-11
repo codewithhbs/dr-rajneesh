@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useAuth } from "@/context/authContext/auth";
 
 const API_BASE_URL = "https://api.drrajneeshkant.in/api/v1/user";
 
-/* ─── tiny icon helpers ─── */
+/* ─── Icons ─── */
 const CheckIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-    <path d="M2.5 7L5.5 10L11.5 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2.5 7L5.5 10L11.5 4" />
   </svg>
 );
 
@@ -20,20 +21,20 @@ const SpinnerIcon = () => (
   </svg>
 );
 
-/* ─── validation helpers ─── */
-function getFieldStatus(name, value) {
+/* ─── Validation ─── */
+function getFieldStatus(name: string, value: string): boolean {
   switch (name) {
-    case "name":    return value.trim().length > 2;
-    case "phone":   return /^\d{10}$/.test(value);
-    case "email":   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
-    case "age":     return value !== "" && !isNaN(Number(value)) && Number(value) >= 1;
+    case "name": return value.trim().length > 2;
+    case "phone": return /^\d{10}$/.test(value);
+    case "email": return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+    case "age": return value !== "" && !isNaN(Number(value)) && Number(value) >= 1;
     case "aadhhar": return /^\d{12}$/.test(value);
-    default:        return true;
+    default: return true;
   }
 }
 
-/* ─── Field wrapper ─── */
-function Field({ label, required, hint, error, children }) {
+/* ─── Reusable Components ─── */
+function Field({ label, required, hint, error, children }: any) {
   return (
     <div style={styles.field}>
       <label style={styles.label}>
@@ -50,11 +51,14 @@ function Field({ label, required, hint, error, children }) {
   );
 }
 
-/* ─── Checklist item ─── */
-function CheckItem({ done, label }) {
+function CheckItem({ done, label }: { done: boolean; label: string }) {
   return (
     <div style={{ ...styles.checkItem, color: done ? "#27500A" : "#888780" }}>
-      <span style={{ ...styles.checkDot, background: done ? "#639922" : "transparent", borderColor: done ? "#639922" : "#B4B2A9", color: "#fff" }}>
+      <span style={{
+        ...styles.checkDot,
+        background: done ? "#639922" : "transparent",
+        borderColor: done ? "#639922" : "#B4B2A9"
+      }}>
         {done && <CheckIcon />}
       </span>
       <span style={{ fontSize: 13 }}>{label}</span>
@@ -68,22 +72,22 @@ export default function PatientDetailsStep({
   otpVerify,
   setOtpVerify,
   onNext,
-}) {
+}: any) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { isAuthenticated ,setToken} = useAuth();
 
   const [otp, setOtp] = useState("");
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [touched, setTouched] = useState({});
-  const [userIdFromRegister, setUserIdFromRegister] = useState(null);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [otpError, setOtpError] = useState("");
 
   const requiredFields = ["name", "phone", "email", "age", "aadhhar"];
 
   const fieldValid = useMemo(() => {
-    const result = {};
+    const result: Record<string, boolean> = {};
     requiredFields.forEach((f) => {
       result[f] = getFieldStatus(f, formData[f] ?? "");
     });
@@ -91,10 +95,12 @@ export default function PatientDetailsStep({
   }, [formData]);
 
   const allFieldsValid = requiredFields.every((f) => fieldValid[f]);
-  const isStep1Valid = allFieldsValid && otpVerify;
+
+  // Step is valid if fields are filled + (user is logged in OR OTP is verified)
+  const isStep1Valid = allFieldsValid && (isAuthenticated || otpVerify);
 
   // ────────────────────────────────────────────────
-  //  Load data from URL query params on mount
+  // Load data from URL query params
   // ────────────────────────────────────────────────
   useEffect(() => {
     const params = {
@@ -107,52 +113,65 @@ export default function PatientDetailsStep({
       gender: searchParams.get("gender") || "male",
     };
 
-    setFormData((prev) => ({ ...prev, ...params }));
+    setFormData((prev: any) => ({ ...prev, ...params }));
   }, [searchParams, setFormData]);
 
-  /* auto-send OTP when form is complete (guest flow) */
+  // Auto-send OTP only for **non-authenticated** users when form is complete
   useEffect(() => {
-    if (!allFieldsValid || showOtpModal || otpVerify || isSubmitting || userIdFromRegister) return;
-    const t = setTimeout(sendRegistrationAndOtp, 800);
-    return () => clearTimeout(t);
-  }, [allFieldsValid, showOtpModal, otpVerify, isSubmitting, userIdFromRegister]);
+    if (
+      isAuthenticated ||          // Skip if already logged in
+      !allFieldsValid ||
+      showOtpModal ||
+      otpVerify ||
+      isSubmitting
+    ) return;
 
-  const updateField = (name, value) => {
-    let v = value;
-    if (name === "phone")   v = value.replace(/\D/g, "").slice(0, 10);
-    if (name === "age")     v = value.replace(/\D/g, "").slice(0, 3);
-    if (name === "aadhhar") v = value.replace(/\D/g, "").slice(0, 12);
+    const timer = setTimeout(sendRegistrationAndOtp, 800);
+    return () => clearTimeout(timer);
+  }, [allFieldsValid, showOtpModal, otpVerify, isSubmitting, isAuthenticated]);
 
-    setFormData((prev) => ({ ...prev, [name]: v }));
+  const updateField = (name: string, value: string) => {
+    let processedValue = value;
+
+    if (name === "phone") processedValue = value.replace(/\D/g, "").slice(0, 10);
+    if (name === "age") processedValue = value.replace(/\D/g, "").slice(0, 3);
+    if (name === "aadhhar") processedValue = value.replace(/\D/g, "").slice(0, 12);
+
+    setFormData((prev: any) => ({ ...prev, [name]: processedValue }));
     setTouched((prev) => ({ ...prev, [name]: true }));
 
-    // Update URL params
+    // Sync URL params
     const params = new URLSearchParams(searchParams.toString());
-    params.set(name, v);
+    params.set(name, processedValue);
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
-  const fieldError = (name) => {
+  const fieldError = (name: string): string => {
     if (!touched[name] || fieldValid[name]) return "";
-    const msgs = {
-      name:    "Enter at least 3 characters",
-      phone:   "Enter a valid 10-digit mobile number",
-      email:   "Enter a valid email address",
-      age:     "Enter a valid age (1 or above)",
+
+    const messages: Record<string, string> = {
+      name: "Enter at least 3 characters",
+      phone: "Enter a valid 10-digit mobile number",
+      email: "Enter a valid email address",
+      age: "Enter a valid age (1 or above)",
       aadhhar: "Enter a valid 12-digit Aadhaar number",
     };
-    return msgs[name] || "";
+    return messages[name] || "";
   };
 
+  // Send OTP + Register (Only for guests)
   async function sendRegistrationAndOtp() {
-    if (!allFieldsValid || isSubmitting) return;
+    if (!allFieldsValid || isSubmitting || isAuthenticated) return;
+
     setIsSubmitting(true);
+    setOtpError("");
+
     try {
       const payload = {
         name: formData.name.trim(),
         phone: formData.phone,
         email: formData.email.trim(),
-        aadhhar: formData.aadhhar.trim(),
+        aadhhar: formData.aadhhar,
         passport: formData.passport?.trim() || undefined,
         age: Number(formData.age),
         gender: formData.gender || "male",
@@ -168,19 +187,19 @@ export default function PatientDetailsStep({
       const data = await res.json();
 
       if (data.success) {
-        setUserIdFromRegister(data.userId);
         setShowOtpModal(true);
       } else {
         alert(data.message || "Failed to send OTP");
       }
-    } catch {
+    } catch (err) {
       alert("Network error. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  async function verifyOtp(e) {
+  // Verify OTP
+  async function verifyOtp(e: React.FormEvent) {
     e.preventDefault();
     if (otp.length !== 6 || isSubmitting) return;
 
@@ -197,6 +216,11 @@ export default function PatientDetailsStep({
       const data = await res.json();
 
       if (data.success) {
+        const { user, token } = data;
+
+        if (user) localStorage.setItem("userData", JSON.stringify(user));
+        setToken(token);   // Uncomment if you want to use auth context setter
+
         setOtpVerify(true);
         setShowOtpModal(false);
       } else {
@@ -220,26 +244,26 @@ export default function PatientDetailsStep({
         </div>
       </div>
 
-      {/* Progress checklist */}
+      {/* Progress Checklist */}
       <div style={styles.checklist}>
         <p style={styles.checklistTitle}>Complete to continue</p>
         <div style={styles.checkGrid}>
-          <CheckItem done={fieldValid.name}    label="Full name" />
-          <CheckItem done={fieldValid.phone}   label="Mobile number" />
-          <CheckItem done={fieldValid.email}   label="Email address" />
-          <CheckItem done={fieldValid.age}     label="Age" />
+          <CheckItem done={fieldValid.name} label="Full name" />
+          <CheckItem done={fieldValid.phone} label="Mobile number" />
+          <CheckItem done={fieldValid.email} label="Email address" />
+          <CheckItem done={fieldValid.age} label="Age" />
           <CheckItem done={fieldValid.aadhhar} label="Aadhaar number" />
-          <CheckItem done={otpVerify}          label="OTP verified" />
+          <CheckItem done={isAuthenticated || otpVerify} label="Phone verified" />
         </div>
       </div>
 
       {/* Form */}
       <div style={styles.form}>
         <div style={{ gridColumn: "1 / -1" }}>
-          <Field label="Full name" required hint="As per government ID" error={fieldError("name")}>
+          <Field label="Full name" required error={fieldError("name")}>
             <input
               type="text"
-              value={formData.name}
+              value={formData.name || ""}
               onChange={(e) => updateField("name", e.target.value)}
               placeholder="Patient's full name"
               style={inputStyle(fieldError("name"), touched.name && fieldValid.name)}
@@ -247,11 +271,11 @@ export default function PatientDetailsStep({
           </Field>
         </div>
 
-        <Field label="Mobile number" required hint="10 digits, for OTP" error={fieldError("phone")}>
+        <Field label="Mobile number" required error={fieldError("phone")}>
           <input
             type="tel"
             inputMode="numeric"
-            value={formData.phone}
+            value={formData.phone || ""}
             onChange={(e) => updateField("phone", e.target.value)}
             placeholder="9876543210"
             maxLength={10}
@@ -271,11 +295,11 @@ export default function PatientDetailsStep({
           </select>
         </Field>
 
-        <Field label="Age" required hint="In years" error={fieldError("age")}>
+        <Field label="Age" required error={fieldError("age")}>
           <input
             type="tel"
             inputMode="numeric"
-            value={formData.age}
+            value={formData.age || ""}
             onChange={(e) => updateField("age", e.target.value)}
             placeholder="e.g. 35"
             maxLength={3}
@@ -283,21 +307,21 @@ export default function PatientDetailsStep({
           />
         </Field>
 
-        <Field label="Email address" required hint="For appointment confirmation" error={fieldError("email")}>
+        <Field label="Email address" required error={fieldError("email")}>
           <input
             type="email"
-            value={formData.email}
+            value={formData.email || ""}
             onChange={(e) => updateField("email", e.target.value)}
             placeholder="patient@example.com"
             style={inputStyle(fieldError("email"), touched.email && fieldValid.email)}
           />
         </Field>
 
-        <Field label="Aadhaar number" required hint="12-digit number" error={fieldError("aadhhar")}>
+        <Field label="Aadhaar number" required error={fieldError("aadhhar")}>
           <input
             type="text"
             inputMode="numeric"
-            value={formData.aadhhar}
+            value={formData.aadhhar || ""}
             onChange={(e) => updateField("aadhhar", e.target.value)}
             placeholder="1234 5678 9012"
             maxLength={12}
@@ -311,13 +335,12 @@ export default function PatientDetailsStep({
             value={formData.passport || ""}
             onChange={(e) => updateField("passport", e.target.value)}
             placeholder="If applicable"
-            maxLength={12}
             style={styles.input}
           />
         </Field>
       </div>
 
-      {/* OTP Status */}
+      {/* Status Messages */}
       {isSubmitting && !showOtpModal && (
         <div style={styles.otpSending}>
           <SpinnerIcon />
@@ -325,15 +348,14 @@ export default function PatientDetailsStep({
         </div>
       )}
 
-      {otpVerify && (
+      {(isAuthenticated || otpVerify) && (
         <div style={styles.verifiedBadge}>
-          <CheckIcon />
-          Phone number verified
+          <CheckIcon /> Phone number verified
         </div>
       )}
 
-      {/* OTP Modal */}
-      {showOtpModal && (
+      {/* OTP Modal - Only shown for non-logged-in users */}
+      {showOtpModal && !isAuthenticated && (
         <div style={styles.modalBackdrop}>
           <div style={styles.modal}>
             <h3 style={styles.modalTitle}>Verify your phone</h3>
@@ -361,19 +383,26 @@ export default function PatientDetailsStep({
               <button
                 type="submit"
                 disabled={otp.length !== 6 || isSubmitting}
-                style={{ ...styles.primaryBtn, opacity: otp.length !== 6 || isSubmitting ? 0.5 : 1 }}
+                style={{
+                  ...styles.primaryBtn,
+                  opacity: otp.length !== 6 || isSubmitting ? 0.6 : 1,
+                }}
               >
                 {isSubmitting ? (
                   <>
                     <SpinnerIcon /> Verifying…
                   </>
                 ) : (
-                  "Verify & continue"
+                  "Verify & Continue"
                 )}
               </button>
             </form>
 
-            <button onClick={sendRegistrationAndOtp} disabled={isSubmitting} style={styles.ghostBtn}>
+            <button
+              onClick={sendRegistrationAndOtp}
+              disabled={isSubmitting}
+              style={styles.ghostBtn}
+            >
               Resend OTP
             </button>
           </div>
@@ -383,39 +412,36 @@ export default function PatientDetailsStep({
   );
 }
 
-/* ─── dynamic input style ─── */
-function inputStyle(error, valid) {
+/* ─── Input Style Helper ─── */
+function inputStyle(error: string, valid: boolean) {
   return {
     ...styles.input,
     borderColor: error ? "#E24B4A" : valid ? "#639922" : "#D3D1C7",
   };
 }
 
-/* ─── styles ─── */
-const styles = {
+/* ─── Styles ─── */
+const styles: any = {
   page: { fontFamily: "system-ui, -apple-system, sans-serif", maxWidth: 940, margin: "0 auto", padding: "32px 20px", color: "#2C2C2A" },
   header: { display: "flex", alignItems: "center", gap: 14, marginBottom: 28 },
-  avatar: { width: 48, height: 48, borderRadius: "50%", background: "#E6F1FB", color: "#185FA5", fontWeight: 600, fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  title: { fontSize: 22, fontWeight: 600, margin: 0, color: "#2C2C2A" },
+  avatar: { width: 48, height: 48, borderRadius: "50%", background: "#E6F1FB", color: "#185FA5", fontWeight: 600, fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center" },
+  title: { fontSize: 22, fontWeight: 600, margin: 0 },
   subtitle: { fontSize: 13, color: "#888780", margin: "3px 0 0" },
 
   checklist: { background: "#F1EFE8", borderRadius: 12, padding: "14px 18px", marginBottom: 28, border: "0.5px solid #D3D1C7" },
   checklistTitle: { fontSize: 12, fontWeight: 600, color: "#5F5E5A", letterSpacing: "0.06em", textTransform: "uppercase", margin: "0 0 10px" },
   checkGrid: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "6px 0" },
-  checkItem: { display: "flex", alignItems: "center", gap: 7, transition: "color 0.2s" },
-  checkDot: { width: 20, height: 20, borderRadius: "50%", border: "1.5px solid", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s" },
+  checkItem: { display: "flex", alignItems: "center", gap: 7 },
+  checkDot: { width: 20, height: 20, borderRadius: "50%", border: "1.5px solid", display: "flex", alignItems: "center", justifyContent: "center" },
 
   form: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px 20px", marginBottom: 24 },
   field: { display: "flex", flexDirection: "column", gap: 5 },
   label: { fontSize: 13, fontWeight: 500, color: "#444441" },
   req: { color: "#A32D2D" },
-  hint: { fontSize: 12, color: "#888780", minHeight: 16 },
+  hint: { fontSize: 12, minHeight: 16 },
   input: {
-    height: 44, padding: "0 12px", fontSize: 14,
-    border: "1.5px solid #D3D1C7", borderRadius: 8,
-    outline: "none", background: "#fff", color: "#2C2C2A",
-    fontFamily: "inherit", width: "100%", boxSizing: "border-box",
-    transition: "border-color 0.15s",
+    height: 44, padding: "0 12px", fontSize: 14, border: "1.5px solid #D3D1C7",
+    borderRadius: 8, outline: "none", background: "#fff", width: "100%", boxSizing: "border-box"
   },
 
   otpSending: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#185FA5", marginBottom: 16 },
@@ -423,10 +449,10 @@ const styles = {
 
   modalBackdrop: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999, padding: 20 },
   modal: { background: "#fff", borderRadius: 16, padding: "32px 28px", width: "100%", maxWidth: 400, boxShadow: "0 4px 32px rgba(0,0,0,0.18)" },
-  modalTitle: { fontSize: 20, fontWeight: 600, margin: "0 0 6px", color: "#2C2C2A" },
+  modalTitle: { fontSize: 20, fontWeight: 600, margin: "0 0 6px" },
   modalSub: { fontSize: 14, color: "#5F5E5A", margin: "0 0 22px" },
-  otpInput: { width: "100%", height: 60, fontSize: 28, textAlign: "center", letterSpacing: 10, border: "2px solid #D3D1C7", borderRadius: 10, outline: "none", fontFamily: "monospace", marginBottom: 6, boxSizing: "border-box" },
+  otpInput: { width: "100%", height: 60, fontSize: 28, textAlign: "center", letterSpacing: 10, border: "2px solid #D3D1C7", borderRadius: 10, outline: "none", fontFamily: "monospace", marginBottom: 6 },
   otpError: { fontSize: 13, color: "#A32D2D", marginBottom: 12 },
-  primaryBtn: { width: "100%", height: 48, background: "#185FA5", color: "#fff", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12, fontFamily: "inherit" },
-  ghostBtn: { width: "100%", background: "none", border: "none", color: "#185FA5", fontSize: 13, cursor: "pointer", padding: "8px 0", fontFamily: "inherit" },
+  primaryBtn: { width: "100%", height: 48, background: "#185FA5", color: "#fff", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12 },
+  ghostBtn: { width: "100%", background: "none", border: "none", color: "#185FA5", fontSize: 13, cursor: "pointer", padding: "8px 0" },
 };

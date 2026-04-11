@@ -32,7 +32,8 @@ exports.registerNormalUser = async (req, res, next) => {
             $or: [{ email }, { phone }],
         });
 
-        const otp = 123456;
+       const otp = Math.floor(100000 + Math.random() * 900000);
+
         const otpExpiry = createOtpExpiry(30); // expires in 30 minutes
 
         if (existingUser) {
@@ -1170,7 +1171,8 @@ exports.loginUser = async (req, res, next) => {
 
         // Check if email is verified
         if (!user.emailVerification.isVerified && !user.isGoogleAuth) {
-            const otp = 123456;
+         const otp = Math.floor(100000 + Math.random() * 900000);
+
             const otpExpiry = createOtpExpiry(30);
             // Send new verification email
             const emailHtml = `
@@ -1853,7 +1855,7 @@ exports.resendVerificationEmail = async (req, res, next) => {
             });
         }
 
-        const otp = 123456;
+       const otp = Math.floor(100000 + Math.random() * 900000);
 
         await userModel.findByIdAndUpdate(user._id, {
             "emailVerification.otp": otp,

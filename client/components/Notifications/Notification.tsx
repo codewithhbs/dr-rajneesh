@@ -29,10 +29,15 @@ const Notification = ({ onClose }) => {
                 throw new Error('Failed to fetch notifications')
             }
             const data = await response.json()
-            const filterData = data.data.filter((item: NotificationData) => {
+            if(data.data){
+      const filterData = data.data.filter((item: NotificationData) => {
                 return item.status === 'active'
             })
             setNotificationData(filterData)
+            }else{
+                setNotificationData([])
+            }
+      
 
 
         } catch (error) {
