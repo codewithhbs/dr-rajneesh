@@ -21,7 +21,7 @@ import { useService } from "@/hooks/use-service"
 import Notification from "../Notifications/Notification"
 
 const phoneNumbers = [
-    "+91-9308511357",
+    "+91- ",
 ]
 
 export function Header() {

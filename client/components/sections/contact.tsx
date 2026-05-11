@@ -111,7 +111,7 @@ const ContactPage: React.FC = () => {
     mumbai: {
       title: "Mumbai Clinic",
       address: "Aston Building, 704, opposite Bank of Baroda, Above Mercedes Benz showroom, Lokhandwala Complex, Andheri West, Mumbai, Maharashtra 400053",
-      phone: ["+91 9308511357", "+91 9137352377"],
+      phone: ["+91  ", "+91 9137352377"],
       hours: "Mon-Sat: 10:00 AM - 8:00 PM",
       mapUrl: "https://maps.google.com/?q=Aston+Building+Lokhandwala+Complex+Andheri+West+Mumbai",
       rating: 4.8,
@@ -120,7 +120,7 @@ const ContactPage: React.FC = () => {
     patna: {
       title: "Patna Clinic",
       address: "Central jail, Near Kuswaha chock, beside of, SK Vihar Colony, Kisan Colony, Beur, Patna, Bihar 800002",
-      phone: ["+91 9308511357", "+91 9137352377"],
+      phone: ["+91  ", "+91 9137352377"],
       hours: "Mon-Sat: 9:00 AM - 7:00 PM",
       mapUrl: "https://maps.google.com/?q=Central+jail+Near+Kuswaha+chock+SK+Vihar+Colony+Patna",
       rating: 4.9,
@@ -411,7 +411,7 @@ const ContactPage: React.FC = () => {
                     <div className="w-10 h-10 bg-gradient-to-r from-green-100 to-emerald-100 rounded-full flex items-center justify-center mr-3">
                       <Phone className="h-5 w-5 text-green-600" />
                     </div>
-                    <span className="text-gray-700 font-medium">+91 9308511357 , </span>  
+                    <span className="text-gray-700 font-medium">+91   , </span>  
                     <span className="text-gray-700 font-medium">+91 9137352377</span>
                   </div>
                 </div>

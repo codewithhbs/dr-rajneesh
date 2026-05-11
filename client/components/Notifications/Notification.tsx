@@ -51,7 +51,7 @@ const Notification = ({ onClose }) => {
                 },
                 {
                     _id: 2,
-                    text: "📞 24/7 Emergency spine care available - Call +91-9308511357 now",
+                    text: "📞 24/7 Emergency spine care available - Call +91-  now",
                     type: "emergency"
                 },
 
