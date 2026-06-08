@@ -119,7 +119,7 @@ const ContactPage: React.FC = () => {
     },
     patna: {
       title: "Patna Clinic",
-      address: "Central jail, Near Kuswaha chock, beside of, SK Vihar Colony, Kisan Colony, Beur, Patna, Bihar 800002",
+      address: "SHIVPURI MAIN BYPASS RD, NEAR BEUR JAIL,, 150 METER EAST, FROM BEUR MORE ANISABAD, PATNA, BIHAR, INDIA, 800002",
       phone: ["+91  ", "+91 9137352377"],
       hours: "Mon-Sat: 9:00 AM - 7:00 PM",
       mapUrl: "https://maps.google.com/?q=Central+jail+Near+Kuswaha+chock+SK+Vihar+Colony+Patna",

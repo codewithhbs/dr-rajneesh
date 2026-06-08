@@ -134,7 +134,7 @@ export function Footer() {
                 <div>
                   <h4 className="font-medium text-gray-900">Patna Clinic</h4>
                   <p className="text-gray-600">
-                    Near Kuswaha Chock, SK Vihar Colony, Beur, Patna, Bihar 800002
+                    SHIVPURI MAIN BYPASS RD, NEAR BEUR JAIL,, 150 METER EAST, FROM BEUR MORE ANISABAD, PATNA, BIHAR, INDIA, 800002
                   </p>
                 </div>
               </div>
