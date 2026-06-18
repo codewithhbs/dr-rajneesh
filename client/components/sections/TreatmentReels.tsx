@@ -430,7 +430,7 @@ const FeaturedTreatmentReels = () => {
               Join thousands who've experienced life-changing results. Book your consultation today and become our next success story featured in our reels.
             </p>
             <div className="flex gap-4 justify-center flex-wrap">
-              <Link href="/book-now-consultation">
+              <Link href="/book-consultation">
                 <Button className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0 hover:shadow-2xl transform hover:scale-105 transition-all duration-300 px-8 py-4 text-lg">
                   <Users className="w-5 h-5 mr-2" /> Book Your Session
                 </Button>

@@ -413,12 +413,19 @@ const Treatments: React.FC<{ slug: string }> = ({ slug }) => {
                 </div>
                 {/* CTA */}
                 <a
-                  href={`/booking-sessions?sessions=${selectedSessions}&price=${calculateTotalPrice(selectedSessions).toLocaleString().replace(/[^\d.]/g, "")}&service=${slug}`}
+                  href={`/book-consultation`}
                   className="w-full inline-flex justify-center items-center gap-2 bg-gradient-to-r from-[#155DFC] to-[#0092B8] hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-white px-5 py-2.5 text-center shadow-lg hover:shadow-2xl transition-all duration-300"
                 >
                   <Calendar className="w-5 h-5 mr-2" />
                   Book Appointment
                 </a>
+                {/* <a
+                  href={`/booking-sessions?sessions=${selectedSessions}&price=${calculateTotalPrice(selectedSessions).toLocaleString().replace(/[^\d.]/g, "")}&service=${slug}`}
+                  className="w-full inline-flex justify-center items-center gap-2 bg-gradient-to-r from-[#155DFC] to-[#0092B8] hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-white px-5 py-2.5 text-center shadow-lg hover:shadow-2xl transition-all duration-300"
+                >
+                  <Calendar className="w-5 h-5 mr-2" />
+                  Book Appointment
+                </a> */}
               </CardContent>
             </Card>
           </div>

@@ -29,7 +29,7 @@ user_auth_router.post("/login/resend-otp", resendLoginOtp);
 // Register Via Number and Otp Only
 
 user_auth_router.post('/register-via-number', registerNormal)
-user_auth_router.post('/verify-otp-via-number',verifyOtpViaNumber)
+user_auth_router.post('/verify-otp-via-number', verifyOtpViaNumber)
 // Demo code 
 user_auth_router.get('/auth/google', (req, res) => {
     const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=profile email&access_type=offline&prompt=consent`;

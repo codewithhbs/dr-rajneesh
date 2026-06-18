@@ -29,6 +29,8 @@ const Notification = ({ onClose }) => {
                 throw new Error('Failed to fetch notifications')
             }
             const data = await response.json()
+                        console.log(data)
+
             if(data.data){
       const filterData = data.data.filter((item: NotificationData) => {
                 return item.status === 'active'
@@ -87,8 +89,7 @@ const Notification = ({ onClose }) => {
         return () => clearTimeout(timer)
     }, [])
 
-    if (!isVisible || notificationData.length > 0) return null
-
+if (!isVisible || notificationData.length === 0) return null;
     return (
         <div className="relative w-full bg-gradient-to-r from-blue-400 via-blue-700 to-blue-400 text-white shadow-lg overflow-hidden border-b-2 border-blue-400/30">
             {/* Animated Background Pattern */}

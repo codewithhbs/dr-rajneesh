@@ -106,7 +106,7 @@ const ChiropracticClinic = () => {
 
                         {/* CTA Buttons */}
                         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-                            <Link href={"/book-now-consultation"}>
+                            <Link href={"/book-consultation"}>
                                 <Button className="relative overflow-hidden bg-gradient-to-r from-[#155DFC] to-[#0092B8] text-white px-8 py-4 text-lg font-semibold rounded-lg shadow-md hover:shadow-2xl transform hover:scale-105 transition-all duration-300">
                                     <Calendar className="w-5 h-5 mr-2" />
                                     Book Consultation

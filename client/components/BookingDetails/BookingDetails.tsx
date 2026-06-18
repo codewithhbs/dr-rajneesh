@@ -201,7 +201,7 @@ export default function BookingDetails({ slug }: { slug: string }) {
     try {
       setLoading(true);
       const res = await axios.get(
-        `https://api.drrajneeshkant.in/api/v1/booking/my-bookings/${slug}`
+        `http://localhost:7900/api/v1/booking/my-bookings/${slug}`
       );
       if (res.data.success) {
         setBooking(res.data.data);

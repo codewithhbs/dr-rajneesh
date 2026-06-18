@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/authContext/auth";
 
-const API_BASE_URL = "https://api.drrajneeshkant.in/api/v1/user";
+const API_BASE_URL = "http://localhost:7900/api/v1/user";
 
 /* ─── Icons ─── */
 const CheckIcon = () => (
@@ -67,16 +67,12 @@ function CheckItem({ done, label }: { done: boolean; label: string }) {
 }
 
 export default function PatientDetailsStep({
-  formData,
-  setFormData,
-  otpVerify,
-  setOtpVerify,
-  onNext,
+
 }: any) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { isAuthenticated ,setToken} = useAuth();
+  const { isAuthenticated, setToken } = useAuth();
 
   const [otp, setOtp] = useState("");
   const [showOtpModal, setShowOtpModal] = useState(false);

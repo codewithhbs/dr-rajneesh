@@ -7,123 +7,93 @@ const { validateClinicData, validateBusinessRules, validateClinicUpdateData } = 
 const { getRedisClient, cleanRedisDataFlush } = require("../../utils/redis.utils");
 
 exports.createClinic = async (req, res) => {
-    try {
-        const redisClient = getRedisClient(req, res);
+  try {
+    const redisClient = getRedisClient(req, res);
 
-        const validationError = validateClinicData(req.body);
-        if (validationError) {
-            if (req.files && req.files.length > 0) {
-                await deleteMultipleFiles(req.files);
-            }
-            return res.status(400).json({
-                success: false,
-                message: "Validation failed",
-                errors: validationError
-            });
-        }
+    const existingClinic = await Clinic.findOne({
+      clinic_name: req.body.clinic_name.trim(),
+    });
 
-        const existingClinic = await Clinic.findOne({
-            clinic_name: req.body.clinic_name.trim()
-        });
-        if (existingClinic) {
-            if (req.files && req.files.length > 0) {
-                await deleteMultipleFiles(req.files);
-            }
-            return res.status(409).json({
-                success: false,
-                message: "Clinic with this name already exists"
-            });
-        }
+    if (existingClinic) {
+      if (req.files?.length) {
+        await deleteMultipleFiles(req.files);
+      }
 
-        const businessValidationError = validateBusinessRules(req.body);
-        if (businessValidationError) {
-            if (req.files && req.files.length > 0) {
-                await deleteMultipleFiles(req.files);
-            }
-            return res.status(400).json({
-                success: false,
-                message: "Business validation failed",
-                errors: businessValidationError
-            });
-        }
-
-        let uploadedImages = [];
-        let uploadedFiles = [];
-
-        if (req.files && req.files.length > 0) {
-            if (req.files.length > 10) {
-                await deleteMultipleFiles(req.files);
-                return res.status(400).json({
-                    success: false,
-                    message: "Maximum 10 images allowed"
-                });
-            }
-
-            uploadedFiles = req.files;
-            try {
-                uploadedImages = await uploadMultipleFiles(req.files);
-            } catch (uploadError) {
-                await deleteMultipleFiles(uploadedFiles);
-                return res.status(400).json({
-                    success: false,
-                    message: "Image upload failed",
-                    error: uploadError.message
-                });
-            }
-        }
-
-        const clinicData = {
-            ...req.body,
-            clinic_images: uploadedImages,
-            clinic_name: req.body.clinic_name.trim(),
-            clinic_contact_details: {
-                ...req.body.clinic_contact_details,
-                email: req.body.clinic_contact_details.email.toLowerCase().trim()
-            }
-        };
-
-        const newClinic = new Clinic(clinicData);
-        const savedClinic = await newClinic.save();
-
-        await deleteMultipleFiles(uploadedFiles);
-
-        await cleanRedisDataFlush(redisClient);
-
-        res.status(201).json({
-            success: true,
-            message: "Clinic created successfully",
-            data: savedClinic
-        });
-
-    } catch (error) {
-        if (req.files && req.files.length > 0) {
-            await deleteMultipleFiles(req.files);
-        }
-
-        if (error.code === 11000) {
-            return res.status(409).json({
-                success: false,
-                message: "Clinic name already exists"
-            });
-        }
-
-        if (error.name === 'ValidationError') {
-            return res.status(400).json({
-                success: false,
-                message: "Validation error",
-                errors: Object.values(error.errors).map(err => err.message)
-            });
-        }
-
-        res.status(500).json({
-            success: false,
-            message: "Failed to create clinic",
-            error: error.message
-        });
+      return res.status(409).json({
+        success: false,
+        message: "Clinic with this name already exists",
+      });
     }
+
+    let uploadedImages = [];
+
+    if (req.files?.length > 0) {
+      uploadedImages = await uploadMultipleFiles(req.files);
+    }
+
+    const phoneNumbers = req.body.phone_numbers
+      ? JSON.parse(req.body.phone_numbers)
+      : [];
+
+    const clinicData = {
+      clinic_name: req.body.clinic_name,
+
+      clinic_images: uploadedImages.map((img) => ({
+        url: img.url,
+        public_id: img.public_id,
+      })),
+
+      clinic_contact_details: {
+        email: req.body.email,
+        phone_numbers: phoneNumbers,
+        clinic_address: req.body.clinic_address,
+      },
+
+      clinic_map: req.body.clinic_map,
+
+      clinic_timings: {
+        open_time: req.body.open_time,
+        close_time: req.body.close_time,
+        off_day: req.body.off_day,
+      },
+
+      BookingAvailabeAt: {
+        start_date: new Date(req.body.start_date),
+        end_date: new Date(req.body.end_date),
+      },
+
+      clinic_stauts: req.body.clinic_stauts || "Draft",
+
+      any_special_note: req.body.any_special_note || "",
+    };
+
+    const clinic = await Clinic.create(clinicData);
+
+    if (req.files?.length) {
+      await deleteMultipleFiles(req.files);
+    }
+
+    await cleanRedisDataFlush(redisClient);
+
+    return res.status(201).json({
+      success: true,
+      message: "Clinic created successfully",
+      data: clinic,
+    });
+  } catch (error) {
+    console.error(error);
+
+    if (req.files?.length) {
+      await deleteMultipleFiles(req.files);
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create clinic",
+      error: error.message,
+    });
+  }
 };
-
-
 // exports.updateClinic = async (req, res) => {
  
 //     try {

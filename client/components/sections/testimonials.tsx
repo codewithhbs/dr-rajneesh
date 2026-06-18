@@ -279,7 +279,7 @@ const Testimonials = () => {
 
                 
                 <div className="flex gap-4 justify-center flex-wrap">
-                  <Link href="/book-now-consultation">
+                  <Link href="/book-consultation">
                     <Button className="bg-white text-blue-600 border-0 hover:bg-white/90 hover:shadow-xl transform hover:scale-105 transition-all duration-300 px-8 py-4 text-lg font-semibold flex items-center justify-center gap-2 rounded-xl">
                       <Users className="w-5 h-5" />
                       Book Your Consultation

@@ -16,13 +16,14 @@ const { updateConfigSettings, getSettings } = require("../controllers/settings/s
 const { createAddOn, getAllAddOns, getAddOnById, updateAddOn, deleteAddOn } = require('../controllers/service/addOn.controller');
 const { getServices } = require('../controllers/service/other.controller');
 const { createContact, getAllContacts, markAsSeen, solveContact } = require('../controllers/Contact/Contact.controller');
+const { createPopup, getAllPopups, getActivePopup, getPopupById, updatePopup, deletePopup } = require('../controllers/Popup/Popup.Controller');
 
 const router = express.Router()
 
 
 //Clinic Routes For CRUD
 router.post('/create-clinic', upload.array('images'), createClinic)
-router.put('/update-clinic/:id', upload.array('image'), updateClinic)
+router.put('/update-clinic/:id', upload.array('images'), updateClinic)
 router.delete('/delete-clinic/:id', DeleteClinic)
 router.get('/get-all-clinic', GetAllClinic)
 router.get('/get-clinic-count', GetClinicCount);
@@ -90,7 +91,7 @@ router.put('/update-notification/:id', updateNotification);
 
 
 // for admin web
-router.get('/admin/get-all-user',  getAllUsers);
+router.get('/admin/get-all-user', getAllUsers);
 
 // Route to get user count for dashboard
 router.get('/get-user-count', getUserCount);
@@ -106,7 +107,7 @@ router.delete("/add-on/:id", deleteAddOn);
 //for admin login
 router.post("/admin/login", adminLogin);
 router.get("/admin/profile", isAdmin, adminProfile);
-router.get("/admin/logout", isAdmin, adminLogout);
+router.get("/admin/logout",  adminLogout);
 router.put("/admin/update-profile", isAdmin, updateAdminProfile);
 router.put("/admin/change-password", isAdmin, changeAdminPassword);
 
@@ -147,7 +148,7 @@ router.get("/get-blogs-count", getBlogsCount);
 router.get("/get-blog/:id", getSingleBlog);
 router.get("/get-blog/slug/:slug", getSingleBlogBySlug);
 router.put("/update-blog/:id", isAdmin, upload.single("image"), updateBlog);
-router.delete("/delete-blog/:id",  deleteBlog)
+router.delete("/delete-blog/:id", deleteBlog)
 
 router.get("/get-config-settings", getSettings);
 router.put("/update-config-settings/:id", (req, res, next) => {
@@ -159,6 +160,13 @@ router.put("/update-config-settings/:id", (req, res, next) => {
 }, updateConfigSettings);
 
 
+
+router.post("/popup", upload.single("image"), createPopup);
+router.get("/popup", getAllPopups);
+router.get("/popup/active", getActivePopup);
+router.get("/popup/:popupId", getPopupById);
+router.put("/popup/:popupId", upload.single("image"), updatePopup);
+router.delete("/popup/:popupId", deletePopup);
 
 
 module.exports = router;   

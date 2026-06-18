@@ -1,4 +1,4 @@
-// page_/book-now-consultation/BookNowConsultationsWrapper.tsx
+// page_/book-consultation/BookNowConsultationsWrapper.tsx
 "use client";
 
 import BookNowConsultations from "@/page_/book-now-consultation/BookNowConsulattions";

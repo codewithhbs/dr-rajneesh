@@ -181,7 +181,7 @@ const Hero = () => {
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                <Link href={`/book-now-consultation`}>
+                <Link href={`/book-consultation`}>
                    <button className="group relative inline-flex items-center justify-center px-8 py-2 font-bold text-gray-900 bg-white rounded-xl overflow-hidden shadow-2xl transition-all duration-300 hover:shadow-yellow-400/50 hover:scale-105">
                   <span className="relative z-10 flex items-center space-x-2">
                     <span>Book Appointment</span>

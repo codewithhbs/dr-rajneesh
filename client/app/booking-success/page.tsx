@@ -32,7 +32,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import axios from "axios";
 import { format } from "date-fns";
 
-const API_ENDPOINT = "https://api.drrajneeshkant.in/api/v1";
+const API_ENDPOINT = "http://localhost:7900/api/v1";
 
 // Types
 interface PatientDetails {

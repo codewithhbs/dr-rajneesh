@@ -195,7 +195,7 @@ export function Footer() {
 
               <div className="mt-6">
                 <Link
-                  href="/book-now-consultation"
+                  href="/book-consultation"
                   className="bg-[#1e7fd0] text-white py-2 px-4 rounded-md inline-block hover:bg-blue-700 transition-colors"
                 >
                   Book Appointment

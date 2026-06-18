@@ -191,7 +191,7 @@ const NextAppointmentCard: React.FC<NextAppointmentCardProps> = ({
             <p className="text-slate-600 mb-4 text-sm">
               Schedule your next appointment to continue your treatment.
             </p>
-            <Link href={"/book-now-consultation"}>
+            <Link href={"/book-consultation"}>
               <Button className="bg-blue-600 hover:bg-blue-700">
                 <Calendar className="h-4 w-4 mr-2" />
                 Book New Appointment

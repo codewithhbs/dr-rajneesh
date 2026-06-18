@@ -160,7 +160,7 @@ export function LoginForm({
           </div>
         </div>
 
-        {/* Google Auth */}
+        {/* Google Auth
         <Button
           type="button"
           variant="outline"
@@ -187,10 +187,10 @@ export function LoginForm({
             />
           </svg>
           Google
-        </Button>
+        </Button> */}
 
         {/* Phone Login */}
-        <Button
+        {/* <Button
           type="button"
           variant="outline"
           onClick={onSwitchToPhoneOTP}
@@ -199,7 +199,7 @@ export function LoginForm({
         >
           <Phone className="h-5 w-5" />
           Login with Phone
-        </Button>
+        </Button> */}
       </form>
 
       {/* Footer */}

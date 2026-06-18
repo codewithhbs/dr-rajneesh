@@ -3,15 +3,20 @@
 import { usePathname } from "next/navigation";
 import { Header } from "./header";
 import { Footer } from "./footer";
+import axios from "axios";
+import PopupModal from "./PopupModal";
+
+const API_ENDPOINT = "http://localhost:7900/api/v1";
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  const hideHeader = pathname === "/book-now-consultation";
+  const hideHeader = pathname === "/book-consultation";
 
   return (
     <>
-       <Header />
+      <Header />
+      <PopupModal/>
       {children}
       <Footer />
     </>

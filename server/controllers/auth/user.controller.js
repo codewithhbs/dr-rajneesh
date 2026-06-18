@@ -146,10 +146,6 @@ exports.registerNormalUser = async (req, res, next) => {
       </div>
     `;
 
-            await sendWhatsApp({
-                mobile: existingUser.phone,
-                msg: `Thank you for registering. Please verify your Phone Number using the OTP :- ${otp}.`
-            });
         emailQueue
             .add({
                 type: "register",
@@ -197,7 +193,7 @@ exports.registerNormal = async (req, res, next) => {
     // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000);
     const otpExpiry = createOtpExpiry(30);
-
+    console.log(otp)
     // MESSAGE
     const message = `Your verification OTP is ${otp}. It will expire in 30 minutes.`;
 
@@ -2360,26 +2356,71 @@ function welcome(user) {
 }
 
 
-
-exports.getAllUsers = async (req, res, next) => {
+exports.getAllUsers = async (req, res) => {
     try {
-        const users = await userModel.find({ status: { $ne: "deleted" } })
-            .select("-password")
-            .sort({ createdAt: -1 });
+        const {
+            page = 1,
+            limit = 10,
+            search = "",
+            status
+        } = req.query;
+
+        const currentPage = Math.max(parseInt(page) || 1, 1);
+        const perPage = Math.min(parseInt(limit) || 10, 100);
+        const skip = (currentPage - 1) * perPage;
+
+        const filter = {
+            status: { $ne: "deleted" }
+        };
+
+        // status filter
+        if (status && status !== "all") {
+            filter.status = status;
+        }
+
+        // search filter
+        if (search?.trim()) {
+            filter.$or = [
+                { name: { $regex: search, $options: "i" } },
+                { email: { $regex: search, $options: "i" } },
+                { phone: { $regex: search, $options: "i" } },
+                { aadhhar: { $regex: search, $options: "i" } }
+            ];
+        }
+
+        const [users, total] = await Promise.all([
+            userModel
+                .find(filter)
+                .select("-password")
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(perPage),
+
+            userModel.countDocuments(filter)
+        ]);
 
         return res.status(200).json({
             success: true,
-            users,
+            data: users,
+            pagination: {
+                total,
+                page: currentPage,
+                limit: perPage,
+                totalPages: Math.ceil(total / perPage),
+                hasNextPage: currentPage < Math.ceil(total / perPage),
+                hasPrevPage: currentPage > 1
+            }
         });
+
     } catch (error) {
         console.error("Error fetching all users:", error);
+
         return res.status(500).json({
             success: false,
-            message: "Something went wrong while fetching users",
+            message: "Something went wrong while fetching users"
         });
     }
-}
-
+};
 
 
 // Get total users count (excluding deleted)

@@ -1,43 +1,89 @@
-import { Route, Routes } from "react-router-dom";
-import "./App.css";
+import { Routes, Route, Navigate } from "react-router-dom";
 
-import SignInPage from "./Pages/SignInPage";
-import DashboardPage from "./Pages/DashboardPage";
-import NotFoundPage from "./Pages/NotFoundPage";
-import Footer from "./Pages/Footer";
-import { Toaster as Sonner } from "sonner"
-function App() {
+import ProtectedRoute from "@/components/layout/ProtectedRoute";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+
+// Pages
+import Login from "@/pages/Login";
+import NotFound from "@/pages/NotFound";
+import Dashboard from "@/pages/Dashboard";
+import Sessions from "@/pages/sessions/Sessions";
+import SessionDetails from "@/pages/sessions/SessionDetails";
+import Users from "@/pages/users/Users";
+import Doctors from "@/pages/users/Doctors";
+import Profile from "@/pages/users/Profile";
+import Treatments from "@/pages/treatments/Treatments";
+import TreatmentForm from "@/pages/treatments/TreatmentForm";
+import Clinics from "@/pages/clinics/Clinics";
+import Blogs from "@/pages/blogs/Blogs";
+import BlogCategories from "@/pages/blogs/BlogCategories";
+import Notifications from "@/pages/notifications/Notifications";
+import Popups from "@/pages/popups/Popups";
+import NewPopup from "@/pages/popups/NewPopup";
+import Settings from "@/pages/settings/Settings";
+import ComingSoon from "@/pages/misc/ComingSoon";
+
+export default function App() {
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* All Routes */}
-      <div className="flex-1">
-        <Routes>
-          <Route path="/" Component={DashboardPage} />  
-          <Route path="/admin/login" element={<SignInPage />} />
-          <Route path="/dashboard/*" element={<DashboardPage />} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </div>
+    <Routes>
+      {/* Public */}
+      <Route path="/admin/login" element={<Login />} />
 
-      {/* Global Footer */}
-      <Sonner
-      theme="light"     
-      position={"top-center"}      // or "dark" / "system"
-      className="toaster group"
-      toastOptions={{
-        classNames: {
-          toast:
-            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
-          description: "group-[.toast]:text-muted-foreground",
-          actionButton: "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
-          cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
-        },
-      }}
-      
-    />
-      <Footer />
-    </div>
+      {/* Everything under /dashboard requires auth and uses the layout shell */}
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Dashboard />} />
+
+        {/* Bookings */}
+        <Route path="sessions" element={<Sessions />} />
+        <Route path="sessions/:id" element={<SessionDetails />} />
+        <Route
+          path="medicine-booking"
+          element={<ComingSoon title="Medicine Bookings" />}
+        />
+
+        {/* Coupons */}
+        <Route path="sessions-coupons" element={<ComingSoon title="Session Coupons" />} />
+        <Route path="product-coupons" element={<ComingSoon title="Product Coupons" />} />
+
+        {/* Treatments / Services */}
+        <Route path="treatments" element={<Treatments />} />
+        <Route path="treatments/new" element={<TreatmentForm />} />
+        <Route path="treatments/edit/:id" element={<TreatmentForm />} />
+
+        {/* People */}
+        <Route path="users" element={<Users />} />
+        <Route path="doctor" element={<Doctors />} />
+        <Route path="profile" element={<Profile />} />
+
+        {/* Popups */}
+        <Route path="all-popup" element={<Popups />} />
+        <Route path="new-popup" element={<NewPopup />} />
+
+        {/* Clinics */}
+        <Route path="all-clinic" element={<Clinics />} />
+
+        {/* Blogs */}
+        <Route path="all-blogs" element={<Blogs />} />
+        <Route path="blogs-categories" element={<BlogCategories />} />
+
+        {/* Misc */}
+        <Route path="notifications" element={<Notifications />} />
+        <Route path="web-settings" element={<Settings />} />
+
+        {/* Unknown dashboard path -> home */}
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Route>
+
+      {/* Root + catch-all */}
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 }
-
-export default App;

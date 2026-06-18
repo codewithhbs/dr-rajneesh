@@ -327,50 +327,59 @@ const AuthSystem = () => {
     }
   }
 
-  const handleRegister = async () => {
-    try {
-      const response = await axios.post<AuthResponse>(
-        `${API_ENDPOINT}/user/register`,
-        {
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          password: formData.password,
-          termsAccepted: formData.termsAccepted,
-        },
-        { timeout: 10000, headers: { "Content-Type": "application/json" } }
-      )
+const handleRegister = async () => {
+  try {
+    const sanitizedPhone = formData.phone
+      .trim() // remove leading/trailing spaces
+      .replace(/\s+/g, "") // remove all spaces
+      .replace(/^\+91/, "") // remove +91 if present
+      .replace(/^91(?=\d{10}$)/, ""); // remove 91 if user entered 919876543210
 
-      if (!response.data.success) {
-        throw new Error(response.data.message || "Registration failed")
+    const response = await axios.post<AuthResponse>(
+      `${API_ENDPOINT}/user/register`,
+      {
+        name: formData.name.trim(),
+        email: formData.email.trim().toLowerCase(),
+        phone: sanitizedPhone,
+        password: formData.password,
+        termsAccepted: formData.termsAccepted,
+      },
+      {
+        timeout: 10000,
+        headers: { "Content-Type": "application/json" },
       }
+    );
 
-      // Store sessionId if provided
-      if (response.data.sessionId) {
-        setAuthState((prev) => ({
-          ...prev,
-          sessionId: response.data.sessionId || "",
-        }))
-      }
-
-      setMessage({ type: "success", text: "Registration successful! Please verify your email." })
-
-      // Reset password field for security
-      setFormData((prev) => ({ ...prev, password: "" }))
-
-      // Navigate to OTP verification
-      setTimeout(() => {
-        setAuthState((prev) => ({
-          ...prev,
-          currentView: "otp-verify",
-          flowType: "email",
-        }))
-        setMessage({ type: "", text: "" })
-      }, 2000)
-    } catch (error) {
-      throw error
+    if (!response.data.success) {
+      throw new Error(response.data.message || "Registration failed");
     }
+
+    if (response.data.sessionId) {
+      setAuthState((prev) => ({
+        ...prev,
+        sessionId: response.data.sessionId || "",
+      }));
+    }
+
+    setMessage({
+      type: "success",
+      text: "Registration successful! Please verify your email.",
+    });
+
+    setFormData((prev) => ({ ...prev, password: "" }));
+
+    setTimeout(() => {
+      setAuthState((prev) => ({
+        ...prev,
+        currentView: "otp-verify",
+        flowType: "email",
+      }));
+      setMessage({ type: "", text: "" });
+    }, 2000);
+  } catch (error) {
+    throw error;
   }
+};
 
   const handleSendLoginOTP = async () => {
     try {

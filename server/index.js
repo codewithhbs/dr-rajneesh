@@ -15,7 +15,8 @@ const router = require('./routes/routes');
 
 const setupBullBoard = require('./bullBoard');
 const user_auth_router = require('./routes/user.auth.routes');
-const user_booking_routes = require('./routes/user.booking.routes')
+const user_booking_routes = require('./routes/user.booking.routes');
+const FullBodyService = require('./routes/fullBodyBooking.routes');
 
 dotenv.config();
 
@@ -30,6 +31,8 @@ const app = express();
     if (client) {
 
       app.set('redis', client);
+
+
       logger.info('Redis connected and set globally', { component: 'Redis', context: 'Initialization' });
     }
   } catch (err) {
@@ -68,8 +71,8 @@ app.use(
     }),
     cookie: {
       httpOnly: true,
-      secure: false, 
-      maxAge: 1000 * 60 * 60, 
+      secure: false,
+      maxAge: 1000 * 60 * 60,
     },
   })
 );
@@ -106,7 +109,9 @@ app.use("/invoices", express.static("invoices"));
 app.get('/', (req, res) => res.send('API Running'));
 app.use('/api/v1', router)
 app.use('/api/v1/user', user_auth_router)
-app.use('/api/v1/booking',user_booking_routes)
+app.use('/api/v1/booking', user_booking_routes)
+app.use('/api/v1/full', FullBodyService)
+
 
 // 404 handler
 app.use((req, res) => {

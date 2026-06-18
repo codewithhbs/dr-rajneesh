@@ -19,7 +19,7 @@ export const useService = () => {
         try {
             setLoading(true);
             const response = await axios.get(`${API_URL}/get-all-service?limit=20`);
-            console.log("Service response:", response.data);
+            // console.log("Service response:", response.data);
 
             if (response.data.success) {
                 setServices(response.data.data);
