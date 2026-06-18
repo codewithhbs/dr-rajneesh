@@ -12,7 +12,7 @@ import { useSettings } from "@/hooks/use-settings";
 import { useGetAllClinic } from "@/hooks/common";
 import { useService } from "@/hooks/use-service";
 
-const API_ENDPOINT = "http://localhost:7900/api/v1";
+const API_ENDPOINT = "https://api.drrajneeshkant.in/api/v1";
 
 const convertTo24Hour = (time: string): string => {
   const [timePart, modifier] = time.split(" ");

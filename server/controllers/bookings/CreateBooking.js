@@ -495,7 +495,7 @@ Thank you for booking with us! 🙏
 
                 // Send WhatsApp message with invoice PDF
                 console.log("Sending WhatsApp message with invoice...");
-                const invoiceUrl = `http://localhost:7900/invoices/${path.basename(invoicePath)}`;
+                const invoiceUrl = `https://api.drrajneeshkant.in/invoices/${path.basename(invoicePath)}`;
                 const whatsappResponse = await sendWhatsApp({
                     mobile: patient_details.phone,
                     msg: whatsappMessage,

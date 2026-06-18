@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 
-const API_BASE_URL = "http://localhost:7900/api/v1/full/user";
+const API_BASE_URL = "https://api.drrajneeshkant.in/api/v1/full/user";
 
 const SpinnerIcon = () => (
     <svg width="18" height="18" viewBox="0 0 16 16" fill="none" style={{ animation: "spin 0.8s linear infinite" }}>

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 
-const API_BASE_URL = "http://localhost:7900/api/v1/full/user";
+const API_BASE_URL = "https://api.drrajneeshkant.in/api/v1/full/user";
 
 const TIME_SLOTS = [
     "09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM",

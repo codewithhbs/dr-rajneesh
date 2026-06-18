@@ -5,7 +5,7 @@ import Cookies from "js-cookie";
 import { useGetProfile } from "@/hooks/use-getprofile";
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:7900/api/v1/full/user";
+const API_BASE_URL = "https://api.drrajneeshkant.in/api/v1/full/user";
 
 /* ----------------------------- Types ----------------------------- */
 

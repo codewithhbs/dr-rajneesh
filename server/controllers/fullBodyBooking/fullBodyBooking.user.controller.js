@@ -434,7 +434,7 @@ exports.initiatePayment = async (req, res) => {
             merchantId: ICICI_MERCHANT_ID,
             merchantTxnNo,
             payType: "0",
-            returnURL: 'https://pw8tvjlc-7900.inc1.devtunnels.ms/api/v1/full/user/payment/verify',
+            returnURL: 'https://api.drrajneeshkant.in/api/v1/full/user/payment/verify',
             transactionType: "SALE",
             txnDate
         };
@@ -566,7 +566,7 @@ exports.verifyPayment = async (req, res) => {
         // ------------------------------
         if (paymentRecord.status === "success") {
             await session.commitTransaction();
-            const redirect_url = `http://localhost:3000/payment/success?order_id=${booking?._id}&merchent=${ICICI_MERCHANT_ID}&redirect_via=dashboard&pay_via=icici`;
+            const redirect_url = `https://drrajneeshkant.in/payment/success?order_id=${booking?._id}&merchent=${ICICI_MERCHANT_ID}&redirect_via=dashboard&pay_via=icici`;
 
             return res.redirect(redirect_url);
 
@@ -703,21 +703,15 @@ exports.verifyPayment = async (req, res) => {
 
         await session.commitTransaction();
 
-        // const redirect_url = `http://localhost:3000/payment/success?order_id=${booking?._id}&merchent=${ICICI_MERCHANT_ID}&redirect_via=dashboard&pay_via=icici`
-        // return res.status(200).json({
-        //     success: true,
-        //     paymentSuccess: true,
-        //     message: "Payment verified successfully",
-        //     data: booking
-        // });
-        const redirect_url = `http://localhost:3000/payment/success?order_id=${booking?._id}&merchent=${ICICI_MERCHANT_ID}&redirect_via=dashboard&pay_via=icici`;
+
+        const redirect_url = `https://drrajneeshkant.in/payment/success?order_id=${booking?._id}&merchent=${ICICI_MERCHANT_ID}&redirect_via=dashboard&pay_via=icici`;
 
         return res.redirect(redirect_url);
 
     } catch (err) {
         await session.abortTransaction();
         console.error("Payment Verification Error:", err);
-        const failed_redirect_url = `http://localhost:3000/payment/failed?order_id=${booking?._id}&merchent=${ICICI_MERCHANT_ID}&redirect_via=dashboard&pay_via=icici&error=${encodeURIComponent(err.response?.data)}`
+        const failed_redirect_url = `https://drrajneeshkant.in/payment/failed?order_id=${booking?._id}&merchent=${ICICI_MERCHANT_ID}&redirect_via=dashboard&pay_via=icici&error=${encodeURIComponent(err.response?.data)}`
 
         return res.redirect(failed_redirect_url);
 

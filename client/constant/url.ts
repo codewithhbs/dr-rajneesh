@@ -1,2 +1,2 @@
-export const API_ENDPOINT = `http://localhost:7900/api/v1`;
-export const LOCAL_API_ENDPOINT = `http://localhost:7900/api/v1`;
+export const API_ENDPOINT = `https://api.drrajneeshkant.in/api/v1`;
+export const LOCAL_API_ENDPOINT = `https://api.drrajneeshkant.in/api/v1`;

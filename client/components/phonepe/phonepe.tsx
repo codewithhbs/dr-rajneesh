@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import axios from "axios";
 import { toast } from "sonner";
 
-const API_ENDPOINT = "http://localhost:7900/api/v1";
+const API_ENDPOINT = "https://api.drrajneeshkant.in/api/v1";
 
 const PhonePeCallbackPage = () => {
   const searchParams = useSearchParams();

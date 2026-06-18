@@ -45,8 +45,8 @@ class PayUUtils {
         firstname: options.firstname || "Patient",
         email: options.email || "patient@example.com",
         phone: options.phone || "9999999999",
-        surl: options.surl || `http://localhost:7900/api/v1/user/bookings/verify-payment`,
-        furl: options.furl || `http://localhost:7900/api/v1/user/bookings/verify-payment`,
+        surl: options.surl || `https://api.drrajneeshkant.in/api/v1/user/bookings/verify-payment`,
+        furl: options.furl || `https://api.drrajneeshkant.in/api/v1/user/bookings/verify-payment`,
 
         udf1: options.udf1 || "",
         udf2: options.udf2 || "",

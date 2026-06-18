@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 
-const API_BASE_URL = "http://localhost:7900/api/v1/full/user";
+const API_BASE_URL = "https://api.drrajneeshkant.in/api/v1/full/user";
 
 /* ─── Icons ─── */
 const CheckIcon = () => (

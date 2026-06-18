@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/authContext/auth";
 
-const API_BASE_URL = "http://localhost:7900/api/v1/user";
+const API_BASE_URL = "https://api.drrajneeshkant.in/api/v1/user";
 
 /* ─── Icons ─── */
 const CheckIcon = () => (

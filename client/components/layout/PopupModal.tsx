@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-const API_ENDPOINT = "http://localhost:7900/api/v1";
+const API_ENDPOINT = "https://api.drrajneeshkant.in/api/v1";
 
 export default function PopupModal() {
     const [popup, setPopup] = useState(null);

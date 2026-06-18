@@ -29,7 +29,7 @@ The backend base URL lives in **one** place: `src/constants/config.js`
 `.env.example` to `.env` and set:
 
 ```
-VITE_API_URL=http://localhost:7900/api/v1
+VITE_API_URL=https://api.drrajneeshkant.in/api/v1
 ```
 
 ## How auth works

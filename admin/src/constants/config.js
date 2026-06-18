@@ -18,7 +18,7 @@ import {
 // (the single axios instance in src/lib/axios.js) follows.
 // ---------------------------------------------------------------------------
 export const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:7900/api/v1";
+  import.meta.env.VITE_API_URL || "https://api.drrajneeshkant.in/api/v1";
 
 // Key used to persist the admin auth token in localStorage.
 export const TOKEN_KEY = "adminToken";

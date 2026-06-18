@@ -6,7 +6,7 @@ import { Footer } from "./footer";
 import axios from "axios";
 import PopupModal from "./PopupModal";
 
-const API_ENDPOINT = "http://localhost:7900/api/v1";
+const API_ENDPOINT = "https://api.drrajneeshkant.in/api/v1";
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
