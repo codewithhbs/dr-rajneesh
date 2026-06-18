@@ -1,10 +1,12 @@
 "use client";
+export const dynamic = "force-dynamic";
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { Loader2 } from 'lucide-react';
 
-export default function PaymentFailedPage() {
+function PaymentFailedContent() {
   const searchParams = useSearchParams();
 
   const bookingId = searchParams.get("order_id");
@@ -18,7 +20,7 @@ export default function PaymentFailedPage() {
         <div className="mx-auto w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mb-6">
           <span className="text-5xl">❌</span>
         </div>
-        
+
         <h1 className="text-4xl font-bold text-red-600 mb-2">
           Payment Failed
         </h1>
@@ -39,7 +41,7 @@ export default function PaymentFailedPage() {
         {bookingId && (
           <div className="border-b pb-6 mb-6">
             <h2 className="text-2xl font-semibold mb-4">Booking Details</h2>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-gray-500">Booking ID</p>
@@ -64,16 +66,16 @@ export default function PaymentFailedPage() {
         {/* What You Can Do Next */}
         <div className="mb-8">
           <h3 className="text-xl font-semibold mb-4">What would you like to do?</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Link 
+            <Link
               href={`/payment?order_id=${bookingId}`}
               className="flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white font-medium py-4 px-6 rounded-2xl transition-all"
             >
               🔄 Try Payment Again
             </Link>
 
-            <Link 
+            <Link
               href="/bookings"
               className="flex items-center justify-center gap-3 border border-gray-300 hover:bg-gray-50 font-medium py-4 px-6 rounded-2xl transition-all"
             >
@@ -105,5 +107,19 @@ export default function PaymentFailedPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function PaymentFailedPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-[#F8F7F4]">
+          <Loader2 className="h-10 w-10 animate-spin text-[#185FA5]" />
+        </div>
+      }
+    >
+      <PaymentFailedContent />
+    </Suspense>
   );
 }

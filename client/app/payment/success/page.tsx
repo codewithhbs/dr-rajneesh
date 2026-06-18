@@ -1,13 +1,15 @@
 "use client";
+export const dynamic = "force-dynamic";
 
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import axios from "axios";
 import { useSearchParams } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 const API_BASE_URL = "https://api.drrajneeshkant.in/api/v1/full/user";
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
   const searchParams = useSearchParams();
 
   const bookingId = searchParams.get("order_id");
@@ -150,12 +152,11 @@ export default function PaymentSuccessPage() {
             </div>
           </div>
         )}
+
         {/* Clinic Details */}
         {booking.clinic && (
           <div className="mb-8">
-            <h3 className="text-xl font-semibold mb-4">
-              Clinic Details
-            </h3>
+            <h3 className="text-xl font-semibold mb-4">Clinic Details</h3>
 
             <div className="bg-gray-50 rounded-xl overflow-hidden border">
               {booking.clinic.clinic_images?.[0]?.url && (
@@ -179,18 +180,14 @@ export default function PaymentSuccessPage() {
 
                 <div className="grid md:grid-cols-2 gap-4 mt-5">
                   <div>
-                    <p className="text-sm text-gray-500">
-                      Email
-                    </p>
+                    <p className="text-sm text-gray-500">Email</p>
                     <p className="font-medium">
                       {booking.clinic.clinic_contact_details?.email}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-sm text-gray-500">
-                      Phone
-                    </p>
+                    <p className="text-sm text-gray-500">Phone</p>
                     <p className="font-medium">
                       {booking.clinic.clinic_contact_details?.phone_numbers?.join(
                         ", "
@@ -199,43 +196,24 @@ export default function PaymentSuccessPage() {
                   </div>
 
                   <div className="md:col-span-2">
-                    <p className="text-sm text-gray-500">
-                      Address
-                    </p>
+                    <p className="text-sm text-gray-500">Address</p>
                     <p className="font-medium">
-                      {
-                        booking.clinic.clinic_contact_details
-                          ?.clinic_address
-                      }
+                      {booking.clinic.clinic_contact_details?.clinic_address}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-sm text-gray-500">
-                      Clinic Timings
-                    </p>
+                    <p className="text-sm text-gray-500">Clinic Timings</p>
                     <p className="font-medium">
-                      {
-                        booking.clinic.clinic_timings
-                          ?.open_time
-                      }{" "}
-                      -{" "}
-                      {
-                        booking.clinic.clinic_timings
-                          ?.close_time
-                      }
+                      {booking.clinic.clinic_timings?.open_time} -{" "}
+                      {booking.clinic.clinic_timings?.close_time}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-sm text-gray-500">
-                      Weekly Off
-                    </p>
+                    <p className="text-sm text-gray-500">Weekly Off</p>
                     <p className="font-medium">
-                      {
-                        booking.clinic.clinic_timings
-                          ?.off_day
-                      }
+                      {booking.clinic.clinic_timings?.off_day}
                     </p>
                   </div>
                 </div>
@@ -254,6 +232,7 @@ export default function PaymentSuccessPage() {
             </div>
           </div>
         )}
+
         {/* Payment Details */}
         <div>
           <h3 className="text-xl font-semibold mb-3">Payment Summary</h3>
@@ -286,5 +265,19 @@ export default function PaymentSuccessPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-[#F8F7F4]">
+          <Loader2 className="h-10 w-10 animate-spin text-[#185FA5]" />
+        </div>
+      }
+    >
+      <PaymentSuccessContent />
+    </Suspense>
   );
 }
