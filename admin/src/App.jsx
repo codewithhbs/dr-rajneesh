@@ -12,6 +12,7 @@ import SessionDetails from "@/pages/sessions/SessionDetails";
 import Users from "@/pages/users/Users";
 import Doctors from "@/pages/users/Doctors";
 import Profile from "@/pages/users/Profile";
+//add in this 
 import Treatments from "@/pages/treatments/Treatments";
 import TreatmentForm from "@/pages/treatments/TreatmentForm";
 import Clinics from "@/pages/clinics/Clinics";
