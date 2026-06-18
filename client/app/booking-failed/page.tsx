@@ -1,7 +1,7 @@
 "use client"
 export const dynamic = "force-dynamic";
 
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { AlertTriangle, RefreshCw, Phone, Mail, Clock, ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,7 +37,8 @@ const Page: React.FC<PageProps> = ({ searchParams }) => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-pink-50 flex items-center justify-center p-4">
+         <Suspense fallback={<div>Loading...</div>}>
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-pink-50 flex items-center justify-center p-4">
             <style jsx global>{`
                 @keyframes shake {
                     0%, 100% { transform: translateX(0); }
@@ -205,6 +206,9 @@ const Page: React.FC<PageProps> = ({ searchParams }) => {
                 </Card>
             </div>
         </div>
+
+         </Suspense>
+    
     );
 };
 
