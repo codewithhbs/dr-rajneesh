@@ -4,7 +4,7 @@ import { Eye, EyeOff, Mail, Lock, ArrowRight, Stethoscope } from "lucide-react";
 import toast from "react-hot-toast";
 
 import api from "@/lib/axios";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/authContext";
 import { ADMIN_WEB_NAME } from "@/constants/config";
 
 export default function Login() {

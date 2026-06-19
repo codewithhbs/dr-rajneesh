@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/authContext";
 import Spinner from "@/components/ui/Spinner";
 
 // Wrap any route that requires login. While we verify the stored token we show

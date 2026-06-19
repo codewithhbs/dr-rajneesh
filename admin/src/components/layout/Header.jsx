@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Menu, Bell, User, LogOut, ChevronDown } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/authContext";
 
 export default function Header({ onMenuClick }) {
   const { user, logout } = useAuth();

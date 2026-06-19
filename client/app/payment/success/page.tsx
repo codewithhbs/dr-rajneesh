@@ -1,56 +1,107 @@
 "use client";
 export const dynamic = "force-dynamic";
 
-import React, { Suspense, useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState, useRef } from "react";
 import Cookies from "js-cookie";
 import axios from "axios";
 import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/context/authContext/auth";
 
 const API_BASE_URL = "https://api.drrajneeshkant.in/api/v1/full/user";
 
 function PaymentSuccessContent() {
   const searchParams = useSearchParams();
-
   const bookingId = searchParams.get("order_id");
-  const merchant = searchParams.get("merchent");
-  const payVia = searchParams.get("pay_via");
 
-  const token = Cookies.get("token");
+  const { token } = useAuth();
 
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Effective token: context prefer karo, warna cookie. State me rakho
+  // taaki jab bhi yeh aaye to re-render + fetch effect dobara chale.
+  const [authToken, setAuthToken] = useState(
+    () => token || Cookies.get("token") || null
+  );
+
+  const pollRef = useRef(null);
+
+  // Token resolve karna (gateway redirect race fix)
   useEffect(() => {
-    if (!bookingId || !token) {
-      setError("Missing booking ID or authentication");
+    if (token) {
+      setAuthToken(token);
+      return;
+    }
+
+    const fromCookie = Cookies.get("token");
+    if (fromCookie) {
+      setAuthToken(fromCookie);
+      return;
+    }
+
+    // Token abhi nahi mila — ~3s tak har 300ms retry
+    let attempts = 0;
+    pollRef.current = setInterval(() => {
+      attempts += 1;
+      const t = Cookies.get("token");
+      if (t) {
+        setAuthToken(t);
+        clearInterval(pollRef.current);
+      } else if (attempts >= 10) {
+        clearInterval(pollRef.current);
+      }
+    }, 300);
+
+    return () => clearInterval(pollRef.current);
+  }, [token]);
+
+  // Booking fetch
+  useEffect(() => {
+    if (!bookingId) {
+      setError("Missing booking ID");
       setLoading(false);
       return;
     }
 
+    if (!authToken) return; // token wait karo, error mat do
+
+    let cancelled = false;
+
     const fetchBooking = async () => {
       try {
+        setLoading(true);
         const { data } = await axios.get(
           `${API_BASE_URL}/booking/${bookingId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+          { headers: { Authorization: `Bearer ${authToken}` } }
         );
-
-        setBooking(data?.data || data);
+        if (!cancelled) {
+          setBooking(data?.data || data);
+          setError(null);
+        }
       } catch (err) {
         console.error("Booking fetch error:", err?.response?.data || err.message);
-        setError("Failed to load booking details");
+        if (!cancelled) setError("Failed to load booking details");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     fetchBooking();
-  }, [bookingId, token]);
+    return () => {
+      cancelled = true;
+    };
+  }, [bookingId, authToken]);
+
+  // Auth abhi resolve ho raha hai
+  if (!authToken && !error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-[#185FA5]" />
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -68,13 +119,12 @@ function PaymentSuccessContent() {
     );
   }
 
-  const formatDate = (dateString) => {
-    return new Intl.DateTimeFormat("en-IN", {
+  const formatDate = (dateString) =>
+    new Intl.DateTimeFormat("en-IN", {
       day: "numeric",
       month: "long",
       year: "numeric",
     }).format(new Date(dateString));
-  };
 
   return (
     <div className="max-w-4xl mx-auto mt-12 p-6">
@@ -219,7 +269,7 @@ function PaymentSuccessContent() {
                 </div>
 
                 {booking.clinic.clinic_map && (
-                  <a
+                    <a
                     href={booking.clinic.clinic_map}
                     target="_blank"
                     rel="noopener noreferrer"

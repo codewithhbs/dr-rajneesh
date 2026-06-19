@@ -10,7 +10,7 @@ const AppointmentTimeline = require("../../models/NewService/AppointmentTimeline
 const ICICI_MERCHANT_ID = process.env.ICICI_MERCHANT_ID;
 const ICICI_AGGREGATOR_ID = process.env.ICICI_AGGREGATOR_ID;
 const ICICI_SECRET_KEY = process.env.ICICI_SECRET_KEY;
-const ICICI_COMMAND_URL = process.env.ICICI_COMMAND_URL || "https://pgpayuat.icicibank.com/tsp/pg/api/command";
+const ICICI_COMMAND_URL = process.env.ICICI_COMMAND_URL || "https://pgpay.icicibank.com/pg/api/command";
 
 function buildSecureHash(paramsInOrder) {
     const hashText = paramsInOrder.join("");

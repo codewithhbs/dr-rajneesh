@@ -10,8 +10,8 @@ const AppointmentTimeline = require("../../models/NewService/AppointmentTimeline
 const ICICI_MERCHANT_ID = process.env.ICICI_MERCHANT_ID;
 const ICICI_AGGREGATOR_ID = process.env.ICICI_AGGREGATOR_ID;
 const ICICI_SECRET_KEY = process.env.ICICI_SECRET_KEY;
-const ICICI_INITIATE_URL = process.env.ICICI_INITIATE_URL || "https://pgpayuat.icicibank.com/tsp/pg/api/v2/initiateSale";
-const ICICI_COMMAND_URL = process.env.ICICI_COMMAND_URL || "https://pgpayuat.icicibank.com/tsp/pg/api/command";
+const ICICI_INITIATE_URL = process.env.ICICI_INITIATE_URL || "https://pgpay.icicibank.com/pg/api/v2/initiateSale";
+const ICICI_COMMAND_URL = process.env.ICICI_COMMAND_URL || "https://pgpay.icicibank.com/pg/api/command";
 const ICICI_RETURN_URL = process.env.ICICI_RETURN_URL;
 
 function genBookingId() {
@@ -520,10 +520,11 @@ exports.verifyPayment = async (req, res) => {
 
         if (!bookingId || !merchantTxnNo) {
             await session.abortTransaction();
-            return res.status(400).json({
-                success: false,
-                message: "bookingId and merchantTxnNo are required"
-            });
+            return res.redirect('https://drrajneeshkant.in/payment/failed')
+            // return res.status(400).json({
+            //     success: false,
+            //     message: "bookingId and merchantTxnNo are required"
+            // });
         }
 
         const booking = await FullBodyBooking.findOne({
@@ -566,7 +567,7 @@ exports.verifyPayment = async (req, res) => {
         // ------------------------------
         if (paymentRecord.status === "success") {
             await session.commitTransaction();
-            const redirect_url = `https://drrajneeshkant.in/payment/success?order_id=${booking?._id}&merchent=${ICICI_MERCHANT_ID}&redirect_via=dashboard&pay_via=icici`;
+            const redirect_url = `https://drrajneeshkant.in/?order_id=${booking?._id}&merchent=${ICICI_MERCHANT_ID}&redirect_via=dashboard&pay_via=icici`;
 
             return res.redirect(redirect_url);
 
@@ -704,7 +705,7 @@ exports.verifyPayment = async (req, res) => {
         await session.commitTransaction();
 
 
-        const redirect_url = `https://drrajneeshkant.in/payment/success?order_id=${booking?._id}&merchent=${ICICI_MERCHANT_ID}&redirect_via=dashboard&pay_via=icici`;
+        const redirect_url = `https://drrajneeshkant.in?order_id=${booking?._id}&merchent=${ICICI_MERCHANT_ID}&redirect_via=dashboard&pay_via=icici`;
 
         return res.redirect(redirect_url);
 
@@ -740,7 +741,7 @@ exports.getMyBookings = async (req, res) => {
             .populate("service", "title price discount_price tag")
             .populate("assignedDoctor", "name")
             .populate("clinic", "clinic_name clinic_contact_details")
-            
+
             .sort({ createdAt: -1 });
 
         return res.status(200).json({ success: true, data: bookings });

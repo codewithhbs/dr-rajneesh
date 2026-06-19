@@ -3,7 +3,7 @@ import { User, KeyRound } from "lucide-react";
 import toast from "react-hot-toast";
 
 import api from "@/lib/axios";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/authContext";
 import PageHeader from "@/components/ui/PageHeader";
 import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
