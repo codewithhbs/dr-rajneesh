@@ -69,7 +69,7 @@ export default function Users() {
     if (!toDelete) return;
     setDeleting(true);
     try {
-      await api.delete(`/admin/delete-user/${toDelete._id}`);
+      await api.delete(`/user/users/${toDelete._id}`);
       toast.success("User deleted");
       setUsers((prev) => prev.filter((u) => u._id !== toDelete._id));
       setToDelete(null);

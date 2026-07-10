@@ -32,7 +32,8 @@ exports.registerNormalUser = async (req, res, next) => {
             $or: [{ email }, { phone }],
         });
 
-       const otp = Math.floor(100000 + Math.random() * 900000);
+        //    const otp = Math.floor(100000 + Math.random() * 900000);
+        const otp = 123456
 
         const otpExpiry = createOtpExpiry(30); // expires in 30 minutes
 
@@ -174,132 +175,134 @@ exports.registerNormalUser = async (req, res, next) => {
 
 
 exports.registerNormal = async (req, res, next) => {
-  try {
+    try {
 
-    const { name, phone, termsAccepted = true, email, aadhhar, age, gender } = req.body;
+        const { name, phone, termsAccepted = true, email, aadhhar, age, gender } = req.body;
 
-    if (!name || !phone) {
-      return res.status(400).json({
-        success: false,
-        message: "Name and phone are required",
-      });
-    }
+        if (!name || !phone) {
+            return res.status(400).json({
+                success: false,
+                message: "Name and phone are required",
+            });
+        }
 
-    // Normalize phone
-    const trimmedPhone = phone.trim();
+        // Normalize phone
+        const trimmedPhone = phone.trim();
 
-    let user = await userModel.findOne({ phone: trimmedPhone });
+        let user = await userModel.findOne({ phone: trimmedPhone });
 
-    // Generate OTP
-    const otp = Math.floor(100000 + Math.random() * 900000);
-    const otpExpiry = createOtpExpiry(30);
-    console.log(otp)
-    // MESSAGE
-    const message = `Your verification OTP is ${otp}. It will expire in 30 minutes.`;
+        // Generate OTP
+            const otp = 123456
 
-    if (user) {
+        // const otp = Math.floor(100000 + Math.random() * 900000);
+        const otpExpiry = createOtpExpiry(30);
+        console.log(otp)
+        // MESSAGE
+        const message = `Your verification OTP is ${otp}. It will expire in 30 minutes.`;
 
-      // If already verified user → LOGIN FLOW
-      if (user.status === "active" && user.phoneNumber?.isVerified) {
+        if (user) {
 
-        user.phoneNumber = {
-          isVerified: true,
-          otp,
-          otpExpiry,
-        };
+            // If already verified user → LOGIN FLOW
+            if (user.status === "active" && user.phoneNumber?.isVerified) {
 
-        await user.save();
+                user.phoneNumber = {
+                    isVerified: true,
+                    otp,
+                    otpExpiry,
+                };
 
-        // Send OTP via WhatsApp
+                await user.save();
+
+                // Send OTP via WhatsApp
+                await sendWhatsApp({
+                    mobile: trimmedPhone,
+                    msg: message,
+                });
+
+                return res.status(200).json({
+                    success: true,
+                    message: "OTP sent for login",
+                    userId: user._id,
+                });
+            }
+
+            // USER EXISTS BUT NOT VERIFIED → UPDATE DATA
+
+            user.name = name.trim();
+            user.phone = trimmedPhone;
+            user.age = age;
+            user.gender = gender;
+            user.email = email ? email.toLowerCase().trim() : user.email || "";
+            user.aadhhar = aadhhar ? aadhhar.trim() : user.aadhhar || "";
+            user.termsAccepted = termsAccepted;
+
+            user.profileImage = {
+                url: `https://api.dicebear.com/9.x/initials/svg?seed=${name.trim()}`,
+                publicId: "",
+            };
+
+            user.phoneNumber = {
+                isVerified: false,
+                otp,
+                otpExpiry,
+            };
+
+            user.status = "un-verified";
+
+            await user.save();
+
+            // Send OTP
+            await sendWhatsApp({
+                mobile: trimmedPhone,
+                msg: message,
+            });
+
+            return res.status(200).json({
+                success: true,
+                message: "OTP sent for verification",
+                userId: user._id,
+            });
+        }
+
+        // NEW USER REGISTRATION
+
+        const newUser = new userModel({
+            name: name.trim(),
+            phone: trimmedPhone,
+            email: email ? email.toLowerCase().trim() : "",
+            aadhhar: aadhhar ? aadhhar.trim() : "",
+            termsAccepted,
+            age,
+            gender,
+            profileImage: {
+                url: `https://api.dicebear.com/9.x/initials/svg?seed=${name.trim()}`,
+                publicId: "",
+            },
+            phoneNumber: {
+                isVerified: false,
+                otp,
+                otpExpiry,
+            },
+            status: "un-verified",
+        });
+
+        await newUser.save();
+
+        // Send OTP
         await sendWhatsApp({
-          mobile: trimmedPhone,
-          msg: message,
+            mobile: trimmedPhone,
+            msg: message,
         });
 
-        return res.status(200).json({
-          success: true,
-          message: "OTP sent for login",
-          userId: user._id,
+        return res.status(201).json({
+            success: true,
+            message: "Registration successful! OTP sent for verification.",
+            userId: newUser._id,
         });
-      }
 
-      // USER EXISTS BUT NOT VERIFIED → UPDATE DATA
-
-      user.name = name.trim();
-      user.phone = trimmedPhone;
-      user.age = age;
-      user.gender = gender;
-      user.email = email ? email.toLowerCase().trim() : user.email || "";
-      user.aadhhar = aadhhar ? aadhhar.trim() : user.aadhhar || "";
-      user.termsAccepted = termsAccepted;
-
-      user.profileImage = {
-        url: `https://api.dicebear.com/9.x/initials/svg?seed=${name.trim()}`,
-        publicId: "",
-      };
-
-      user.phoneNumber = {
-        isVerified: false,
-        otp,
-        otpExpiry,
-      };
-
-      user.status = "un-verified";
-
-      await user.save();
-
-      // Send OTP
-      await sendWhatsApp({
-        mobile: trimmedPhone,
-        msg: message,
-      });
-
-      return res.status(200).json({
-        success: true,
-        message: "OTP sent for verification",
-        userId: user._id,
-      });
+    } catch (error) {
+        next(error);
     }
-
-    // NEW USER REGISTRATION
-
-    const newUser = new userModel({
-      name: name.trim(),
-      phone: trimmedPhone,
-      email: email ? email.toLowerCase().trim() : "",
-      aadhhar: aadhhar ? aadhhar.trim() : "",
-      termsAccepted,
-      age,
-      gender,
-      profileImage: {
-        url: `https://api.dicebear.com/9.x/initials/svg?seed=${name.trim()}`,
-        publicId: "",
-      },
-      phoneNumber: {
-        isVerified: false,
-        otp,
-        otpExpiry,
-      },
-      status: "un-verified",
-    });
-
-    await newUser.save();
-
-    // Send OTP
-    await sendWhatsApp({
-      mobile: trimmedPhone,
-      msg: message,
-    });
-
-    return res.status(201).json({
-      success: true,
-      message: "Registration successful! OTP sent for verification.",
-      userId: newUser._id,
-    });
-
-  } catch (error) {
-    next(error);
-  }
 };
 
 
@@ -966,8 +969,9 @@ exports.sendLoginOtp = async (req, res) => {
                 message: "Account is suspended or deactivated"
             });
         }
+    const otp = 123456
 
-        const otp = Math.floor(100000 + Math.random() * 900000);
+        // const otp = Math.floor(100000 + Math.random() * 900000);
 
         user.phoneNumber.otp = otp;
         user.phoneNumber.otpExpiry = Date.now() + 5 * 60 * 1000;
@@ -1087,8 +1091,9 @@ exports.resendLoginOtp = async (req, res) => {
                 message: "Account is suspended or deactivated"
             });
         }
+    const otp = 123456
 
-        const otp = Math.floor(100000 + Math.random() * 900000);
+        // const otp = Math.floor(100000 + Math.random() * 900000);
 
         user.phoneNumber.otp = otp;
         user.phoneNumber.otpExpiry = Date.now() + 5 * 60 * 1000;
@@ -1167,7 +1172,7 @@ exports.loginUser = async (req, res, next) => {
 
         // Check if email is verified
         if (!user.emailVerification.isVerified && !user.isGoogleAuth) {
-         const otp = Math.floor(100000 + Math.random() * 900000);
+            const otp = Math.floor(100000 + Math.random() * 900000);
 
             const otpExpiry = createOtpExpiry(30);
             // Send new verification email
@@ -1851,7 +1856,7 @@ exports.resendVerificationEmail = async (req, res, next) => {
             });
         }
 
-       const otp = Math.floor(100000 + Math.random() * 900000);
+        const otp = Math.floor(100000 + Math.random() * 900000);
 
         await userModel.findByIdAndUpdate(user._id, {
             "emailVerification.otp": otp,

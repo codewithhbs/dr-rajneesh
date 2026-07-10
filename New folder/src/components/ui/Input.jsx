@@ -1,0 +1,25 @@
+import { cn } from "./cn";
+
+// Labelled text input. Pass `error` to show a red message under the field.
+export default function Input({ label, error, className, id, ...props }) {
+  return (
+    <div className="space-y-1.5">
+      {label && (
+        <label htmlFor={id} className="block text-sm font-medium text-gray-700">
+          {label}
+        </label>
+      )}
+      <input
+        id={id}
+        className={cn(
+          "w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400",
+          "focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none transition",
+          error && "border-red-400 focus:border-red-500 focus:ring-red-100",
+          className
+        )}
+        {...props}
+      />
+      {error && <p className="text-xs text-red-600">{error}</p>}
+    </div>
+  );
+}
