@@ -87,24 +87,7 @@ exports.getAllValidNotifications = async (req, res) => {
     const redisKey = 'valid_notifications';
     try {
         const redisClient = getRedisClient(req, res);
-        if (!redisClient) {
-            return res.status(500).json({
-                success: false,
-                message: "Redis client is not available",
-                data: null
-            });
-        }
-
-        // Check if data exists in Redis cache
-        const cachedData = await redisClient.get(redisKey);
-        if (cachedData) {
-            return res.status(200).json({
-                success: true,
-                message: "Valid notifications fetched from cache",
-                data: JSON.parse(cachedData),
-                cached: true
-            });
-        }
+    
 
         // Fetch from MongoDB if cache not available
         const notifications = await Notification.find({

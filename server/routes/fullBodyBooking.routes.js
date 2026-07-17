@@ -15,7 +15,7 @@ router.post("/user/booking", isAuthenticated, userCtrl.createBooking);
 router.get("/user/booking", isAuthenticated, userCtrl.getMyBookings);
 router.get("/user/booking/:bookingId", isAuthenticated, userCtrl.getBookingDetail);
 router.put("/user/booking/:bookingId/reschedule", isAuthenticated, userCtrl.rescheduleBooking);
-router.put("/user/booking/:bookingId/cancel", isAuthenticated, userCtrl.cancelBooking);
+router.post("/user/booking/:bookingId/cancel", isAuthenticated, userCtrl.cancelBooking);
 
 router.post("/user/payment/initiate", isAuthenticated, userCtrl.initiatePayment);
 router.post("/user/payment/verify", userCtrl.verifyPayment);

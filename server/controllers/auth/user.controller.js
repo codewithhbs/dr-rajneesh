@@ -192,7 +192,7 @@ exports.registerNormal = async (req, res, next) => {
         let user = await userModel.findOne({ phone: trimmedPhone });
 
         // Generate OTP
-            const otp = 123456
+        const otp = 123456
 
         // const otp = Math.floor(100000 + Math.random() * 900000);
         const otpExpiry = createOtpExpiry(30);
@@ -969,7 +969,7 @@ exports.sendLoginOtp = async (req, res) => {
                 message: "Account is suspended or deactivated"
             });
         }
-    const otp = 123456
+        const otp = 123456
 
         // const otp = Math.floor(100000 + Math.random() * 900000);
 
@@ -1091,7 +1091,7 @@ exports.resendLoginOtp = async (req, res) => {
                 message: "Account is suspended or deactivated"
             });
         }
-    const otp = 123456
+        const otp = 123456
 
         // const otp = Math.floor(100000 + Math.random() * 900000);
 
@@ -1142,14 +1142,7 @@ exports.loginUser = async (req, res, next) => {
             });
         }
 
-        // Check if account is locked
-        if (user.isLocked) {
-            return res.status(423).json({
-                success: false,
-                message:
-                    "Account temporarily locked due to too many failed login attempts",
-            });
-        }
+
 
         // Check if account is active
         if (user.status !== "active") {

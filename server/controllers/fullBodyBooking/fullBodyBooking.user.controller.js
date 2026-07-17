@@ -6,6 +6,7 @@ const FullBodyBooking = require("../../models/NewService/FullBodyBooking");
 const FullBodyService = require("../../models/NewService/FullBodyService");
 const PaymentHistory = require("../../models/NewService/PaymentHistory");
 const AppointmentTimeline = require("../../models/NewService/AppointmentTimeline");
+const { sendEmail } = require("../../utils/sendEmail");
 
 const ICICI_MERCHANT_ID = process.env.ICICI_MERCHANT_ID;
 const ICICI_AGGREGATOR_ID = process.env.ICICI_AGGREGATOR_ID;
@@ -236,7 +237,7 @@ exports.createBooking = async (req, res) => {
             selectedIncludedServices,
             notes
         } = req.body;
-        console.log(req.body)
+
         if (!serviceId || !appointmentDate || !appointmentTime) {
             await session.abortTransaction();
             return res.status(400).json({
@@ -338,7 +339,7 @@ exports.createBooking = async (req, res) => {
                     notes: notes || "",
                     totalVisits: 1,
                     completedVisits: 0,
-                    clinic: clinic?._id,
+                    clinic: clinic ? clinic : clinic?._id,
                     selectedIncludedServices: selectedIncludedServices || [],
                 }
             ],
@@ -368,6 +369,7 @@ exports.createBooking = async (req, res) => {
         });
     } catch (err) {
         await session.abortTransaction();
+        console.log(err.message)
         session.endSession();
         return res.status(500).json({
             success: false,
@@ -383,8 +385,8 @@ exports.createBooking = async (req, res) => {
 exports.initiatePayment = async (req, res) => {
     try {
         const userId = req.user._id;
-        const { bookingId, amount } = req.body;
-
+        const { bookingId, amount, source = "web" } = req.body;
+        console.log("source", source)
         if (!bookingId || !amount) {
             return res.status(400).json({
                 success: false,
@@ -408,12 +410,12 @@ exports.initiatePayment = async (req, res) => {
             });
         }
 
-        if (Number(amount) > Number(booking.dueAmount)) {
-            return res.status(400).json({
-                success: false,
-                message: "Amount exceeds due amount"
-            });
-        }
+        // if (Number(amount) > Number(booking.dueAmount)) {
+        //     return res.status(400).json({
+        //         success: false,
+        //         message: "Amount exceeds due amount"
+        //     });
+        // }
 
         const merchantTxnNo = genTxnNo();
         const txnDate = formatTxnDate();
@@ -434,7 +436,7 @@ exports.initiatePayment = async (req, res) => {
             merchantId: ICICI_MERCHANT_ID,
             merchantTxnNo,
             payType: "0",
-            returnURL: 'https://api.drrajneeshkant.in/api/v1/full/user/payment/verify',
+            returnURL: `http://192.168.1.21:7900/api/v1/full/user/payment/verify?source=${source}`,
             transactionType: "SALE",
             txnDate
         };
@@ -498,55 +500,171 @@ exports.initiatePayment = async (req, res) => {
 // VERIFY PAYMENT (Status Check API) + update booking + ledger + timeline
 // ---------------------------------------------------------------------
 
+
+const SUCCESS_URL = (id) =>
+    `https://drrajneeshkant.in?order_id=${id}&merchent=${ICICI_MERCHANT_ID}&redirect_via=dashboard&pay_via=icici`;
+const FAILED_URL = (id, reason) =>
+    `https://drrajneeshkant.in/payment/failed?order_id=${id}&merchent=${ICICI_MERCHANT_ID}&redirect_via=dashboard&pay_via=icici&reason=${encodeURIComponent(reason || "declined")}`;
+const PENDING_URL = (id) =>
+    `https://drrajneeshkant.in/payment/pending?order_id=${id}&merchent=${ICICI_MERCHANT_ID}&redirect_via=dashboard&pay_via=icici`;
+
+const APP_SCREEN = {
+    SUCCESS: "BookingResult",
+    FAILED: "BookingResult",
+    PENDING: "BookingResult"
+};
+
+function respond(res, isApp, status, { bookingId, txnId, amount, message, summary }) {
+    if (isApp) {
+        return res.status(200).json({
+            success: status === "SUCCESS",
+            source: "app",
+            status,
+            screen: APP_SCREEN[status],
+            params: {
+                orderId: String(bookingId || ""),
+                txnId: txnId || null,
+                amount: amount != null ? String(amount) : null,
+                payVia: "icici",
+                message: message || null,
+                status,
+                summary: summary || null
+            }
+        });
+    }
+    if (status === "SUCCESS") return res.redirect(SUCCESS_URL(bookingId));
+    if (status === "PENDING") return res.redirect(PENDING_URL(bookingId));
+    return res.redirect(FAILED_URL(bookingId, message));
+}
+
+async function fetchIciciStatus(merchantTxnNo) {
+    const params = {
+        merchantId: ICICI_MERCHANT_ID,
+        aggregatorID: ICICI_AGGREGATOR_ID,
+        merchantTxnNo,
+        originalTxnNo: merchantTxnNo,
+        transactionType: "STATUS"
+    };
+    const secureHash = buildSecureHash([
+        params.aggregatorID,
+        params.merchantId,
+        params.merchantTxnNo,
+        params.originalTxnNo,
+        params.transactionType
+    ]);
+    const { data } = await axios.post(
+        ICICI_COMMAND_URL,
+        { ...params, secureHash },
+        { headers: { "Content-Type": "application/json" }, timeout: 15000 }
+    );
+    return data;
+}
+
+function mapStatus(data) {
+    const st = (data?.txnStatus || "").toUpperCase();
+    const rc = data?.txnResponseCode || data?.responseCode;
+    if (st === "SUC" || rc === "0000" || rc === "000") return "SUCCESS";
+    if (st === "REJ" || st === "ERR") return "FAILED";
+    return "PENDING";
+}
+
+function statusFromRecord(rec) {
+    if (rec?.status === "success") return "SUCCESS";
+    if (rec?.status === "failed") return "FAILED";
+    return null;
+}
+
+// booking doc -> summary object for app + email
+function buildSummary(booking, user) {
+    return {
+        bookingRefId: booking.bookingRefId || null,
+        serviceTitle: booking.serviceTitle || booking.service?.title || null,
+        appointmentDate: booking.appointmentDate ? String(booking.appointmentDate).slice(0, 10) : null,
+        appointmentTime: booking.appointmentTime || null,
+        name: user?.name || null,
+        email: user?.email || null,
+        amount: booking.amount || null
+    };
+}
+
+async function sendConfirmationEmail(user, booking, txnId) {
+    if (!user?.email) return;
+    const html = `
+    <div style="font-family:sans-serif;max-width:560px;margin:auto;padding:24px;">
+      <h2 style="color:#1a6b3c;">✅ Booking Confirmed!</h2>
+      <p>नमस्ते ${user.name || ""},</p>
+      <p>आपकी अपॉइंटमेंट सफलतापूर्वक बुक हो गई है। विवरण नीचे दिए गए हैं:</p>
+      <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+        <tr style="border-bottom:1px solid #eee;"><td style="padding:8px;color:#666;">Booking ID</td><td style="padding:8px;font-weight:600;">${booking.bookingRefId || "-"}</td></tr>
+        <tr style="border-bottom:1px solid #eee;"><td style="padding:8px;color:#666;">Treatment</td><td style="padding:8px;font-weight:600;">${booking.serviceTitle || booking.service?.title || "-"}</td></tr>
+        <tr style="border-bottom:1px solid #eee;"><td style="padding:8px;color:#666;">Date</td><td style="padding:8px;font-weight:600;">${booking.appointmentDate ? String(booking.appointmentDate).slice(0, 10) : "-"}</td></tr>
+        <tr style="border-bottom:1px solid #eee;"><td style="padding:8px;color:#666;">Time</td><td style="padding:8px;font-weight:600;">${booking.appointmentTime || "-"}</td></tr>
+        <tr style="border-bottom:1px solid #eee;"><td style="padding:8px;color:#666;">Amount Paid</td><td style="padding:8px;font-weight:600;">₹${booking.paidAmount || booking.amount || "-"}</td></tr>
+        <tr><td style="padding:8px;color:#666;">Transaction ID</td><td style="padding:8px;font-weight:600;">${txnId || "-"}</td></tr>
+      </table>
+      <p style="color:#555;">कृपया अपनी अपॉइंटमेंट से <strong>10 मिनट पहले</strong> पहुँचें।</p>
+      <p style="color:#555;">Dr. Rajneesh Kant Clinic</p>
+      <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
+      <p style="font-size:12px;color:#999;">यह एक स्वचालित ईमेल है। किसी सहायता के लिए क्लिनिक से संपर्क करें।</p>
+    </div>`;
+
+    await sendEmail({
+        to: user.email,
+        subject: "Booking Confirmed – Dr. Rajneesh Kant Clinic",
+        html
+    });
+}
+
 exports.verifyPayment = async (req, res) => {
     const session = await mongoose.startSession();
+    let booking = null;
+    const isApp =
+        req.query?.source === "app" ||
+        req.body?.source === "app" ||
+        req.body?.txnChannel === "MOBILE";
+
+    const bookingId = req.body?.addlParam1 || req.body?.bookingId;
+    const userId = req.body?.addlParam2 || req.body?.userId;
+    const { merchantTxnNo, respDescription, amount, paymentID, txnID } = req.body;
 
     try {
         session.startTransaction();
 
-        console.log("ICICI CALLBACK");
+        console.log("ICICI CALLBACK", isApp ? "[APP]" : "[WEB]");
         console.log(JSON.stringify(req.body, null, 2));
-
-        const {
-            addlParam1: bookingId,
-            addlParam2: userId,
-            merchantTxnNo,
-            responseCode,
-            respDescription,
-            amount,
-            paymentID,
-            txnID
-        } = req.body;
 
         if (!bookingId || !merchantTxnNo) {
             await session.abortTransaction();
-            return res.redirect('https://drrajneeshkant.in/payment/failed')
-            // return res.status(400).json({
-            //     success: false,
-            //     message: "bookingId and merchantTxnNo are required"
-            // });
+            return respond(res, isApp, "FAILED", { bookingId, message: "missing_params" });
         }
 
-        const booking = await FullBodyBooking.findOne({
-            _id: bookingId,
-            patient: userId
-        }).session(session);
+        const bookingQuery = userId ? { _id: bookingId, patient: userId } : { _id: bookingId };
+        booking = await FullBodyBooking.findOne(bookingQuery).session(session);
 
         if (!booking) {
             await session.abortTransaction();
-            return res.status(404).json({
-                success: false,
-                message: "Booking not found"
-            });
+            return res.status(404).json({ success: false, message: "Booking not found" });
         }
 
-        // ------------------------------
-        // Handle Payment Record
-        // ------------------------------
+        const user = await User.findById(booking.patient).lean();
+
         let paymentRecord = await PaymentHistory.findOne({
             booking: booking._id,
             transactionId: merchantTxnNo
         }).session(session);
+
+        // already terminal -> short-circuit + include summary
+        const terminal = statusFromRecord(paymentRecord);
+        if (terminal) {
+            await session.commitTransaction();
+            return respond(res, isApp, terminal, {
+                bookingId: booking._id,
+                txnId: paymentRecord.gatewayTxnId,
+                amount: paymentRecord.amount,
+                message: terminal === "SUCCESS" ? "Payment successful" : (paymentRecord.remarks || "Transaction declined"),
+                summary: terminal === "SUCCESS" ? buildSummary(booking, user) : null
+            });
+        }
 
         if (!paymentRecord) {
             [paymentRecord] = await PaymentHistory.create(
@@ -562,140 +680,78 @@ exports.verifyPayment = async (req, res) => {
             );
         }
 
-        // ------------------------------
-        // Idempotency check
-        // ------------------------------
-        if (paymentRecord.status === "success") {
-            await session.commitTransaction();
-            const redirect_url = `https://drrajneeshkant.in/?order_id=${booking?._id}&merchent=${ICICI_MERCHANT_ID}&redirect_via=dashboard&pay_via=icici`;
-
-            return res.redirect(redirect_url);
-
-
-        }
-
-        // ------------------------------
-        // ICICI Callback Success Check
-        // ------------------------------
-        const callbackSuccess = responseCode === "0000";
-
-        if (!callbackSuccess) {
-            paymentRecord.status = "failed";
-            paymentRecord.remarks = respDescription || "Payment failed";
-
-            await paymentRecord.save({ session });
-            await session.commitTransaction();
-
-            return res.status(200).json({
-                success: true,
-                paymentSuccess: false,
-                message: "Payment failed",
-                data: req.body
-            });
-        }
-
-        // ------------------------------
-        // Optional STATUS API Verify
-        // ------------------------------
-        let statusVerified = true;
-
+        let finalStatus = "PENDING";
+        let statusData = null;
         try {
-            const statusParams = {
-                merchantId: ICICI_MERCHANT_ID,
-                aggregatorID: ICICI_AGGREGATOR_ID,
-                merchantTxnNo,
-                originalTxnNo: merchantTxnNo,
-                transactionType: "STATUS"
-            };
-
-            const secureHash = buildSecureHash([
-                statusParams.aggregatorID,
-                statusParams.merchantId,
-                statusParams.merchantTxnNo,
-                statusParams.originalTxnNo,
-                statusParams.transactionType
-            ]);
-
-            const statusRes = await axios.post(
-                ICICI_COMMAND_URL,
-                { ...statusParams, secureHash },
-                { headers: { "Content-Type": "application/json" } }
-            );
-
-            console.log("ICICI STATUS RESPONSE", JSON.stringify(statusRes.data, null, 2));
-
-            const result = statusRes.data;
-
-            statusVerified =
-                result.txnStatus === "SUC" ||
-                result.txnResponseCode === "0000" ||
-                result.responseCode === "0000";
-
+            statusData = await fetchIciciStatus(merchantTxnNo);
+            console.log("ICICI STATUS RESPONSE", JSON.stringify(statusData, null, 2));
+            finalStatus = mapStatus(statusData);
         } catch (statusError) {
             console.log("STATUS API FAILED", statusError.message);
-            // Trust callback if status API fails
-            statusVerified = true;
+            finalStatus = "PENDING";
         }
 
-        if (!statusVerified) {
-            paymentRecord.status = "failed";
-            paymentRecord.remarks = "Status verification failed";
+        const paidNow = Number(statusData?.amount || amount || 0);
+        const gwTxnId = statusData?.txnID || txnID;
+        const gwAuthId = statusData?.txnAuthID || statusData?.authCode;
 
+        // FAILED
+        if (finalStatus === "FAILED") {
+            paymentRecord.status = "failed";
+            paymentRecord.gatewayTxnId = gwTxnId;
+            paymentRecord.remarks = statusData?.txnRespDescription || respDescription || "Transaction declined";
             await paymentRecord.save({ session });
             await session.commitTransaction();
-
-            return res.status(200).json({
-                success: true,
-                paymentSuccess: false,
-                message: "Payment verification failed"
+            return respond(res, isApp, "FAILED", {
+                bookingId: booking._id, txnId: gwTxnId, amount: paidNow,
+                message: paymentRecord.remarks
             });
         }
 
-        // ------------------------------
-        // Update Booking
-        // ------------------------------
-        const paidNow = Number(amount || 0);
+        // PENDING
+        if (finalStatus === "PENDING") {
+            paymentRecord.status = "pending";
+            paymentRecord.gatewayTxnId = gwTxnId;
+            paymentRecord.remarks = "Awaiting confirmation from gateway";
+            await paymentRecord.save({ session });
+            await session.commitTransaction();
+            return respond(res, isApp, "PENDING", {
+                bookingId: booking._id, txnId: gwTxnId, amount: paidNow,
+                message: paymentRecord.remarks,
+                summary: buildSummary(booking, user)
+            });
+        }
 
+        // SUCCESS
         booking.paidAmount = Number(booking.paidAmount || 0) + paidNow;
         booking.dueAmount = Math.max(0, Number(booking.amount) - booking.paidAmount);
-
-        booking.paymentStatus =
-            booking.dueAmount <= 0 ? "paid" :
-                booking.paidAmount > 0 ? "partial" : "pending";
-
+        booking.paymentStatus = booking.dueAmount <= 0 ? "paid" : booking.paidAmount > 0 ? "partial" : "pending";
         if (booking.bookingStatus === "scheduled" || booking.bookingStatus === "payment_pending") {
             booking.bookingStatus = "confirmed";
         }
-
         await booking.save({ session });
 
-        // ------------------------------
-        // Update Payment Record
-        // ------------------------------
         paymentRecord.status = "success";
-        paymentRecord.gatewayTxnId = txnID;
-        paymentRecord.gatewayPaymentId = paymentID;
-        paymentRecord.remarks = "Payment verified successfully";
-
+        paymentRecord.gatewayTxnId = gwTxnId;
+        paymentRecord.gatewayPaymentId = paymentID || statusData?.paymentInstId;
+        paymentRecord.remarks = "Payment verified via STATUS API";
+        if (gwAuthId) paymentRecord.authId = gwAuthId;
         await paymentRecord.save({ session });
 
-        // ------------------------------
-        // Timeline Entries
-        // ------------------------------
         await AppointmentTimeline.create(
             [
                 {
                     booking: booking._id,
                     action: "payment_received",
                     remark: `Payment of ₹${paidNow} received via ICICI Orange PG`,
-                    createdBy: userId,
+                    createdBy: userId || booking.patient,
                     createdByModel: "User"
                 },
                 {
                     booking: booking._id,
                     action: "confirmed",
                     remark: "Booking confirmed after successful payment",
-                    createdBy: userId,
+                    createdBy: userId || booking.patient,
                     createdByModel: "User"
                 }
             ],
@@ -704,34 +760,37 @@ exports.verifyPayment = async (req, res) => {
 
         await session.commitTransaction();
 
+        // email after commit (non-blocking)
+        sendConfirmationEmail(user, booking, gwTxnId).catch((e) =>
+            console.error("Confirmation email failed:", e.message)
+        );
 
-        const redirect_url = `https://drrajneeshkant.in?order_id=${booking?._id}&merchent=${ICICI_MERCHANT_ID}&redirect_via=dashboard&pay_via=icici`;
-
-        return res.redirect(redirect_url);
+        return respond(res, isApp, "SUCCESS", {
+            bookingId: booking._id,
+            txnId: gwTxnId,
+            amount: paidNow,
+            message: "Payment successful",
+            summary: buildSummary(booking, user)
+        });
 
     } catch (err) {
         await session.abortTransaction();
         console.error("Payment Verification Error:", err);
-        const failed_redirect_url = `https://drrajneeshkant.in/payment/failed?order_id=${booking?._id}&merchent=${ICICI_MERCHANT_ID}&redirect_via=dashboard&pay_via=icici&error=${encodeURIComponent(err.response?.data)}`
-
-        return res.redirect(failed_redirect_url);
-
-        // return res.status(500).json({
-        //     success: false,
-        //     message: "Failed to verify payment",
-        //     error: err.response?.data || err.message
-        // });
+        return respond(res, isApp, "FAILED", {
+            bookingId,
+            message: err.response?.data?.respDescription || "server_error"
+        });
     } finally {
         session.endSession();
     }
 };
-
 // ---------------------------------------------------------------------
 // GET MY BOOKINGS
 // ---------------------------------------------------------------------
 exports.getMyBookings = async (req, res) => {
     try {
         const userId = req.user._id;
+        console.log("user id hit me", userId)
         const { status } = req.query;
 
         const filter = { patient: userId };
@@ -1027,70 +1086,127 @@ exports.rescheduleBooking = async (req, res) => {
 // ---------------------------------------------------------------------
 // CANCEL BOOKING (by patient)
 // ---------------------------------------------------------------------
+
+const ADMIN_EMAIL = "hr.rkmspine@gmail.com";
+ 
 exports.cancelBooking = async (req, res) => {
     const session = await mongoose.startSession();
     try {
         session.startTransaction();
-
+ 
         const userId = req.user._id;
         const { bookingId } = req.params;
-        const { reason } = req.body;
-
-        const booking = await FullBodyBooking.findOne({
-            _id: bookingId,
-            patient: userId
-        }).session(session);
-
+        const { reason="personal reson" } = req.body;
+        console.log( req.body)
+ 
+        const booking = await FullBodyBooking.findOne({ _id: bookingId, patient: userId })
+            .populate("patient", "name email phone")
+            .populate("service", "title price discount_price")
+            .populate("clinic", "clinic_name")
+            .session(session);
+ 
         if (!booking) {
             await session.abortTransaction();
             return res.status(404).json({ success: false, message: "Booking not found" });
         }
-
+ 
         if (["completed", "cancelled"].includes(booking.bookingStatus)) {
             await session.abortTransaction();
-            return res.status(409).json({
-                success: false,
-                message: `Booking already ${booking.bookingStatus}`
-            });
+            return res.status(409).json({ success: false, message: `Booking already ${booking.bookingStatus}` });
         }
-
+ 
+        const cancelReason = reason || "Cancelled by patient";
         booking.bookingStatus = "cancelled";
-        booking.cancelledReason = reason || "Cancelled by patient";
-
+        booking.cancelledReason = cancelReason;
         await booking.save({ session });
-
+ 
         await AppointmentTimeline.create(
-            [
-                {
-                    booking: booking._id,
-                    action: "cancelled",
-                    remark: reason || "Cancelled by patient",
-                    createdBy: userId,
-                    createdByModel: "User"
-                }
-            ],
+            [{ booking: booking._id, action: "cancelled", remark: cancelReason, createdBy: userId, createdByModel: "User" }],
             { session }
         );
-
+ 
         await session.commitTransaction();
-        session.endSession();
-
-        return res.status(200).json({
-            success: true,
-            message: "Booking cancelled successfully",
-            data: booking
-        });
+ 
+        // emails after commit (non-blocking)
+        _sendCancelEmails(booking, cancelReason).catch((e) =>
+            console.error("Cancel email failed:", e.message)
+        );
+ 
+        return res.status(200).json({ success: true, message: "Booking cancelled successfully", data: booking });
     } catch (err) {
+        console.log(err)
         await session.abortTransaction();
+        return res.status(500).json({ success: false, message: "Failed to cancel booking", error: err.message });
+    } finally {
         session.endSession();
-        return res.status(500).json({
-            success: false,
-            message: "Failed to cancel booking",
-            error: err.message
-        });
     }
 };
-
+ 
+async function _sendCancelEmails(booking, reason) {
+    const user = booking.patient;
+    const serviceName = booking.service?.title || "Full Body Treatment";
+    const clinicName  = booking.clinic?.clinic_name || "Dr. Rajneesh Kant Clinic";
+    const paidAmount  = booking.paidAmount || 0;
+    const apptDate    = booking.appointmentDate ? String(booking.appointmentDate).slice(0, 10) : "-";
+    const apptTime    = booking.appointmentTime || "-";
+    const bookingRef  = booking.bookingId || String(booking._id);
+ 
+    // ---- email to user ----
+    const userHtml = `
+    <div style="font-family:sans-serif;max-width:560px;margin:auto;padding:24px;">
+      <h2 style="color:#c0392b;">❌ Booking Cancelled</h2>
+      <p>नमस्ते ${user?.name || ""},</p>
+      <p>आपकी निम्नलिखित अपॉइंटमेंट रद्द कर दी गई है:</p>
+      <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+        <tr style="border-bottom:1px solid #eee;"><td style="padding:8px;color:#666;">Booking ID</td>    <td style="padding:8px;font-weight:600;">${bookingRef}</td></tr>
+        <tr style="border-bottom:1px solid #eee;"><td style="padding:8px;color:#666;">Treatment</td>    <td style="padding:8px;font-weight:600;">${serviceName}</td></tr>
+        <tr style="border-bottom:1px solid #eee;"><td style="padding:8px;color:#666;">Date</td>         <td style="padding:8px;font-weight:600;">${apptDate}</td></tr>
+        <tr style="border-bottom:1px solid #eee;"><td style="padding:8px;color:#666;">Time</td>         <td style="padding:8px;font-weight:600;">${apptTime}</td></tr>
+        <tr style="border-bottom:1px solid #eee;"><td style="padding:8px;color:#666;">Clinic</td>       <td style="padding:8px;font-weight:600;">${clinicName}</td></tr>
+        <tr style="border-bottom:1px solid #eee;"><td style="padding:8px;color:#666;">Paid Amount</td>  <td style="padding:8px;font-weight:600;">₹${paidAmount}</td></tr>
+        <tr>                                        <td style="padding:8px;color:#666;">Reason</td>      <td style="padding:8px;font-weight:600;">${reason}</td></tr>
+      </table>
+      ${paidAmount > 0
+        ? `<p style="color:#555;background:#fff8e1;padding:12px;border-radius:8px;border-left:4px solid #f39c12;">
+            💰 <strong>Refund:</strong> यदि आपने भुगतान किया था, तो हमारी टीम जल्द ही आपसे संपर्क कर रिफंड की प्रक्रिया शुरू करेगी।
+           </p>`
+        : ''}
+      <p style="color:#555;">किसी भी प्रश्न के लिए क्लिनिक से संपर्क करें।</p>
+      <p style="color:#555;">${clinicName}</p>
+      <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
+      <p style="font-size:12px;color:#999;">यह एक स्वचालित ईमेल है।</p>
+    </div>`;
+ 
+    // ---- email to admin ----
+    const adminHtml = `
+    <div style="font-family:sans-serif;max-width:560px;margin:auto;padding:24px;">
+      <h2 style="color:#c0392b;">⚠️ Booking Cancelled – Refund Required</h2>
+      <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+        <tr style="border-bottom:1px solid #eee;"><td style="padding:8px;color:#666;">Booking ID</td>    <td style="padding:8px;font-weight:600;">${bookingRef}</td></tr>
+        <tr style="border-bottom:1px solid #eee;"><td style="padding:8px;color:#666;">Patient Name</td>  <td style="padding:8px;font-weight:600;">${user?.name || "-"}</td></tr>
+        <tr style="border-bottom:1px solid #eee;"><td style="padding:8px;color:#666;">Patient Email</td> <td style="padding:8px;font-weight:600;">${user?.email || "-"}</td></tr>
+        <tr style="border-bottom:1px solid #eee;"><td style="padding:8px;color:#666;">Patient Phone</td> <td style="padding:8px;font-weight:600;">${user?.phone || "-"}</td></tr>
+        <tr style="border-bottom:1px solid #eee;"><td style="padding:8px;color:#666;">Treatment</td>     <td style="padding:8px;font-weight:600;">${serviceName}</td></tr>
+        <tr style="border-bottom:1px solid #eee;"><td style="padding:8px;color:#666;">Date</td>          <td style="padding:8px;font-weight:600;">${apptDate}</td></tr>
+        <tr style="border-bottom:1px solid #eee;"><td style="padding:8px;color:#666;">Time</td>          <td style="padding:8px;font-weight:600;">${apptTime}</td></tr>
+        <tr style="border-bottom:1px solid #eee;"><td style="padding:8px;color:#666;">Clinic</td>        <td style="padding:8px;font-weight:600;">${clinicName}</td></tr>
+        <tr style="border-bottom:1px solid #eee;"><td style="padding:8px;color:#666;">Paid Amount</td>   <td style="padding:8px;font-weight:600;color:${paidAmount > 0 ? '#c0392b' : 'inherit'};">₹${paidAmount}</td></tr>
+        <tr>                                        <td style="padding:8px;color:#666;">Cancel Reason</td><td style="padding:8px;font-weight:600;">${reason}</td></tr>
+      </table>
+      ${paidAmount > 0
+        ? `<p style="background:#fdecea;padding:12px;border-radius:8px;border-left:4px solid #c0392b;color:#c0392b;font-weight:600;">
+            ₹${paidAmount} refund pending – please process manually via ICICI PG dashboard.
+           </p>`
+        : `<p style="color:#555;">No payment was made. No refund required.</p>`}
+    </div>`;
+ 
+    const promises = [];
+    if (user?.email) {
+        promises.push(sendEmail({ to: user.email, subject: `Booking Cancelled – ${bookingRef}`, html: userHtml }));
+    }
+    promises.push(sendEmail({ to: ADMIN_EMAIL, subject: `[REFUND REQUIRED] Booking ${bookingRef} cancelled by patient`, html: adminHtml }));
+    await Promise.allSettled(promises);
+}
 // ---------------------------------------------------------------------
 // GET MY PAYMENT HISTORY (across all bookings)
 // ---------------------------------------------------------------------
