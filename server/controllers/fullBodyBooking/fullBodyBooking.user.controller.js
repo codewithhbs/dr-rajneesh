@@ -7,6 +7,7 @@ const FullBodyService = require("../../models/NewService/FullBodyService");
 const PaymentHistory = require("../../models/NewService/PaymentHistory");
 const AppointmentTimeline = require("../../models/NewService/AppointmentTimeline");
 const { sendEmail } = require("../../utils/sendEmail");
+const userModel = require("../../models/users/user.model");
 
 const ICICI_MERCHANT_ID = process.env.ICICI_MERCHANT_ID;
 const ICICI_AGGREGATOR_ID = process.env.ICICI_AGGREGATOR_ID;
@@ -436,7 +437,7 @@ exports.initiatePayment = async (req, res) => {
             merchantId: ICICI_MERCHANT_ID,
             merchantTxnNo,
             payType: "0",
-            returnURL: `http://192.168.1.21:7900/api/v1/full/user/payment/verify?source=${source}`,
+            returnURL: `ttps://api.drrajneeshkant.in/api/v1/full/user/payment/verify?source=${source}`,
             transactionType: "SALE",
             txnDate
         };
@@ -646,7 +647,7 @@ exports.verifyPayment = async (req, res) => {
             return res.status(404).json({ success: false, message: "Booking not found" });
         }
 
-        const user = await User.findById(booking.patient).lean();
+        const user = await userModel.findById(booking.patient).lean();
 
         let paymentRecord = await PaymentHistory.findOne({
             booking: booking._id,
@@ -1088,50 +1089,50 @@ exports.rescheduleBooking = async (req, res) => {
 // ---------------------------------------------------------------------
 
 const ADMIN_EMAIL = "hr.rkmspine@gmail.com";
- 
+
 exports.cancelBooking = async (req, res) => {
     const session = await mongoose.startSession();
     try {
         session.startTransaction();
- 
+
         const userId = req.user._id;
         const { bookingId } = req.params;
-        const { reason="personal reson" } = req.body;
-        console.log( req.body)
- 
+        const { reason = "personal reson" } = req.body;
+        console.log(req.body)
+
         const booking = await FullBodyBooking.findOne({ _id: bookingId, patient: userId })
             .populate("patient", "name email phone")
             .populate("service", "title price discount_price")
             .populate("clinic", "clinic_name")
             .session(session);
- 
+
         if (!booking) {
             await session.abortTransaction();
             return res.status(404).json({ success: false, message: "Booking not found" });
         }
- 
+
         if (["completed", "cancelled"].includes(booking.bookingStatus)) {
             await session.abortTransaction();
             return res.status(409).json({ success: false, message: `Booking already ${booking.bookingStatus}` });
         }
- 
+
         const cancelReason = reason || "Cancelled by patient";
         booking.bookingStatus = "cancelled";
         booking.cancelledReason = cancelReason;
         await booking.save({ session });
- 
+
         await AppointmentTimeline.create(
             [{ booking: booking._id, action: "cancelled", remark: cancelReason, createdBy: userId, createdByModel: "User" }],
             { session }
         );
- 
+
         await session.commitTransaction();
- 
+
         // emails after commit (non-blocking)
         _sendCancelEmails(booking, cancelReason).catch((e) =>
             console.error("Cancel email failed:", e.message)
         );
- 
+
         return res.status(200).json({ success: true, message: "Booking cancelled successfully", data: booking });
     } catch (err) {
         console.log(err)
@@ -1141,16 +1142,16 @@ exports.cancelBooking = async (req, res) => {
         session.endSession();
     }
 };
- 
+
 async function _sendCancelEmails(booking, reason) {
     const user = booking.patient;
     const serviceName = booking.service?.title || "Full Body Treatment";
-    const clinicName  = booking.clinic?.clinic_name || "Dr. Rajneesh Kant Clinic";
-    const paidAmount  = booking.paidAmount || 0;
-    const apptDate    = booking.appointmentDate ? String(booking.appointmentDate).slice(0, 10) : "-";
-    const apptTime    = booking.appointmentTime || "-";
-    const bookingRef  = booking.bookingId || String(booking._id);
- 
+    const clinicName = booking.clinic?.clinic_name || "Dr. Rajneesh Kant Clinic";
+    const paidAmount = booking.paidAmount || 0;
+    const apptDate = booking.appointmentDate ? String(booking.appointmentDate).slice(0, 10) : "-";
+    const apptTime = booking.appointmentTime || "-";
+    const bookingRef = booking.bookingId || String(booking._id);
+
     // ---- email to user ----
     const userHtml = `
     <div style="font-family:sans-serif;max-width:560px;margin:auto;padding:24px;">
@@ -1167,16 +1168,16 @@ async function _sendCancelEmails(booking, reason) {
         <tr>                                        <td style="padding:8px;color:#666;">Reason</td>      <td style="padding:8px;font-weight:600;">${reason}</td></tr>
       </table>
       ${paidAmount > 0
-        ? `<p style="color:#555;background:#fff8e1;padding:12px;border-radius:8px;border-left:4px solid #f39c12;">
+            ? `<p style="color:#555;background:#fff8e1;padding:12px;border-radius:8px;border-left:4px solid #f39c12;">
             💰 <strong>Refund:</strong> यदि आपने भुगतान किया था, तो हमारी टीम जल्द ही आपसे संपर्क कर रिफंड की प्रक्रिया शुरू करेगी।
            </p>`
-        : ''}
+            : ''}
       <p style="color:#555;">किसी भी प्रश्न के लिए क्लिनिक से संपर्क करें।</p>
       <p style="color:#555;">${clinicName}</p>
       <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
       <p style="font-size:12px;color:#999;">यह एक स्वचालित ईमेल है।</p>
     </div>`;
- 
+
     // ---- email to admin ----
     const adminHtml = `
     <div style="font-family:sans-serif;max-width:560px;margin:auto;padding:24px;">
@@ -1194,12 +1195,12 @@ async function _sendCancelEmails(booking, reason) {
         <tr>                                        <td style="padding:8px;color:#666;">Cancel Reason</td><td style="padding:8px;font-weight:600;">${reason}</td></tr>
       </table>
       ${paidAmount > 0
-        ? `<p style="background:#fdecea;padding:12px;border-radius:8px;border-left:4px solid #c0392b;color:#c0392b;font-weight:600;">
+            ? `<p style="background:#fdecea;padding:12px;border-radius:8px;border-left:4px solid #c0392b;color:#c0392b;font-weight:600;">
             ₹${paidAmount} refund pending – please process manually via ICICI PG dashboard.
            </p>`
-        : `<p style="color:#555;">No payment was made. No refund required.</p>`}
+            : `<p style="color:#555;">No payment was made. No refund required.</p>`}
     </div>`;
- 
+
     const promises = [];
     if (user?.email) {
         promises.push(sendEmail({ to: user.email, subject: `Booking Cancelled – ${bookingRef}`, html: userHtml }));
