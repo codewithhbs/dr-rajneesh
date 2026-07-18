@@ -32,8 +32,8 @@ exports.registerNormalUser = async (req, res, next) => {
             $or: [{ email }, { phone }],
         });
 
-        //    const otp = Math.floor(100000 + Math.random() * 900000);
-        const otp = 123456
+           const otp = Math.floor(100000 + Math.random() * 900000);
+
 
         const otpExpiry = createOtpExpiry(30); // expires in 30 minutes
 
@@ -192,9 +192,9 @@ exports.registerNormal = async (req, res, next) => {
         let user = await userModel.findOne({ phone: trimmedPhone });
 
         // Generate OTP
-        const otp = 123456
 
-        // const otp = Math.floor(100000 + Math.random() * 900000);
+
+        const otp = Math.floor(100000 + Math.random() * 900000);
         const otpExpiry = createOtpExpiry(30);
         console.log(otp)
         // MESSAGE
